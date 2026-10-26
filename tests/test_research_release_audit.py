@@ -29,6 +29,7 @@ def test_release_gate_passes_only_as_software_audit(tmp_path):
     report = audit.audit_release(root, tracked_paths=[
         "README.md", "LICENSE",
         "data/manifest.example.csv", "data/features/.gitkeep",
+        "data/raw/.gitkeep",
         "models/squat_form_rf.joblib", "models/yolov8s.pt",
     ])
     assert report["status"] == "research_software_release_audit_PASS"
