@@ -101,3 +101,59 @@ not confirmed athlete/subject-disjoint.
 If the inspector finds unknown extensions, archive structures, or missing IDs,
 review its `first_video_paths` / missing examples and correct path matching
 before extracting. Do not invent files to satisfy validation.
+
+
+## Timestamped pose extraction from the verified ZIP (new)
+
+The archive inspector may legitimately report 116 additional video keys not named
+by the publisher's train/validation/test JSON. This is **not a corrupt ZIP**:
+all 1,623 officially assigned videos are present, so extra keys are ignored.
+
+To start with a small safe pilot using only 8 train videos, without
+extracting the whole 970 MB archive:
+
+```bash
+python -m pip install -e '.[camera,dev]'
+python -m scripts.extract_fitness_aqa_pose --split train --max-videos-per-split 8 --sample-fps 2
+```
+
+For a controlled smoke pilot of all three publisher splits:
+
+```bash
+python -m scripts.extract_fitness_aqa_pose --split all --max-videos-per-split 8 --sample-fps 2
+```
+
+This creates `data/features/fitness_aqa/fitness_aqa_train_pose.csv` (also
+`_val_pose.csv` and `_test_pose.csv` with `--split all`) and
+`fitness_aqa_extraction_summary.json`. All are ignored by Git.
+
+Each CSV row preserves `video_id`, publisher `split`, `timestamp_s`,
+`frame_index`, and **separate** `error_knees_forward`,
+`error_knees_inward` targets, plus the 103 pose features.
+
+The script uses only one video at a time: it decompresses an archive member
+into a temporary file, decodes/samples frames, then deletes the temp file.
+It never mass-extracts the ZIP and never commits video or image data.
+Frames very close to an annotation start/end are excluded (by default +/-0.1 s).
+Frames without reliable MediaPipe pose are counted and excluded.
+
+**When the smoke pilot succeeds**, process all official videos only after
+checking available space and runtime:
+
+```bash
+python -m scripts.extract_fitness_aqa_pose --split all --max-videos-per-split 0 --sample-fps 2
+```
+
+`--max-videos-per-split 0` intentionally means *all* clips. This will take
+substantially more work than the 8-video smoke check; model accuracy is not
+measured by extraction. The output summary reports skipped and accepted frames,
+along with labels present among accepted frames.
+
+**Research and evaluation warning**: keep publisher video-id-disjoint splits
+unchanged; they are not verified subject-disjoint. Do not feed this dataset to
+the existing `gym-pose benchmark` command because it requires real subject IDs
+and a *global* correct/incorrect label that this dataset does not provide.
+This dataset supports **two error-specific interval labels**; a 0 denotes
+absence of that particular named annotation, not a fully correct squat.
+Train/validation should be used for initial model selection; lock away test
+until evaluation protocol is fixed.
