@@ -45,7 +45,7 @@ def test_strata_deterministic_and_cover_rare_error_modes():
     assert a==b
     assert len({i for i,_ in a})==12
     assert len(set(name for _,name in a))==4
-    assert all(sum(stratum==name for _,name in a)>=3 for name in {
+    assert all(sum(value == category for _, value in a) >= 3 for category in {
         "both_errors_annotated", "elbows_annotated_only",
         "knees_annotated_only", "neither_named_error_annotated",
     })
