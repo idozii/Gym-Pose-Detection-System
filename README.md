@@ -20,6 +20,28 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 14B prerequisite: Barbell Row Pose Coverage Audit
+
+The original source Barbell Row TRAIN/VAL image extraction succeeded,
+but strict 8-joint MediaPipe pose coverage was only **4–5%** across
+the two tasks. The source lum-bar validation subset retained only
+**8 positive error images**. Training a classifier now would risk
+substantial source selection bias.
+
+```bash
+python -m scripts.audit_fitness_aqa_barbell_row_coverage --images-per-task-split 180 --seed 42
+```
+
+This is a train/validation-only, source-label-stratified diagnostic
+comparing 8-joint strict/relaxed gates against hypothetical 6- and
+4-joint gates on the **same source photos**. It reports per-joint
+failures, positive/negative pose admission, and missing-pose counts;
+no test photos decoded, no model retrained, no source archive edits.
+
+[Barbell Row pose quality diagnostic](docs/FITNESS_AQA_BARBELL_ROW_POSE_COVERAGE_M14.md).
+
+---
+
 ## Milestone 14A: Barbell Row image pose extraction
 
 The publisher Barbell Row dataset is **images** with two separately
