@@ -53,28 +53,51 @@ def load_splits(directory: Path, *, suffix: str, key_pattern: re.Pattern[str]) -
 
 
 def validate_intervals(labels: Any, keys: set[str], *, task: str) -> dict:
+    """Validate interval *pairs*, not the publisher's JSON list ordering.
+
+    Fitness-AQA OHP contains valid but out-of-order error windows. Their order
+    does not change the target semantics: the error is annotated whenever the
+    timestamp lies in ANY interval. Preserve the original source annotations.
+    Overlaps are informative metadata, not a reason to reject this dataset.
+    """
     if not isinstance(labels, dict):
         raise ValueError(f"{task}: expected video-ID -> interval-list mapping")
     missing = keys - set(labels)
     if missing:
         raise ValueError(f"{task}: missing annotation for {len(missing)} assigned videos: {sorted(missing)[:5]}")
     positives, intervals = 0, 0
-    for key in keys:
+    out_of_order, overlapping = [], []
+    for key in sorted(keys):
         windows = labels[key]
         if not isinstance(windows, list):
             raise ValueError(f"{task}/{key}: expected list of time intervals")
         positives += bool(windows)
-        prev_start = -1.0
         for pair in windows:
             if (not isinstance(pair, (list, tuple)) or len(pair) != 2
                 or any(type(v) not in (int, float) or not math.isfinite(v) for v in pair)
                 or pair[0] < 0 or pair[1] <= pair[0]):
                 raise ValueError(f"{task}/{key}: invalid annotation interval {pair!r}")
-            if pair[0] < prev_start:
-                raise ValueError(f"{task}/{key}: intervals must be ordered by start time")
-            prev_start = pair[0]
             intervals += 1
-    return {"videos_with_annotated_error": int(positives), "annotated_intervals": intervals}
+
+        if any(windows[i][0] < windows[i - 1][0] for i in range(1, len(windows))):
+            out_of_order.append(key)
+        # Analyze sorted copies only. The original JSON is never modified.
+        ordered = sorted(windows, key=lambda pair: (pair[0], pair[1]))
+        latest_end = -1.0
+        for begin, finish in ordered:
+            if begin < latest_end:
+                overlapping.append(key)
+                break
+            latest_end = max(latest_end, finish)
+
+    return {
+        "videos_with_annotated_error": int(positives),
+        "annotated_intervals": intervals,
+        "videos_with_out_of_order_intervals": len(out_of_order),
+        "out_of_order_video_examples": out_of_order[:10],
+        "videos_with_overlapping_intervals": len(overlapping),
+        "overlapping_video_examples": overlapping[:10],
+    }
 
 
 def validate_binary_labels(labels: Any, keys: set[str], *, task: str) -> dict:
