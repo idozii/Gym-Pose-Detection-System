@@ -17,6 +17,7 @@ from types import SimpleNamespace
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
@@ -105,6 +106,12 @@ def create_app(registry: ModelRegistry | None = None, *,
         lifespan=lifespan,
     )
     origins = _allowed_origins()
+    @app.exception_handler(RequestValidationError)
+    async def redact_validation_errors(_request: Request, _exc: RequestValidationError):
+        # FastAPI normally includes original invalid input in 422 responses.
+        # Pose coordinates must never be echoed back to clients or logs.
+        return JSONResponse(status_code=422, content={"detail": "Invalid request payload"})
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
@@ -151,10 +158,15 @@ def create_app(registry: ModelRegistry | None = None, *,
     @app.get("/health")
     def health(request: Request):
         statuses = request.app.state.models
+        loaded = sum(v == "loaded_experimental_only" for v in statuses.values())
+        expected = len(KNOWN_TASKS)
         return {
-            "status": "research_api_ready" if any(
-                v == "loaded_experimental_only" for v in statuses.values()
-            ) else "model_artifacts_not_provisioned",
+            "status": ("research_api_ready" if loaded == expected
+                       else "partial_model_artifacts" if loaded
+                       else "model_artifacts_not_provisioned"),
+            "ready_for_six_detector_demo": loaded == expected,
+            "loaded_model_count": loaded,
+            "expected_model_count": expected,
             "models": statuses,
             "pose_estimator_source_parity_validated": False,
             "research_only": True,
@@ -162,6 +174,16 @@ def create_app(registry: ModelRegistry | None = None, *,
             "request_landmarks_logged": False,
             "warning": DISCALIMER,
         }
+
+    @app.get("/ready")
+    def readiness(request: Request):
+        """Deployment probe: never treat partial provisioning as full readiness."""
+        loaded = sum(
+            s == "loaded_experimental_only" for s in request.app.state.models.values()
+        )
+        if loaded != len(KNOWN_TASKS):
+            raise HTTPException(status_code=503, detail="Six source models not ready")
+        return {"status": "ready", "loaded_model_count": loaded, "research_only": True}
 
     @app.post("/score")
     def score(body: ScoreRequest, request: Request):
