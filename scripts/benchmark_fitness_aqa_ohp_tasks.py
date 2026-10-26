@@ -464,7 +464,7 @@ def main() -> int:
                     } for name, v in entry["variants"].items()},
                 "paired_bootstrap_temporal_minus_static":
                     entry["paired_validation_cluster_bootstrap"]["intervals"]["temporal_minus_static"],
-            } for task, entry in report["tasks"].items(),
+            } for task, entry in report["tasks"].items()
         },
         "full_report": str(args.output_dir / "comparison.json"),
     }
