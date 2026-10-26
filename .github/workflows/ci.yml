@@ -1,4 +1,4 @@
-name: Milestone 1 tests
+name: Gym Pose research CI
 on:
   push:
     branches: [main, "feat/**"]
