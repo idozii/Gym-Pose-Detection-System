@@ -20,6 +20,34 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 14C: Barbell Row shoulder–hip 20-feature extraction
+
+The source TRAIN/VAL PR #22 audit established that requiring knees
+and ankles was a major cause of the earlier **4–5%** Barbell Row pose
+coverage. On equal-size label-stratified audit subsets, a strict
+shoulder+hip four-joint gate admitted approximately **68–75%** of
+images per task/split. These sample rates are **not** model accuracy.
+
+A new independent `barbell-row-torso4-image-20-v1` schema uses only
+the four reliable shoulders/hips as both feature inputs and quality
+gate (>=0.50):
+
+```bash
+# Source JSON + ZIP already downloaded in M12; small smoke test first
+python -m scripts.extract_fitness_aqa_barbell_row_torso4 --max-images-per-task-split 12
+# Full original TRAIN+VAL, never publisher TEST
+python -m scripts.extract_fitness_aqa_barbell_row_torso4 --max-images-per-task-split 0
+```
+
+The new output directory is `data/features/fitness_aqa_barbell_row_torso4/`
+and the original 32-feature pipeline remains intact. This is an
+**image-label classifier foundation**, not direct lumbar-spine
+measurement or reliable real-time coaching.
+
+[Milestone 14C torso4 extraction methodology](docs/FITNESS_AQA_BARBELL_ROW_TORSO4_M14.md).
+
+---
+
 ## Milestone 14B prerequisite: Barbell Row Pose Coverage Audit
 
 The original source Barbell Row TRAIN/VAL image extraction succeeded,
