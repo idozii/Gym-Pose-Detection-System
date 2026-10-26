@@ -91,7 +91,8 @@ def test_row_model_loads_and_predicts_source_labels_only(tmp_path):
     assert states["barbell_row/lumbar"] == "loaded_experimental_only"
     assert states["ohp/error_elbows"] == "model_artifact_missing"
     assert states["ohp/error_knees"] == "model_artifact_missing"
-    assert states["squat/error_knees_forward"] == "not_trained_as_source_error_detector"
+    assert states["squat/error_knees_forward"] == "model_artifact_missing"
+    assert states["squat/error_knees_inward"] == "model_artifact_missing"
     p = registry.score_landmarks("barbell_row","lumbar",landmarks())
     assert p["status"] == "experimental_source_label_score"
     assert p["schema_version"] == SCHEMA_VERSION
