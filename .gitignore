@@ -9,3 +9,18 @@ data/features/
 *.metrics.json
 .DS_Store
 .env
+
+# External research datasets and large derived media (do not commit)
+data/external/
+data/processed/
+data/cache/
+datasets/
+Fitness-AQA_dataset_release/
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.zip
+*.7z
+*.tar
+*.tar.gz
