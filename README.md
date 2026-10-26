@@ -20,6 +20,31 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 14D: Barbell Row static RF benchmark
+
+Barbell Row full source train/validation now retains around 70% of
+original per-task labeled images using the new torso4 20-feature
+shoulder/hip geometry. The new benchmark trains a **separate** Static RF
+for each publisher error label, selecting threshold from original
+**TRAIN candidate-prefix groups only**:
+
+```bash
+python -m scripts.benchmark_fitness_aqa_barbell_row_torso4 \
+  --seed 42 --trees 300 --bootstraps 500
+```
+
+It reads existing local torso4 CSVs (no ZIP/MediaPipe), rejects pilot,
+split/prefix leakage and mismatched manifests, reports acceptance and
+source-validation AP/precision/recall/FPR, and stores RF models under
+ignored `artifacts/fitness_aqa_barbell_row_torso4_rf/`. Source TEST
+image contents are never used. Candidate prefix is **NOT verified
+video/subject provenance**, and 4-joint geometry does not measure spine
+curvature.
+
+[Milestone 14D training/evaluation protocol](docs/FITNESS_AQA_BARBELL_ROW_RF_M14D.md).
+
+---
+
 ## Milestone 14C: Barbell Row shoulder–hip 20-feature extraction
 
 The source TRAIN/VAL PR #22 audit established that requiring knees
