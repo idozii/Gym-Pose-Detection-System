@@ -13,11 +13,13 @@ Milestone 16A is an opt-in RESEARCH visualization, NOT a fitness coach:
 from __future__ import annotations
 
 from collections import Counter
+from time import perf_counter
 from typing import Any
 
 import numpy as np
 
 from .model_registry import ModelRegistry
+from .live_diagnostics import LiveSessionDiagnostics, source_gate_diagnostic
 
 TASKS_BY_EXERCISE = {
     "squat": ("error_knees_forward", "error_knees_inward"),
@@ -71,7 +73,8 @@ def summary_line(target: str, report: dict) -> str:
     return f"{target}: src P={p:.3f}, train T={threshold:.2f} ({side})"[:MAX_TARGET_TEXT]
 
 
-def draw_status(frame, cv2_api, exercise: str, reports: dict) -> None:
+def draw_status(frame, cv2_api, exercise: str, reports: dict,
+                diagnostic_hint: str = "") -> None:
     """No color-coded error warnings; explanatory text stays onscreen."""
     h = int(frame.shape[0])
     w = int(frame.shape[1])
@@ -86,7 +89,7 @@ def draw_status(frame, cv2_api, exercise: str, reports: dict) -> None:
         summary_line(tasks[0], reports[tasks[0]]),
         summary_line(tasks[1], reports[tasks[1]]),
         VIEWER_DISCLAIMER,
-        "No recording | Static models; live-camera distribution shift",
+        diagnostic_hint or "No recording | Static models; live-camera distribution shift",
     )
     for idx, line in enumerate(lines):
         cv2_api.putText(
@@ -120,8 +123,10 @@ def run_live_viewer(
         camera.release()
         raise RuntimeError("Local webcam unavailable or permission denied")
     counts = Counter()
+    diagnostics = LiveSessionDiagnostics()
     frames = 0
     current = exercise
+    started_at = perf_counter()
     try:
         with mp_api.solutions.pose.Pose(
             static_image_mode=False, model_complexity=1,
@@ -130,13 +135,16 @@ def run_live_viewer(
             min_tracking_confidence=.5,
         ) as pose:
             while camera.isOpened():
+                frame_started = perf_counter()
                 ok, frame = camera.read()
                 if not ok:
                     break
                 if frame is None or getattr(frame, "ndim", -1) != 3:
                     raise RuntimeError("Invalid webcam frame shape")
+                pose_started = perf_counter()
                 prediction = pose.process(
                     cv2_api.cvtColor(frame, cv2_api.COLOR_BGR2RGB))
+                pose_ended = perf_counter()
                 landmark_holder = getattr(prediction, "pose_landmarks", None)
                 landmarks = (
                     getattr(landmark_holder, "landmark", None)
@@ -146,16 +154,33 @@ def run_live_viewer(
                     mp_api.solutions.drawing_utils.draw_landmarks(
                         frame, landmark_holder, mp_api.solutions.pose.POSE_CONNECTIONS)
                 reports = analyze_landmarks(registry, current, landmarks)
+                scored_at = perf_counter()
                 for value in reports.values():
                     key = (
                         "scored" if value["status"] == "experimental_source_label_score"
                         else "abstained"
                     )
                     counts[key] += 1
-                draw_status(frame, cv2_api, current, reports)
+                hint = "No recording | Static models; live-camera distribution shift"
+                if landmarks is None:
+                    hint = "No MediaPipe pose: show your entire body in frame"
+                else:
+                    gate, bad = source_gate_diagnostic(
+                        landmarks, current, TASKS_BY_EXERCISE[current][0])
+                    if gate == "required_joint_low_visibility":
+                        hint = "Low visibility: " + ", ".join(bad[:3])
+                    elif gate != "passes_basic_visibility_geometry_checks":
+                        hint = "Pose geometry: " + gate
+                draw_status(frame, cv2_api, current, reports, diagnostic_hint=hint)
                 cv2_api.imshow("Gym Pose - Experimental Source Label Viewer", frame)
                 frames += 1
                 key = cv2_api.waitKey(1) & 0xff
+                diagnostics.record(
+                    current, landmarks, reports,
+                    pose_ms=(pose_ended - pose_started) * 1000.,
+                    model_ms=(scored_at - pose_ended) * 1000.,
+                    frame_ms=(perf_counter() - frame_started) * 1000.,
+                )
                 if key in (ord("q"), ord("Q"), 27):
                     break
                 if key in KEY_TO_EXERCISE:
@@ -165,6 +190,7 @@ def run_live_viewer(
     finally:
         camera.release()
         cv2_api.destroyAllWindows()
+    elapsed_seconds = perf_counter() - started_at
     return {
         "status": "local_research_viewer_closed",
         "frames_processed": frames,
@@ -175,5 +201,6 @@ def run_live_viewer(
         "alerts_issued": 0,
         "rep_counting_enabled": False,
         "last_selected_exercise": current,
+        "diagnostics": diagnostics.summary(elapsed_seconds=elapsed_seconds),
         "warning": VIEWER_DISCLAIMER,
     }

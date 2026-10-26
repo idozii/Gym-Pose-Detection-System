@@ -20,6 +20,34 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 16B: live pose abstention and performance diagnostics
+
+The owner's first 60-frame Squat webcam run initialized correctly and
+loaded all six source-error RF models but returned **0 source-label
+scores / 120 abstentions** (two task scores per camera frame).
+That alone did not distinguish *no MediaPipe pose* from unreliable
+required joints or an inference error.
+
+M16B reports **aggregate, privacy-safe** reasons and mean/p95
+pose/model/frame timing + observed FPS; it keeps all quality gates and
+thresholds unchanged:
+
+```bash
+python -m pytest -q
+python -m scripts.run_fitness_aqa_research_viewer \
+  --exercise squat --camera 0 --max-frames 120 \
+  --trust-local-artifacts
+```
+
+The viewer now displays no-pose and missing-joint hints and prints a
+`diagnostics` summary at exit. No webcam video, pose coordinates,
+per-frame predictions or publisher TEST data are stored. This is
+diagnostics only, not a technique or safety coach.
+
+[Milestone 16B diagnostics guide](docs/M16B_LIVE_POSE_DIAGNOSTICS.md).
+
+---
+
 ## Milestone 16A: Local real-time *research* viewer (experimental)
 
 The owner's M15C local run confirmed six source-label error-model
