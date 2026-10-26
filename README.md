@@ -16,6 +16,42 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### Web v2: opt-in six source-label RF inference API
+
+The deployed browser camera and pose visibility workbench now has an
+optional **real Python inference backend** integration for all six
+original-source models (two Squat, two OHP, two Barbell Row). Users
+must explicitly opt in before their **33 pose landmarks** leave the
+browser; raw camera frames never leave. The backend reuses exact
+existing `ModelRegistry` feature generation and thresholds, and
+returns genuine experimental source-label scores or `ABSTAIN`.
+There are **no invented scores or medical / safe-form judgments**.
+
+```bash
+python -m pip install -e '.[webapi,dev]'
+python -m pytest -q
+# Models stay on the owner's computer or separately provisioned private host.
+POSE_TRUST_LOCAL_ARTIFACTS=1 POSE_MODEL_ROOT=. \
+POSE_WEB_ORIGINS=http://localhost:5173 \
+uvicorn gym_pose.web_api:app --host 127.0.0.1 --port 8000 --no-access-log
+# In separate terminal:
+cd web
+VITE_INFERENCE_API_URL=http://localhost:8000 npm run dev
+```
+
+**Vercel static frontend does NOT magically contain the six local joblib
+bundles.** Backend hosting with private model provisioning and a
+build-time `VITE_INFERENCE_API_URL` is required before deployed
+public website users can see real scores. Otherwise it stays a
+browser-only visibility demo with model inference unavailable.
+CORS, no-pose abstention, request constraints and tests are included;
+public backend abuse protection and cross-MediaPipe task/solution
+parity are still open research/ops requirements.
+
+[How to provision the model API and connect Vercel](docs/WEB_REAL_INFERENCE_DEPLOYMENT.md).
+
+---
+
 ### Web MVP: open camera in your browser (deployable on Vercel)
 
 A new `web/` Vite project brings the privacy-conscious pose
