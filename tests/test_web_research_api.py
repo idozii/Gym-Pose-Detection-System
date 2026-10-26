@@ -6,6 +6,8 @@ smoke-tested separately using synthetic sklearn source-provenance bundles.
 """
 from __future__ import annotations
 
+import json
+
 from fastapi.testclient import TestClient
 import pytest
 
@@ -121,7 +123,11 @@ def test_invalid_source_inputs_never_reach_registry(monkeypatch, mutation):
     with TestClient(create_app(mock, trust_local_artifacts=True)) as client:
         item = body()
         mutation(item)
-        result = client.post("/score", json=item)
+        # httpx json= refuses Infinity BEFORE the server receives it;
+        # send raw JSON to exercise the API's own finite-number validator.
+        result = client.post(
+            "/score", content=json.dumps(item, allow_nan=True),
+            headers={"Content-Type": "application/json"})
         assert result.status_code == 422
         assert mock.calls == []
 
