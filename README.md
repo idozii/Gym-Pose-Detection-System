@@ -1,5 +1,35 @@
 # Gym Pose Detection (Real-Time Correct vs Incorrect Form)
 
+## Milestone 1: Modular baseline (new)
+
+The original notebook below remains available as a historical baseline. A new
+installable package adds named 103-feature extraction, visibility checks, resettable
+probability smoothing, model schema validation, tests and CLI workflows.
+
+```bash
+python3.10 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e '.[camera,dev]'
+python -m pytest -q
+
+# Capture images for each class, then train an explicitly versioned baseline:
+gym-pose capture --label correct --count 100
+gym-pose capture --label incorrect --count 100
+gym-pose extract
+gym-pose train
+gym-pose webcam
+```
+
+**Evaluation warning:** `gym-pose train` uses a random frame split for an exploratory
+baseline only. For independent group evaluation, collect truthful `subject_id`/
+`session_id` metadata and use `--group-column subject_id`. No real-world
+form accuracy or rep-counting claims are made. Existing old joblib bundles are not
+schema-versioned and must be retrained for the new CLI.
+
+See [Milestone 1 setup, scope and limitations](docs/MILESTONE_1.md).
+
+---
+
 This project is structured for building and running a real-time gym form detection pipeline using:
 
 - MediaPipe Pose for landmark extraction
