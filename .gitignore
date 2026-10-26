@@ -1,11 +1,16 @@
 .venv/
 __pycache__/
 .pytest_cache/
+*.egg-info/
 *.py[cod]
 .ipynb_checkpoints/
 artifacts/
 data/raw/
 data/features/
+
+# Local dataset manifests may include file paths and subject/session metadata.
+# Track only the sanitized schema example at data/manifest.example.csv.
+data/manifest.csv
 *.metrics.json
 .DS_Store
 .env
