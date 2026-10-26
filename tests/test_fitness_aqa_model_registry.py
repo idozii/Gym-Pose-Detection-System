@@ -83,7 +83,7 @@ def test_row_model_loads_and_predicts_source_labels_only(tmp_path):
     assert 0 <= p["error_probability"] <= 1
     assert isinstance(p["source_label_flag"], bool)
     assert p["experimental_only"]
-    assert "not" in p["warning"].lower()
+    assert "NOT verified" in p["warning"]
     no_pose = registry.score_landmarks("barbell_row","lumbar",
                                        landmarks(low=(11,)))
     assert no_pose["status"] == "abstain"
