@@ -129,10 +129,15 @@ def run(features_dir: str | Path, output: str | Path, *,
             for variant in VARIANTS:
                 temp = model(seed, trees)
                 temp.fit(xtrain[variant].iloc[fit_i], yt[fit_i])
+                # Parallel RF probability accumulation can permute nearly
+                # tied probabilities and AP ranks across otherwise identical
+                # fits; use deterministic serial inference only.
+                temp.n_jobs = 1
                 cal_prob = predict_positive(temp, xtrain[variant].iloc[cal_i])
                 th = float(choose_threshold(yt[cal_i], cal_prob)["threshold"])
                 final = model(seed, trees)
                 final.fit(xtrain[variant], yt)
+                final.n_jobs = 1
                 p = predict_positive(final, xval[variant])
                 seed_result["variants"][variant] = {
                     "feature_count": len(xtrain[variant].columns),
