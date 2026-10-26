@@ -22,6 +22,8 @@ def main() -> int:
     parser.add_argument("--camera", type=int, default=0)
     parser.add_argument("--max-frames", type=int, default=None,
                         help="Optional local smoke-test frame cap; no images saved")
+    parser.add_argument("--no-framing-guide", action="store_true",
+                        help="Hide the dedicated live joint visibility side panel")
     parser.add_argument("--trust-local-artifacts", action="store_true",
                         help="Required: only your OWN trained joblib files (pickle can execute code)")
     args = parser.parse_args()
@@ -38,7 +40,8 @@ def main() -> int:
         }, indent=2))
         result = run_live_viewer(
             registry, exercise=args.exercise,
-            camera_index=args.camera, max_frames=args.max_frames)
+            camera_index=args.camera, max_frames=args.max_frames,
+            show_framing_guide=not args.no_framing_guide)
     except (OSError, ValueError, TypeError, RuntimeError, ImportError) as err:
         parser.exit(1, f"Local research viewer stopped: {err}\n")
     print(json.dumps(result, indent=2))
