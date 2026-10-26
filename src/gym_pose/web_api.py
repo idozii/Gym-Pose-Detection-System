@@ -10,6 +10,7 @@ MediaPipe training distribution; scores are exploratory source labels.
 from __future__ import annotations
 
 import os
+import json
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import SimpleNamespace
@@ -130,6 +131,17 @@ def create_app(registry: ModelRegistry | None = None, *,
             raw = await request.body()
             if len(raw) > MAX_JSON_BYTES:
                 return JSONResponse(status_code=413, content={"detail": "Request too large"})
+            # Reject nonstandard JSON NaN/Infinity before FastAPI's
+            # validation exception renderer can echo nonfinite inputs.
+            # Never echo user landmarks in error responses or access logs.
+            def nonfinite_constant(_):
+                raise ValueError("Nonfinite JSON number forbidden")
+            try:
+                json.loads(raw, parse_constant=nonfinite_constant)
+            except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
+                return JSONResponse(
+                    status_code=422, content={"detail": "Invalid or nonfinite JSON"}
+                )
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
