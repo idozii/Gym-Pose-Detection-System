@@ -20,6 +20,31 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 15B: OHP registry feature adapter restored
+
+M15A could already load both local Barbell Row models, but initially
+reported `feature_schema_not_integrated` for OHP because its original
+30-feature source module lived only on unmerged PR #18. M15B now
+integrates those **exact** original OHP elbow/knee schemas on the
+current main-based branch (no re-training or ZIP extraction required):
+
+```bash
+python -m pytest -q
+python -m scripts.check_fitness_aqa_model_registry
+# Only for your own trusted locally trained joblib files:
+python -m scripts.check_fitness_aqa_model_registry --trust-local-artifacts
+```
+
+After trusting the original locally created models, the two OHP and two
+Barbell Row tasks can report `loaded_experimental_only`. Two separate
+Squat source knee-error models are still not integrated. This is
+experimental source-label inference, **not** a trustworthy realtime
+exercise-safety coach.
+
+[Milestone 15B OHP adapter details](docs/M15B_OHP_REGISTRY_INTEGRATION.md).
+
+---
+
 ## Milestone 15A: Offline multi-exercise model registry
 
 An experimental **fail-closed** registry can load the owner's locally
@@ -34,9 +59,9 @@ python -m scripts.check_fitness_aqa_model_registry --trust-local-artifacts
 ```
 
 The Squat source knee-error slots are intentionally not automatically
-mapped to the legacy generic correct/incorrect classifier. OHP 30-feature
-registry slots require its source modules from still-open PR #18/#19
-to be integrated before they can load. Missing model/pose yields
+mapped to the legacy generic correct/incorrect classifier. Original OHP
+30-feature source schemas are integrated by M15B; the outstanding research
+PR #18/#19 histories still require separate reconciliation before final release. Missing model/pose yields
 `abstain`, not a "good exercise" classification. This is not a webcam
 coach or medical safety assessment.
 
