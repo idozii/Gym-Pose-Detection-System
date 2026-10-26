@@ -1,5 +1,38 @@
 # Gym Pose Detection (Real-Time Correct vs Incorrect Form)
 
+## Milestone 12: Fitness-AQA multi-exercise dataset foundation
+
+The research dataset foundation now supports the original publisher's **three
+exercise subsets** without assuming interchangeable labels or globally
+correct form:
+
+- **Squat:** named knee error intervals from video ZIP (existing baseline).
+- **Overhead Press (OHP):** elbow/knee error intervals from its own video ZIP.
+- **Barbell Row:** torso-angle and lumbar **image** labels (0/1), with **separate
+  publisher train/val/test splits per error target**.
+
+```bash
+# Validate downloaded small publisher JSON metadata, even before ZIP download:
+python -m scripts.inspect_fitness_aqa_multi --exercise ohp --skip-archive
+python -m scripts.inspect_fitness_aqa_multi --exercise barbell_row --skip-archive
+
+# When archives are downloaded, verify exact file-stem IDs WITHOUT unzipping:
+python -m scripts.inspect_fitness_aqa_multi --exercise ohp
+python -m scripts.inspect_fitness_aqa_multi --exercise barbell_row
+# or --exercise all after downloading all three datasets
+```
+
+The manifest saves locally under `artifacts/fitness_aqa_dataset/`, never
+uploads source media, detects missing/duplicate ZIP keys and warns if the
+Barbell Row image's two target-specific splits conflict. **No new OHP/Row
+accuracy claims or model training** occur in this milestone; the publisher
+test IDs are checked for integrity only. Source splits are not verified
+independent by athlete.
+
+[Milestone 12 datasets, exact download commands and research protocol](docs/FITNESS_AQA_MULTIBENCHMARK_M12.md).
+
+---
+
 ## Milestone 2: Data provenance and subject-independent evaluation
 
 The new commands validate a consented image manifest, extract traceable features, and
