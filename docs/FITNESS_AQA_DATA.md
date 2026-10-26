@@ -19,7 +19,7 @@ On your computer, from the repository root:
 ```bash
 python -m pip install gdown
 mkdir -p data/external/fitness_aqa/squat/labeled
-gdown --id 1LvxLhX-Ctljr0xP8WNtHsKvObfISkZ70 \
+gdown 1LvxLhX-Ctljr0xP8WNtHsKvObfISkZ70 \
   -O data/external/fitness_aqa/squat/labeled/videos.zip
 ```
 
