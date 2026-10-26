@@ -82,7 +82,9 @@ def audit_tracked_paths(paths: Iterable[str]) -> dict:
     blocked: set[str] = set()
     historical: set[str] = set()
     for raw in paths:
-        p = str(raw).replace("\\", "/").lstrip("./")
+        p = str(raw).replace("\\", "/")
+        if p.startswith("./"):
+            p = p[2:]
         if not p or p.startswith("../") or "/../" in p:
             blocked.add(raw)
             continue
