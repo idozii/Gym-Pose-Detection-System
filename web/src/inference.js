@@ -2,6 +2,28 @@
 const EXERCISE_IDS = new Set(['squat', 'ohp', 'barbell_row']);
 export const API_URL = (import.meta.env?.VITE_INFERENCE_API_URL ?? '').trim().replace(/\/$/, '');
 
+// Exact versioned original-source models; partial inference is NOT a six-model demo.
+export const EXPECTED_MODELS = Object.freeze([
+  'squat/error_knees_forward',
+  'squat/error_knees_inward',
+  'ohp/error_elbows',
+  'ohp/error_knees',
+  'barbell_row/torso_angle',
+  'barbell_row/lumbar'
+]);
+
+export function sixModelReady(health) {
+  if (!health || health.research_only !== true ||
+      health.pose_estimator_source_parity_validated !== false ||
+      health.ready_for_six_detector_demo !== true ||
+      health.loaded_model_count !== EXPECTED_MODELS.length ||
+      health.expected_model_count !== EXPECTED_MODELS.length ||
+      !health.models || typeof health.models !== 'object') return false;
+  return Object.keys(health.models).length === EXPECTED_MODELS.length &&
+    EXPECTED_MODELS.every((name) => health.models[name] === 'loaded_experimental_only');
+}
+
+
 export function landmarkPayload(exercise, landmarks) {
   if (!EXERCISE_IDS.has(exercise)) throw new Error('Unsupported exercise');
   if (!Array.isArray(landmarks) || landmarks.length !== 33) {
