@@ -60,6 +60,9 @@ def test_disabled_api_does_not_unpickle_or_score(monkeypatch):
     with TestClient(create_app(mock, trust_local_artifacts=False)) as client:
         h = client.get("/health").json()
         assert h["status"] == "model_artifacts_not_provisioned"
+        assert h["ready_for_six_detector_demo"] is False
+        assert h["loaded_model_count"] == 0
+        assert client.get("/ready").status_code == 503
         assert h["pose_estimator_source_parity_validated"] is False
         response = client.post("/score", json=body(),
                                headers={"Origin": "https://demo.example.com"})
@@ -73,6 +76,9 @@ def test_live_two_original_source_tasks_only_no_echoed_pose(monkeypatch):
     with TestClient(create_app(mock, trust_local_artifacts=True)) as client:
         health = client.get("/health").json()
         assert health["status"] == "research_api_ready"
+        assert health["ready_for_six_detector_demo"] is True
+        assert health["loaded_model_count"] == 6
+        assert client.get("/ready").status_code == 200
         assert health["models"]["squat/error_knees_forward"] == "loaded_experimental_only"
         result = client.post(
             "/score", json=body(),
@@ -173,3 +179,33 @@ def test_no_open_cors_wildcard_on_production(monkeypatch):
     monkeypatch.setenv("POSE_WEB_ORIGINS", "*")
     with pytest.raises(ValueError, match="HTTPS"):
         create_app(FakeRegistry(), trust_local_artifacts=False)
+
+
+def test_partial_models_fail_deployment_readiness(monkeypatch):
+    monkeypatch.setenv("POSE_WEB_ORIGINS", "https://demo.example.com")
+
+    class PartialRegistry(FakeRegistry):
+        def load_local(self, *, trust_local_pickle_files=False):
+            statuses = super().load_local(trust_local_pickle_files=trust_local_pickle_files)
+            statuses["barbell_row/lumbar"] = "model_artifact_missing"
+            return statuses
+
+    with TestClient(create_app(PartialRegistry(), trust_local_artifacts=True)) as client:
+        data = client.get("/health").json()
+        assert data["status"] == "partial_model_artifacts"
+        assert data["loaded_model_count"] == 5
+        assert data["ready_for_six_detector_demo"] is False
+        assert client.get("/ready").status_code == 503
+
+
+def test_invalid_landmark_validation_does_not_echo_coordinates(monkeypatch):
+    monkeypatch.setenv("POSE_WEB_ORIGINS", "http://localhost:5173")
+    with TestClient(create_app(FakeRegistry(), trust_local_artifacts=True)) as client:
+        private_marker = "12345.6789"
+        payload = body()
+        payload["landmarks"][0]["x"] = private_marker
+        response = client.post("/score", json=payload)
+        assert response.status_code == 422
+        assert private_marker not in response.text
+        assert "landmarks" not in response.text
+        assert response.json() == {"detail": "Invalid request payload"}

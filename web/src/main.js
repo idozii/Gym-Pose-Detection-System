@@ -1,6 +1,6 @@
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { TASKS, requiredJointIndices, readiness, taskReadiness } from './pose.js';
-import { API_URL, ResearchInferenceClient, scoreState } from './inference.js';
+import { API_URL, ResearchInferenceClient, scoreState, sixModelReady } from './inference.js';
 import './style.css';
 
 const ASSET_VERSION = '1.1.1';
@@ -252,19 +252,18 @@ async function enableResearchInference() {
     state.inferenceAbort = controller;
     const health = await client.health({ signal: controller.signal });
     if (sequence !== state.inferenceSession || !ui.inferenceToggle.checked) return;
-    const loaded = Object.values(health.models).filter(
-      (s) => s === 'loaded_experimental_only'
-    ).length;
-    if (!loaded) throw new Error('Model bundles have not been provisioned');
+    if (!sixModelReady(health)) {
+      throw new Error('All six versioned source-error models must be available');
+    }
     state.inferenceClient = client;
     state.inferenceEnabled = true;
-    state.inferenceStatus = `${loaded}/6 EXPERIMENTAL MODELS AVAILABLE`;
+    state.inferenceStatus = '6/6 EXPERIMENTAL MODELS AVAILABLE';
     state.lastInferenceAt = 0;
   } catch (error) {
     if (sequence !== state.inferenceSession) return;
     disableResearchInference();
     state.inferenceStatus = 'BACKEND UNAVAILABLE · NO LANDMARKS SENT';
-    ui.hint.textContent = 'Inference backend requires owner-provisioned models; pose visualization still works locally.';
+    ui.hint.textContent = 'All six trusted source models must be provisioned. Local pose visualization remains available.';
   }
   renderModels();
 }
