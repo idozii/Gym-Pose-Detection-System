@@ -1,5 +1,6 @@
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
-import { TASKS, requiredJointIndices, readiness, taskReadiness, JOINT_NAMES } from './pose.js';
+import { TASKS, requiredJointIndices, readiness, taskReadiness } from './pose.js';
+import { API_URL, ResearchInferenceClient, scoreState } from './inference.js';
 import './style.css';
 
 const ASSET_VERSION = '1.1.1';
@@ -10,7 +11,11 @@ const state = {
   exercise: 'squat', running: false, starting: false, token: 0,
   stream: null, landmarker: null, raf: null, frames: 0,
   poseFrames: 0, fps: 0, lastFrameClock: 0, lastVideoTime: -1,
-  lastRendered: 0, landmarks: null
+  lastRendered: 0, landmarks: null,
+  inferenceEnabled: false, inferenceClient: null,
+  inferenceStatus: 'NOT CONNECTED', inferred: null,
+  inferenceSession: 0, inferenceAbort: null,
+  inferenceInFlight: false, lastInferenceAt: 0
 };
 
 document.querySelector('#app').innerHTML = `
@@ -89,18 +94,25 @@ document.querySelector('#app').innerHTML = `
 
           <div class="section-divider"></div>
           <div class="section-heading"><div>03 / SOURCE-LABEL MODELS</div></div>
+          <div class="inference-consent">
+            <label class="consent-label" for="enableInference">
+              <input type="checkbox" id="enableInference" />
+              <span><strong>Enable research inference</strong><small>Send only 33 pose landmarks to the configured Python API (max 2 requests/sec). Webcam images never leave this page.</small></span>
+            </label>
+            <p class="inference-state" id="inferenceState">MODEL SERVER NOT CONFIGURED</p>
+          </div>
           <div id="models" class="models"></div>
           <div class="notice">
             <div class="notice-icon" aria-hidden="true">i</div>
             <div><strong>Research preview only</strong>
-              <p>Six Python Random Forest models exist in the original local project, but are <strong>not deployed</strong> in this browser build. This website does not invent scores or judge exercise form.</p>
+              <p>Only original source-annotation scores from operator-trusted RF models may appear, after consent. The Python models are not bundled with this website. The browser pose estimator differs from the source training pipeline; results have <strong>unvalidated domain shift</strong> and cannot determine safe or correct technique.</p>
             </div>
           </div>
         </aside>
       </section>
       <footer class="site-footer">
         <span>GYM POSE LAB / EXPERIMENTAL RESEARCH SOFTWARE</span>
-        <p>Pose runs in your browser. Camera access is optional and can be stopped anytime. MediaPipe runtime/model files are fetched from Google/CDN when you start. No automatic injury, safety, or technique advice.</p>
+        <p>Camera video runs in your browser. If you separately enable research inference, only 33 pose landmarks are transmitted to the configured backend. No video uploading or automated technique and injury advice. MediaPipe assets are fetched from Google/CDN.</p>
       </footer>
     </main>
   </div>
@@ -124,7 +136,9 @@ const ui = {
   videoStatus: document.querySelector('#videoStatus'),
   hint: document.querySelector('#controlHint'),
   poseMetric: document.querySelector('#poseMetric'),
-  fpsMetric: document.querySelector('#fpsMetric')
+  fpsMetric: document.querySelector('#fpsMetric'),
+  inferenceToggle: document.querySelector('#enableInference'),
+  inferenceState: document.querySelector('#inferenceState')
 };
 
 function setStatus(text, hint) {
@@ -134,12 +148,23 @@ function setStatus(text, hint) {
 
 function renderModels() {
   const targets = TASKS[state.exercise].targets;
-  ui.models.innerHTML = targets.map((target) => `
-    <div class="model-row">
-      <div><strong>${target.name}</strong><span>${target.source}</span></div>
-      <span class="offline-tag">NOT DEPLOYED</span>
-    </div>
-  `).join('');
+  ui.inferenceState.textContent = !API_URL ? 'MODEL SERVER NOT CONFIGURED'
+    : state.inferenceStatus;
+  ui.models.innerHTML = targets.map((target) => {
+    const report = state.inferenceEnabled ? state.inferred?.targets?.[target.source] : null;
+    const stateView = report ? scoreState(report) : null;
+    const label = stateView
+      ? stateView.text
+      : !API_URL ? 'NOT DEPLOYED'
+        : state.inferenceEnabled ? 'AWAITING SCORE' : 'CONSENT REQUIRED';
+    const klass = stateView?.status === 'scored' ? 'source-tag' : 'offline-tag';
+    return `
+      <div class="model-row">
+        <div><strong>${target.name}</strong><span>${target.source}</span></div>
+        <span class="${klass}">${label}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 function updateInspector() {
@@ -162,8 +187,86 @@ function updateInspector() {
   const perTask = taskReadiness(state.exercise, state.landmarks);
   const n = perTask.filter((t) => t.basicVisibilityReady).length;
   ui.videoStatus.textContent = rawPoseSeen
-    ? `${n}/${perTask.length} task visibility checks ready · no RF inference`
+    ? `${n}/${perTask.length} visibility gates · ${state.inferenceEnabled ? 'research inference opt-in' : 'no remote inference'}`
     : 'No pose detected';
+  renderModels();
+}
+
+async function requestResearchInference(timestamp) {
+  if (!state.inferenceEnabled || !state.inferenceClient ||
+      !state.running || !Array.isArray(state.landmarks) ||
+      state.inferenceInFlight || timestamp - state.lastInferenceAt < 500) return;
+  state.lastInferenceAt = timestamp;
+  const sequence = state.inferenceSession;
+  const exercise = state.exercise;
+  const points = state.landmarks;
+  const controller = new AbortController();
+  state.inferenceAbort = controller;
+  state.inferenceInFlight = true;
+  try {
+    const response = await state.inferenceClient.score(exercise, points, {
+      signal: controller.signal
+    });
+    if (sequence !== state.inferenceSession || !state.running ||
+        exercise !== state.exercise || !state.inferenceEnabled) return;
+    state.inferred = response;
+    state.inferenceStatus = 'RESEARCH SOURCE SCORES · NOT FORM ADVICE';
+  } catch (error) {
+    if (sequence !== state.inferenceSession || !state.inferenceEnabled) return;
+    state.inferred = null;
+    state.inferenceStatus = 'INFERENCE UNAVAILABLE · ABSTAIN';
+  } finally {
+    if (sequence === state.inferenceSession) {
+      state.inferenceInFlight = false;
+      state.inferenceAbort = null;
+      renderModels();
+    }
+  }
+}
+
+function disableResearchInference() {
+  state.inferenceSession += 1;
+  state.inferenceAbort?.abort();
+  state.inferenceAbort = null;
+  state.inferenceInFlight = false;
+  state.inferenceEnabled = false;
+  state.inferenceClient = null;
+  state.inferred = null;
+  state.lastInferenceAt = 0;
+  ui.inferenceToggle.checked = false;
+  state.inferenceStatus = 'CONSENT REQUIRED';
+  renderModels();
+}
+
+async function enableResearchInference() {
+  if (!ui.inferenceToggle.checked) {
+    disableResearchInference();
+    return;
+  }
+  const sequence = ++state.inferenceSession;
+  state.inferenceStatus = 'CHECKING TRUSTED RESEARCH BACKEND';
+  renderModels();
+  try {
+    const client = new ResearchInferenceClient();
+    const controller = new AbortController();
+    state.inferenceAbort = controller;
+    const health = await client.health({ signal: controller.signal });
+    if (sequence !== state.inferenceSession || !ui.inferenceToggle.checked) return;
+    const loaded = Object.values(health.models).filter(
+      (s) => s === 'loaded_experimental_only'
+    ).length;
+    if (!loaded) throw new Error('Model bundles have not been provisioned');
+    state.inferenceClient = client;
+    state.inferenceEnabled = true;
+    state.inferenceStatus = `${loaded}/6 EXPERIMENTAL MODELS AVAILABLE`;
+    state.lastInferenceAt = 0;
+  } catch (error) {
+    if (sequence !== state.inferenceSession) return;
+    disableResearchInference();
+    state.inferenceStatus = 'BACKEND UNAVAILABLE · NO LANDMARKS SENT';
+    ui.hint.textContent = 'Inference backend requires owner-provisioned models; pose visualization still works locally.';
+  }
+  renderModels();
 }
 
 function drawFrame() {
@@ -217,6 +320,7 @@ function loop(token, timestamp) {
       }
       state.lastFrameClock = timestamp;
       drawFrame();
+      void requestResearchInference(timestamp);
       if (timestamp - state.lastRendered > 220) {
         state.lastRendered = timestamp;
         updateInspector();
@@ -231,6 +335,7 @@ function loop(token, timestamp) {
 }
 
 function stopCamera() {
+  disableResearchInference();
   state.token++;
   state.running = false;
   state.starting = false;
@@ -303,7 +408,7 @@ async function startCamera() {
     ui.videoFooter.hidden = false;
     ui.button.disabled = false;
     ui.button.innerHTML = '<span aria-hidden="true">■</span> Stop camera';
-    setStatus('LOCAL POSE ACTIVE', 'Camera frames are processed locally; six RF models are not hosted.');
+    setStatus('LOCAL POSE ACTIVE', 'Webcam pixels remain local. Remote source inference requires separate opt-in.');
     state.raf = requestAnimationFrame((timestamp) => loop(token, timestamp));
   } catch (error) {
     tempStream?.getTracks().forEach((track) => track.stop());
@@ -315,8 +420,16 @@ async function startCamera() {
 }
 
 ui.button.addEventListener('click', () => state.running ? stopCamera() : startCamera());
+ui.inferenceToggle.disabled = !API_URL;
+ui.inferenceToggle.addEventListener('change', () => { void enableResearchInference(); });
 ui.exercise.addEventListener('change', () => {
   if (!TASKS[ui.exercise.value]) return;
+  state.inferenceSession += 1;
+  state.inferenceAbort?.abort();
+  state.inferenceAbort = null;
+  state.inferenceInFlight = false;
+  state.lastInferenceAt = 0;
+  state.inferred = null;
   state.exercise = ui.exercise.value;
   ui.help.textContent = TASKS[state.exercise].subtitle;
   renderModels();
