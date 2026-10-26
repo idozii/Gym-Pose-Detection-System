@@ -29,6 +29,32 @@ without checking cross-task conflicts and source-clip provenance. The final
 number of images matching the archive and publisher splits must be
 verified locally; labels count alone does not prove ZIP completeness.
 
+## Source annotation ordering: validated publisher exception
+
+The publisher OHP JSON files contain valid but **non-monotonic list order**
+for some error intervals. This must not be treated as a corrupt dataset.
+Observed in the original source files:
+
+- `error_elbows`: video `79916_1` contains `[[2.88,3.6],[0.6,1.33]]`,
+  both valid windows stored with the later one first.
+- `error_knees`: video IDs `80341_2`, `76013_4`, `76123_3`
+  have out-of-order windows.
+- `error_elbows`: video `69822_6` contains two slightly overlapping
+  windows `[[0,0.53],[0.52,1.87]]`.
+
+The M12 inspector validates the numerical time bounds **of each interval**
+(`0 <= start < end`, finite timestamps), **not** the order of windows in
+the original publisher JSON. It reports out-of-order and overlapping-video
+counts and examples as audit metadata. It does **not** rewrite source JSON,
+discard these clips, infer new labels or merge annotations during inspection.
+Downstream interval membership uses the union (any matching window), for
+which JSON list order has no effect.
+
+If your original M12 checkout reported
+`error_elbows/79916_1: intervals must be ordered by start time`, update
+to the follow-up validator fix branch/merged main and rerun the inspector.
+**Do not edit the downloaded annotation files.**
+
 ## 1. Download OHP annotations, splits and labeled video archive
 
 From repository root, install `gdown` separately if needed:
