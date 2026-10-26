@@ -91,6 +91,12 @@ def audit_tracked_paths(paths: Iterable[str]) -> dict:
         if p in HISTORICAL_LEGACY_BINARIES:
             historical.add(p)
             continue
+        # Empty marker files preserve a directory's structure in Git.
+        # They contain NO user media, derived records or source TEST data.
+        if p.endswith("/.gitkeep") and (
+            p.startswith(DERIVED_PREFIXES) or p.startswith("data/features/")
+        ):
+            continue
         if (p.startswith(DERIVED_PREFIXES) or
             p.startswith("data/features/") and not p.endswith("/.gitkeep") or
             p.startswith("models/") and Path(p).suffix.lower() in MEDIA_SUFFIXES or
