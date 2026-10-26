@@ -16,6 +16,24 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M18: six-model deployment readiness gate (pending owner cloud artifacts)
+
+The Web v2 frontend and optional Python scoring API are integrated, but the
+deployed Vercel site is **not yet connected to a publicly provisioned six-model
+backend**. M18 now requires all six original-source research RFs before
+enabling the user opt-in; `/ready` returns 503 when any is missing, and a
+read-only HTTPS preflight checks exact model availability without transmitting
+landmarks. Validation errors do not echo pose coordinates. This does **not**
+fix the unvalidated browser/source pose distribution shift.
+
+```bash
+python -m scripts.check_web_inference_deployment --api-url http://localhost:8000
+```
+
+[Follow the M18 deployment acceptance and model-provisioning guide](docs/M18_SIX_MODEL_DEPLOYMENT_ACCEPTANCE.md).
+
+---
+
 ### Web v2: opt-in six source-label RF inference API
 
 The deployed browser camera and pose visibility workbench now has an
