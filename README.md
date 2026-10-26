@@ -20,6 +20,38 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 16D: scored-only RF runtime profiling
+
+The owner's M16C webcam test admitted **47/180 Squat frames** and
+generated **94 source-label scores**, up from zero in the initial
+run. Both ankles are now occasionally visible, but the right ankle
+remains below the source pose-quality cutoff in **131/180** frames.
+The old average model-stage timing included many abstained frames,
+so it was not a measure of real RF execution speed.
+
+M16D now measures **separate** task-level successful inference
+and abstention latencies, plus scored/abstained source-label
+fractions per exercise/target, without collecting frames,
+person data, source-label probabilities or changing model gates:
+
+```bash
+python -m pytest -q
+python -m scripts.run_fitness_aqa_research_viewer \
+  --exercise squat --camera 0 --max-frames 180 \
+  --trust-local-artifacts
+```
+
+Inspect `diagnostics.timing_ms.successful_model_task_inference`,
+`diagnostics.timing_ms.abstained_model_task_call` and
+`diagnostics.source_label_score_admission_by_target`.
+Model score admission is **not** model accuracy or form-safety
+assessment. This brings the local research viewer closer to M17
+release/reproducibility work, not a production fitness coach.
+
+[Milestone 16D scored inference performance audit](docs/M16D_SCORED_INFERENCE_LATENCY.md).
+
+---
+
 ## Milestone 16C: webcam framing guide for low-visibility joints
 
 On the owner's first 120-frame Squat webcam diagnostic, MediaPipe detected
