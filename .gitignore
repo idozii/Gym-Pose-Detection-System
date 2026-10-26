@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.ipynb_checkpoints/
+artifacts/
+data/raw/
+data/features/
+*.metrics.json
+.DS_Store
+.env
