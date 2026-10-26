@@ -59,6 +59,8 @@ def test_release_gate_passes_only_as_software_audit(tmp_path):
     "Fitness-AQA_dataset_release/a.mp4",
     "models/new_huge_model.pt",
     "data/temp/private.png",
+    "data/manifest.csv",
+    "src/gym_pose_detection.egg-info/PKG-INFO",
     "src/secret.zip",
     "../outside.csv",
 ])

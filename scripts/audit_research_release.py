@@ -97,7 +97,9 @@ def audit_tracked_paths(paths: Iterable[str]) -> dict:
             p.startswith(DERIVED_PREFIXES) or p.startswith("data/features/")
         ):
             continue
-        if (p.startswith(DERIVED_PREFIXES) or
+        if (p == "data/manifest.csv" or
+            any(part.endswith(".egg-info") for part in p.split("/")) or
+            p.startswith(DERIVED_PREFIXES) or
             p.startswith("data/features/") and not p.endswith("/.gitkeep") or
             p.startswith("models/") and Path(p).suffix.lower() in MEDIA_SUFFIXES or
             p.startswith("data/") and Path(p).suffix.lower() in MEDIA_SUFFIXES or
