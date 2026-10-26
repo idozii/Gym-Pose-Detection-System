@@ -1,0 +1,15 @@
+# Build context is repository root; use docker build -f backend/Dockerfile .
+.git
+artifacts/
+models/
+data/
+notebooks/
+web/
+.env
+*.joblib
+*.pkl
+*.pt
+*.mp4
+*.zip
+**/__pycache__/
+**/*.egg-info/
