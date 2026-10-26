@@ -16,6 +16,39 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### Web MVP: open camera in your browser (deployable on Vercel)
+
+A new `web/` Vite project brings the privacy-conscious pose
+**visibility viewer** to a browser, with no Python install, repo clone
+or model pickle required for end users:
+
+```bash
+cd web
+npm install
+npm test
+npm run dev
+# Open http://localhost:5173
+```
+
+It supports webcam pose skeleton, Squat/OHP/Barbell Row exercise
+selection, per-source-task required-joint visibility, a local camera
+Start/Stop control and responsive desktop/mobile UI. Source videos
+or camera frames are **not uploaded**.
+
+**Important:** Six publisher source-error models are still only
+available in the owner's trusted **local Python research registry**.
+The web demo shows each RF as `NOT DEPLOYED`. No model probabilities
+are fabricated; an explicit backend+source-parity validation or
+browser ONNX parity is needed before serving those actual classifiers.
+
+Vercel deployment: import GitHub repo and configure **Root Directory
+`web`**, Vite `npm run build`, output `dist`. Browser webcam
+requires HTTPS/localhost and permission.
+
+[Web MVP setup, deployment and privacy boundaries](docs/WEB_MVP_VERCEL_DEPLOYMENT.md).
+
+---
+
 ### Research release source integrity — M17B
 
 The owner confirmed **218 tests passed** and all **six** trusted local
