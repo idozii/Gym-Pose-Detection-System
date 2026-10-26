@@ -20,6 +20,33 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 16C: webcam framing guide for low-visibility joints
+
+On the owner's first 120-frame Squat webcam diagnostic, MediaPipe detected
+a pose in **120/120 frames**, but both ankles and the right knee were
+below visibility>=0.50 in **every** frame. The original source-model
+quality gate correctly abstained on all 240 Squat detector attempts.
+This is a **framing/joint visibility** blocker, not a model load failure.
+
+The viewer now has a separate, display-only **joint visibility side
+panel**. It shows which joints are `LOW`, `VISIBLE`, or `NO POSE`
+so a user can move back and include their whole body without changing
+the original 6 model schemas, gates or thresholds:
+
+```bash
+python -m scripts.run_fitness_aqa_research_viewer \
+  --exercise squat --camera 0 --max-frames 180 \
+  --trust-local-artifacts
+```
+
+Use `--no-framing-guide` to hide the panel. No webcam frames are
+recorded or uploaded. MediaPipe visibility is **not** a medical
+assessment or confirmation of safe/correct exercise.
+
+[Milestone 16C camera framing guide](docs/M16C_CAMERA_FRAMING_GUIDE.md).
+
+---
+
 ## Milestone 16B: live pose abstention and performance diagnostics
 
 The owner's first 60-frame Squat webcam run initialized correctly and
