@@ -68,7 +68,7 @@ def source_fixture(tmp_path: Path, *, cross_task_conflict=False):
         # Both classes in each split, and different target labels.
         labels = {key: (int(key.split("_")[-1]) % 2
                         if task == "torso_angle"
-                        else int(key.split("_")[-1]) % 3 == 0)
+                        else int(int(key.split("_")[-1]) % 3 == 0))
                   for key in allids}
         (ann / name).write_text(json.dumps(labels))
     zpath = root / "images.zip"
