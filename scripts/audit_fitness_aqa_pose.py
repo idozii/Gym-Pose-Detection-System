@@ -47,7 +47,7 @@ def load_frames(path: Path, split: str) -> pd.DataFrame:
         raise ValueError(f"{path.name}: negative timestamp/frame")
     if (df["source_fps"] <= 0).any():
         raise ValueError(f"{path.name}: invalid source_fps")
-    if not (df[list(FEATURE_NAMES)].apply(pd.to_numeric, errors="raise").applymap(math.isfinite)).all().all():
+    if not np.isfinite(df[list(FEATURE_NAMES)].apply(pd.to_numeric, errors="raise").to_numpy(dtype=float)).all():
         raise ValueError(f"{path.name}: nonfinite features")
     if df.duplicated(["video_id", "frame_index"]).any():
         raise ValueError(f"{path.name}: repeated frame per video")
@@ -73,8 +73,13 @@ def audit(folder: str | Path, *, min_pose_coverage: float = .7,
     all_samples = set()
     for split in SPLITS:
         csv_path = folder / f"fitness_aqa_{split}_pose.csv"
-        if not csv_path.is_file():
+        stats = source.get("splits", {}).get(split)
+        if stats is None:
+            if csv_path.exists():
+                result["warnings"].append(f"stale_{split}_CSV_ignored_not_in_current_summary")
             continue
+        if not csv_path.is_file():
+            raise ValueError(f"Summary declares {split} but CSV is missing")
         df = load_frames(csv_path, split)
         ids = set(df["video_id"].astype(str))
         samples = set(df["sample_id"].astype(str))
@@ -82,9 +87,6 @@ def audit(folder: str | Path, *, min_pose_coverage: float = .7,
             raise ValueError(f"Split leakage: repeated video/sample IDs in {split}")
         all_ids.update(ids)
         all_samples.update(samples)
-        stats = source.get("splits", {}).get(split)
-        if stats is None:
-            raise ValueError(f"Summary missing split {split}")
         if int(stats["pose_accepted"]) != len(df):
             raise ValueError(f"{split}: CSV row count does not equal extraction summary")
         sampled = int(stats["frames_sampled"])
