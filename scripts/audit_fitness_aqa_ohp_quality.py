@@ -21,7 +21,9 @@ import numpy as np
 
 from gym_pose.fitness_aqa_sources import inspect_ohp, read_json
 from gym_pose.ohp_features import pose_to_ohp_features
-from gym_pose.ohp_quality import REASONS, assess_ohp_pose_quality
+from gym_pose.ohp_quality import (
+    REASONS, TASK_GATE_POLICIES, assess_ohp_pose_quality, assess_task_gate_policies,
+)
 from scripts.extract_fitness_aqa_pose import labels_at_time, video_members
 
 TARGETS = ("error_elbows", "error_knees")
@@ -122,6 +124,13 @@ def inspect_clip(entry: zipfile.ZipInfo, archive: zipfile.ZipFile,
                 )
                 if existing_accept and not relaxed_accept:
                     raise AssertionError("Lowered visibility threshold rejected an accepted pose")
+                gates = assess_task_gate_policies(
+                    landmarks, strict=baseline_visibility,
+                    relaxed=diagnostic_visibility,
+                )
+                if (gates["all_050"] != existing_accept
+                    or gates["all_035"] != relaxed_accept):
+                    raise AssertionError("Counterfactual gates disagree with production OHP gate")
                 records.append({
                     "video_id": key, "split": split,
                     "video_annotation_stratum": category,
@@ -135,6 +144,7 @@ def inspect_clip(entry: zipfile.ZipInfo, archive: zipfile.ZipFile,
                     "low_visibility_upper_joints": quality["low_visibility_upper_joints"],
                     "accepted_at_baseline": existing_accept,
                     "accepted_at_diagnostic_cutoff": relaxed_accept,
+                    "visibility_policies": gates,
                 })
         finally:
             reader.release()
@@ -164,6 +174,48 @@ def summarize(rows: list[dict], picked: list[tuple[str,str]], *,
                 "newly_accepted_alternative": alternate - current,
                 "baseline_coverage": current / len(subset) if subset else None,
             }
+    # Note: alternative gates are *diagnostic admission rules only*.
+    # No OHP model supports those masks at this time.
+    task_gate_counts = {}
+    for policy in TASK_GATE_POLICIES:
+        count = sum(row["visibility_policies"][policy] for row in rows)
+        task_gate_counts[policy] = {
+            "accepted_frames": count,
+            "coverage": count / len(rows),
+            "newly_accepted_vs_all_050": count - baseline,
+            "newly_admitted_positive_annotations": {
+                task: int(sum(
+                    row[task] == 1 and row["visibility_policies"][policy]
+                    and not row["accepted_at_baseline"]
+                    for row in rows
+                )) for task in TARGETS
+            },
+        }
+    if task_gate_counts["all_050"]["accepted_frames"] != baseline:
+        raise AssertionError("Recomputed strict gate count differs")
+    if task_gate_counts["all_035"]["accepted_frames"] != relaxed:
+        raise AssertionError("Recomputed relaxed gate count differs")
+    task_specific = {
+        task: {
+            "candidate_policy": policy,
+            "eligible_positive_frames": int(sum(row[task] == 1 for row in rows)),
+            "accepted_positive_baseline": int(sum(
+                row[task] == 1 and row["accepted_at_baseline"] for row in rows
+            )),
+            "accepted_positive_candidate": int(sum(
+                row[task] == 1 and row["visibility_policies"][policy] for row in rows
+            )),
+            "accepted_negative_baseline": int(sum(
+                row[task] == 0 and row["accepted_at_baseline"] for row in rows
+            )),
+            "accepted_negative_candidate": int(sum(
+                row[task] == 0 and row["visibility_policies"][policy] for row in rows
+            )),
+        } for task, policy in (
+            ("error_elbows", "elbows_arm_chain_050"),
+            ("error_knees", "knees_lower_chain_050"),
+        )
+    }
     by_stratum = {}
     for category in STRATA:
         subset = [r for r in rows if r["video_annotation_stratum"] == category]
@@ -185,6 +237,8 @@ def summarize(rows: list[dict], picked: list[tuple[str,str]], *,
         "additional_candidate_frames": relaxed - baseline,
         "rejection_reason_counts": {k:int(reasons.get(k,0)) for k in REASONS},
         "low_visibility_joint_counts": dict(sorted(joints.items())),
+        "task_visibility_admission_policies": task_gate_counts,
+        "task_specific_positive_recovery": task_specific,
         "by_error_annotation_at_timestamp": by_error,
         "by_publisher_video_annotation_stratum": by_stratum,
     }
@@ -232,6 +286,9 @@ def audit(archive_path: Path, annotation_dir: Path, output: Path, *,
             "A no-error annotation only means the named error was not tagged at that timestamp",
             "Frames are correlated within videos and original athlete IDs are unverified",
             "TEST media was not decoded, no model trained or evaluated, no feature CSV overwritten",
+            "Task-specific visibility policies are hypothetical frame-admission criteria, NOT production 111-feature model inputs",
+            "Knee-error classification still needs reliable knee and ankle geometry; elbow classification needs visible arm joints",
+            "Source train/val exploratory clips were sampled by annotation stratum; these counts are NOT population-weighted",
         ],
     }
     with zipfile.ZipFile(base) as archive:

@@ -6,7 +6,9 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from gym_pose.ohp_quality import assess_ohp_pose_quality
+from gym_pose.ohp_quality import (
+    TASK_GATE_POLICIES, assess_ohp_pose_quality, assess_task_gate_policies,
+)
 from scripts.audit_fitness_aqa_ohp_quality import (
     STRATA, audit, select_videos, summarize,
 )
@@ -60,12 +62,19 @@ def test_zero_accepted_errors_do_not_hide_positive_eligible_frames():
         {"video_id":"a","rejection_reason":"accepted","error_elbows":0,
          "error_knees":0,"accepted_at_baseline":True,
          "accepted_at_diagnostic_cutoff":True,"low_visibility_joints":[],
-         "video_annotation_stratum":STRATA[2]},
+         "video_annotation_stratum":STRATA[2],
+         "visibility_policies":dict.fromkeys(TASK_GATE_POLICIES,True)},
         {"video_id":"b","rejection_reason":"squat_base_joint_low_visibility",
          "error_elbows":0,"error_knees":1,"accepted_at_baseline":False,
          "accepted_at_diagnostic_cutoff":True,
          "low_visibility_joints":["left_knee"],
-         "video_annotation_stratum":STRATA[0]},
+         "video_annotation_stratum":STRATA[0],
+         "visibility_policies":{
+             **dict.fromkeys(TASK_GATE_POLICIES,False),
+             "all_035":True,
+             "elbows_arm_chain_050":True,
+             "elbows_arm_050_other_035":True,
+         }},
     ]
     r=summarize(rows,[("a",STRATA[2]),("b",STRATA[0])],
                 rejected_boundary=0,failures=[],diagnostic_visibility=.35)
@@ -161,3 +170,71 @@ def test_test_split_not_exposed_and_bad_parameters_fail(tmp_path):
         audit(tmp_path,tmp_path,tmp_path,videos_per_split=0)
     with pytest.raises(ValueError):
         audit(tmp_path,tmp_path,tmp_path,diagnostic_visibility=.8)
+
+
+def test_counterfactual_gate_requires_task_relevant_joints_not_all():
+    # All arm joints visible, but OHP knee/ankle may be outside camera.
+    truncated_legs = landmarks(low_joint=27, level=.12)
+    p = assess_task_gate_policies(truncated_legs)
+    assert not p["all_050"]
+    assert not p["all_035"]
+    assert p["elbows_arm_chain_050"]
+    assert not p["knees_lower_chain_050"]
+    assert p["all_except_ankles_050"]
+    # All lower-body geometry visible but an elbow is occluded.
+    occluded_elbow = landmarks(low_joint=13, level=.2)
+    p = assess_task_gate_policies(occluded_elbow)
+    assert not p["all_050"]
+    assert not p["elbows_arm_chain_050"]
+    assert p["knees_lower_chain_050"]
+    assert not p["all_035"]
+    # An ankle 0.40 should be recovered by all-lowered 0.35 but
+    # not by 0.50 strict lower-chain or full baseline.
+    ankle_040 = landmarks(low_joint=27, level=.4)
+    p = assess_task_gate_policies(ankle_040)
+    assert not p["all_050"]
+    assert p["all_035"]
+    assert p["elbows_arm_chain_050"]
+    assert not p["knees_lower_chain_050"]
+    assert p["all_except_ankles_050"]
+
+
+def test_counterfactual_gate_rejects_no_pose_and_invalid_numeric():
+    assert all(not v for v in assess_task_gate_policies(None).values())
+    assert all(not v for v in assess_task_gate_policies(landmarks()[:31]).values())
+    bad = landmarks()
+    bad[12].x = float("nan")
+    assert all(not v for v in assess_task_gate_policies(bad).values())
+    with pytest.raises(ValueError, match="relaxed"):
+        assess_task_gate_policies(landmarks(), strict=.35, relaxed=.5)
+
+
+def test_counterfactual_task_summaries_preserve_model_free_interpretation():
+    baseline = dict.fromkeys(TASK_GATE_POLICIES, True)
+    candidate = dict.fromkeys(TASK_GATE_POLICIES, False)
+    candidate.update({
+        "elbows_arm_chain_050":True,
+        "elbows_arm_050_other_035":True,
+        "all_035":True,
+    })
+    rows = [
+        {"video_id":"v1","rejection_reason":"accepted",
+         "error_elbows":0,"error_knees":0,
+         "accepted_at_baseline":True,"accepted_at_diagnostic_cutoff":True,
+         "low_visibility_joints":[],"video_annotation_stratum":STRATA[2],
+         "visibility_policies":baseline},
+        {"video_id":"v2","rejection_reason":"squat_base_joint_low_visibility",
+         "error_elbows":1,"error_knees":0,
+         "accepted_at_baseline":False,"accepted_at_diagnostic_cutoff":True,
+         "low_visibility_joints":["left_ankle"],
+         "video_annotation_stratum":STRATA[1],
+         "visibility_policies":candidate},
+    ]
+    summary = summarize(rows,[("v1",STRATA[2]),("v2",STRATA[1])],
+                        rejected_boundary=0,failures=[],diagnostic_visibility=.35)
+    elbows = summary["task_specific_positive_recovery"]["error_elbows"]
+    assert elbows["eligible_positive_frames"] == 1
+    assert elbows["accepted_positive_baseline"] == 0
+    assert elbows["accepted_positive_candidate"] == 1
+    assert summary["task_visibility_admission_policies"]["all_050"]["accepted_frames"] == 1
+    assert summary["task_visibility_admission_policies"]["all_035"]["accepted_frames"] == 2
