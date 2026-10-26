@@ -37,3 +37,14 @@ h1,h2,p{margin:0}h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(36px,
 @media(max-width:740px){.shell{padding:0 16px 22px}.topbar{height:75px}.brand{font-size:11px}.brand-logo{height:34px;width:34px}.version{display:none}.github-link{font-size:10px}.top-right{gap:12px}.top-separator{display:none}.intro{padding:35px 0 26px}.intro p{font-size:13px}.workbench{grid-template-columns:minmax(0,1fr)}.camera-stage{aspect-ratio:4/3;min-height:240px}.video-bar{height:54px;padding:0 15px}.inspector{padding:22px 18px}.joint-list{grid-template-columns:1fr 1fr}.controls{padding:16px;flex-wrap:wrap;gap:11px}.control-hint{font-size:10px}.site-footer{flex-direction:column;gap:10px}.placeholder-title{font-size:18px}.placeholder-faint{margin-top:24px}}
 @media(max-width:400px){.joint-list{grid-template-columns:1fr}.stage-placeholder p{font-size:11px}.video-footer{flex-direction:column}.placeholder-glyph{height:60px;width:60px;font-size:50px}.intro h1{font-size:35px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Opt-in, privacy-accurate experimental source-label inference. */
+.inference-consent{margin-top:16px;border:1px solid #415851;background:#19292a;padding:14px;border-radius:10px}
+.consent-label{display:flex;gap:12px;align-items:flex-start;cursor:pointer;line-height:1.5}
+.consent-label input{flex:none;margin-top:3px;width:18px;height:18px;accent-color:#a5edbf}
+.consent-label input:disabled{opacity:.4;cursor:not-allowed}
+.consent-label span{display:flex;flex-direction:column;gap:4px}
+.consent-label strong{font-size:12px;color:#e5f7ec}
+.consent-label small{font-size:10px;color:#adbbba;line-height:1.5}
+.inference-state{font-size:9px;color:#c4d4cd;letter-spacing:.06em;font-weight:800;margin-top:13px}
+.source-tag{font-size:10px;color:#d2eae3;background:#244138;border:1px solid #54836a;border-radius:5px;padding:6px 8px;text-align:right;white-space:normal;max-width:155px}

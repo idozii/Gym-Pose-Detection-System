@@ -1,0 +1,23 @@
+# Root Docker build context for backend/Dockerfile.
+# Keep personal data/models out of any remote Docker build upload.
+.git/
+artifacts/
+models/
+data/
+datasets/
+Fitness-AQA_dataset_release/
+notebooks/
+web/
+*.joblib
+*.pkl
+*.pt
+*.zip
+*.mp4
+*.avi
+*.mov
+*.mkv
+.env
+.env.*
+**/*.egg-info/
+**/__pycache__/
+**/.pytest_cache/

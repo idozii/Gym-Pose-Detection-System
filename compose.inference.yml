@@ -1,0 +1,20 @@
+# Run the exact Python source-label registry as a local model server.
+# Mount ONLY operator-trained model artifacts; no camera/TEST media enters image.
+services:
+  research-api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      POSE_MODEL_ROOT: /private-models
+      POSE_TRUST_LOCAL_ARTIFACTS: "1"
+      POSE_WEB_ORIGINS: ${POSE_WEB_ORIGINS:-http://localhost:5173}
+    volumes:
+      - ./artifacts:/private-models/artifacts:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m
+    security_opt:
+      - no-new-privileges:true
