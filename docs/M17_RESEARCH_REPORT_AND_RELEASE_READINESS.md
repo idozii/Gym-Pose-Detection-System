@@ -157,15 +157,20 @@ python -m scripts.run_fitness_aqa_research_viewer \
 Original Fitness-AQA download rights/attribution and locally
 reproducible source files are the user's responsibility. **Never
 commit original source media, private webcam images, source CSVs
-or trained pickle artifacts** into the public repository. The
-repository ships source code and synthetic tests only.
+or additional trained pickle artifacts** into the public repository.
+The **six original-source research RF artifacts are not tracked**,
+but two older notebook-era binary files ARE tracked in the current
+history: `models/squat_form_rf.joblib` and `models/yolov8s.pt`.
+They are not the six trusted research models; M17B reports them as
+historical release caveats without deleting notebook dependencies.
+Never load downloaded joblib/pickle files from untrusted sources.
 
 ## Release acceptance and known blockers
 
 | Gate | Status / requirement |
 | --- | --- |
 | Six correct task/model contracts | **Observed 6/6 on owner's machine** |
-| Headless Python matrix tests | **201 passing through M16D**; rerun CI after M17A source integration |
+| Headless Python matrix tests | **218 passing** in owner's real M17A run; rerun after M17B release-audit additions |
 | Live capture with 6 local model slots | Squat-only actual 180-frame proof; OHP/Row **not yet checked live by owner** |
 | Per-task source validation transparency | Preliminary research table above; no pristine held-out evaluation |
 | Standalone subject-independent accuracy | **NOT established**, cannot claim research validation |
