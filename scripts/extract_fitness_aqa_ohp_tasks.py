@@ -236,7 +236,6 @@ def extract(archive_path: Path, annotations: Path, output_dir: Path, *,
                         stats["accepted_frames"] / counts["eligible_frames"]
                         if counts["eligible_frames"] else None)
                     stats["csv"] = str(destinations[task])
-                counts["any_frame_policy_difference"] = True
                 summary["splits"][split] = counts
     summary_path = output_dir / "fitness_aqa_ohp_task_extraction_summary.json"
     summary_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
