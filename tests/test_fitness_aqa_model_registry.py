@@ -24,6 +24,14 @@ def landmarks(*, low=()):
     ]
 
 
+def isolated_registry_paths(tmp_path):
+    """No test may inspect a real owner's ignored artifact or unpickle it."""
+    return {
+        key: tmp_path / "unavailable" / key[0] / original.name
+        for key, original in reg.DEFAULT_PATHS.items()
+    }
+
+
 def create_local_artifact(tmp_path, target="lumbar", **overrides):
     rng = np.random.default_rng(14)
     arr = rng.normal(size=(64, len(FEATURE_NAMES)))
@@ -62,7 +70,10 @@ def test_missing_models_and_squat_source_error_slots_fail_closed():
 
 def test_pickle_deserialization_requires_explicit_user_optin(tmp_path):
     file = create_local_artifact(tmp_path)
-    registry = reg.ModelRegistry(paths={("barbell_row","lumbar"):file})
+    registry = reg.ModelRegistry(paths={
+        **isolated_registry_paths(tmp_path),
+        ("barbell_row", "lumbar"): file,
+    })
     with pytest.raises(ValueError, match="explicitly opt"):
         registry.load_local()
     assert registry._models == {}
@@ -71,9 +82,14 @@ def test_pickle_deserialization_requires_explicit_user_optin(tmp_path):
 
 def test_row_model_loads_and_predicts_source_labels_only(tmp_path):
     file = create_local_artifact(tmp_path)
-    registry = reg.ModelRegistry(paths={("barbell_row","lumbar"):file})
+    registry = reg.ModelRegistry(paths={
+        **isolated_registry_paths(tmp_path),
+        ("barbell_row", "lumbar"): file,
+    })
     states = registry.load_local(trust_local_pickle_files=True)
     assert states["barbell_row/lumbar"] == "loaded_experimental_only"
+    assert states["ohp/error_elbows"] == "model_artifact_missing"
+    assert states["ohp/error_knees"] == "model_artifact_missing"
     assert states["squat/error_knees_forward"] == "not_trained_as_source_error_detector"
     p = registry.score_landmarks("barbell_row","lumbar",landmarks())
     assert p["status"] == "experimental_source_label_score"
@@ -92,7 +108,10 @@ def test_row_model_loads_and_predicts_source_labels_only(tmp_path):
 
 def test_bad_features_or_unknown_task_cannot_trigger_source_label_flag(tmp_path):
     file = create_local_artifact(tmp_path)
-    registry = reg.ModelRegistry(paths={("barbell_row","lumbar"):file})
+    registry = reg.ModelRegistry(paths={
+        **isolated_registry_paths(tmp_path),
+        ("barbell_row", "lumbar"): file,
+    })
     registry.load_local(trust_local_pickle_files=True)
     pose = pose_to_torso4_features(landmarks())
     assert pose is not None
@@ -126,7 +145,10 @@ def test_bad_features_or_unknown_task_cannot_trigger_source_label_flag(tmp_path)
 ])
 def test_fail_closed_on_corrupt_or_mislabeled_artifacts(tmp_path,metadata_override):
     file = create_local_artifact(tmp_path, **metadata_override)
-    registry = reg.ModelRegistry(paths={("barbell_row","lumbar"):file})
+    registry = reg.ModelRegistry(paths={
+        **isolated_registry_paths(tmp_path),
+        ("barbell_row", "lumbar"): file,
+    })
     with pytest.raises(ValueError):
         registry.load_local(trust_local_pickle_files=True)
     assert registry.score_features("barbell_row","lumbar",{})["status"] == "abstain"
