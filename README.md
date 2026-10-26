@@ -20,6 +20,30 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 15A: Offline multi-exercise model registry
+
+An experimental **fail-closed** registry can load the owner's locally
+trained OHP static and Barbell Row torso4 static RF artifacts, verify
+original source target/feature schema/model class/operating threshold,
+and score source labels without access to publisher TEST media:
+
+```bash
+python -m scripts.check_fitness_aqa_model_registry
+# Only for your OWN trusted local joblib artifacts (pickle deserialization):
+python -m scripts.check_fitness_aqa_model_registry --trust-local-artifacts
+```
+
+The Squat source knee-error slots are intentionally not automatically
+mapped to the legacy generic correct/incorrect classifier. OHP 30-feature
+registry slots require its source modules from still-open PR #18/#19
+to be integrated before they can load. Missing model/pose yields
+`abstain`, not a "good exercise" classification. This is not a webcam
+coach or medical safety assessment.
+
+[Milestone 15A registry contracts](docs/M15_UNIFIED_MODEL_REGISTRY.md).
+
+---
+
 ## Milestone 14D: Barbell Row static RF benchmark
 
 Barbell Row full source train/validation now retains around 70% of
