@@ -137,7 +137,7 @@ def run(features_dir: str | Path, output: str | Path, *,
                 seed_result["variants"][variant] = {
                     "feature_count": len(xtrain[variant].columns),
                     "threshold_from_train_groups_only": th,
-                    "validation_average_precision": float(average_precision_score(yv, p)),
+                    "validation_average_precision": float(np.clip(average_precision_score(yv, p), 0., 1.)),
                     "validation_0_5": _metrics(yv, p, .5),
                     "validation_train_calibrated": _metrics(yv, p, th),
                 }
