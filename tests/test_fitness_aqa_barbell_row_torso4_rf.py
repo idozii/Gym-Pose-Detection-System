@@ -130,7 +130,7 @@ def test_train_val_candidate_prefix_leakage_halts(tmp_path):
     root = source_fixture(tmp_path)
     file = root / "fitness_aqa_barbell_row_torso4_lumbar_val_pose.csv"
     df = pd.read_csv(file)
-    new_id = "101_000_0"  # same task's source train candidate prefix
+    new_id = "101_000_99"  # same task's source train candidate prefix
     df.loc[0, "image_id"] = new_id
     df.loc[0, "candidate_clip_prefix"] = new_id.rsplit("_", 1)[0]
     df.to_csv(file, index=False)
