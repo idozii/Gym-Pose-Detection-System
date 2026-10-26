@@ -225,7 +225,7 @@ def main() -> int:
                         default=Path("data/external/fitness_aqa/squat/labeled/annotations"))
     parser.add_argument("--output-dir", type=Path,
                         default=Path("data/features/fitness_aqa"))
-    parser.add_argument("--split", choices=("train", "val", "test", "all"), default="train")
+    parser.add_argument("--split", choices=("train", "val", "train-val", "test", "all"), default="train")
     parser.add_argument("--max-videos-per-split", type=int, default=8,
                         help="Pilot limit per split; pass 0 to process all publisher-split clips")
     parser.add_argument("--sample-fps", type=float, default=2.0)
@@ -233,7 +233,7 @@ def main() -> int:
     parser.add_argument("--min-visibility", type=float, default=0.5)
     parser.add_argument("--max-video-mb", type=int, default=250)
     options = parser.parse_args()
-    splits = ("train", "val", "test") if options.split == "all" else (options.split,)
+    splits = (("train", "val", "test") if options.split == "all" else\n              ("train", "val") if options.split == "train-val" else (options.split,))
     try:
         report = extract(
             options.zip, options.annotations, options.output_dir,
