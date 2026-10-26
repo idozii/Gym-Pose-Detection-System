@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestClassifier
 
-from gym_pose.model_registry import ModelRegistry, _contract
+from gym_pose.model_registry import DEFAULT_PATHS, ModelRegistry, _contract
 from gym_pose.ohp_task_features import (
     FEATURES_BY_TASK, JOINTS_BY_TASK, SCHEMA_BY_TASK, TASKS,
     pose_to_task_features,
@@ -49,6 +49,19 @@ def fake_ohp_bundle(tmp_path, task, **updates):
     return path
 
 
+def isolated_registry_paths(tmp_path):
+    """Redirect ALL model slots to test-local nonexisting files.
+
+    Never deserialize or depend on the developer's existing RF artifacts
+    under the repository's ignored artifacts/ directory.
+    """
+    return {
+        key: tmp_path / "unavailable" / exercise / path.name
+        for key, path in DEFAULT_PATHS.items()
+        for exercise in (key[0],)
+    }
+
+
 def test_original_m13c_schema_is_unmodified_and_task_specific():
     assert TASKS == ("error_elbows", "error_knees")
     assert SCHEMA_BY_TASK == {
@@ -76,7 +89,8 @@ def test_original_m13c_schema_is_unmodified_and_task_specific():
 
 
 def test_two_OHP_models_load_and_score_with_local_trust_only(tmp_path):
-    paths = {("ohp", t): fake_ohp_bundle(tmp_path, t) for t in TASKS}
+    paths = isolated_registry_paths(tmp_path)
+    paths.update({("ohp", t): fake_ohp_bundle(tmp_path, t) for t in TASKS})
     registry = ModelRegistry(paths=paths)
     with pytest.raises(ValueError, match="explicitly opt"):
         registry.load_local()
@@ -84,6 +98,7 @@ def test_two_OHP_models_load_and_score_with_local_trust_only(tmp_path):
     states = registry.load_local(trust_local_pickle_files=True)
     assert all(states[f"ohp/{t}"] == "loaded_experimental_only" for t in TASKS)
     assert states["barbell_row/lumbar"] == "model_artifact_missing"
+    assert states["barbell_row/torso_angle"] == "model_artifact_missing"
     assert states["squat/error_knees_forward"] == "not_trained_as_source_error_detector"
     for task in TASKS:
         p = registry.score_landmarks("ohp", task, landmarks())
@@ -110,17 +125,17 @@ def test_two_OHP_models_load_and_score_with_local_trust_only(tmp_path):
 ])
 def test_model_contract_rejects_wrong_variant_or_provenance(tmp_path, updates):
     path = fake_ohp_bundle(tmp_path, "error_elbows", **updates)
-    reg = ModelRegistry(paths={("ohp", "error_elbows"): path})
+    reg = ModelRegistry(paths={
+        **isolated_registry_paths(tmp_path),
+        ("ohp", "error_elbows"): path,
+    })
     with pytest.raises(ValueError):
         reg.load_local(trust_local_pickle_files=True)
     assert reg.score_landmarks("ohp", "error_elbows", landmarks())["status"] == "abstain"
 
 
 def test_missing_artifacts_do_not_fabricate_scores(tmp_path):
-    registry = ModelRegistry(paths={
-        ("ohp", task): tmp_path / f"absent_{task}.joblib"
-        for task in TASKS
-    })
+    registry = ModelRegistry(paths=isolated_registry_paths(tmp_path))
     states = registry.load_local(trust_local_pickle_files=True)
     assert all(states[f"ohp/{task}"] == "model_artifact_missing" for task in TASKS)
     for task in TASKS:
