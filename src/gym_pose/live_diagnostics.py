@@ -105,6 +105,32 @@ class LiveSessionDiagnostics:
         self.pose_ms = deque(maxlen=3600)
         self.model_ms = deque(maxlen=3600)
         self.frame_ms = deque(maxlen=3600)
+        # Per-target calls are timed independently; OHP can score elbows
+        # while knees abstains on the very same camera frame.
+        self.scored_task_ms = deque(maxlen=3600)
+        self.abstained_task_ms = deque(maxlen=3600)
+        self.task_scored_ms = defaultdict(lambda: deque(maxlen=3600))
+        self.task_abstained_ms = defaultdict(lambda: deque(maxlen=3600))
+
+    def record_task_timing(
+        self, exercise: str, target: str, status: str, elapsed_ms: float
+    ) -> None:
+        """Keep only elapsed milliseconds and named task, never predictions."""
+        if (exercise, target) not in REQUIRED_BY_TASK:
+            raise ValueError("Unknown source-label task for timing")
+        if not isinstance(elapsed_ms, (float, int, np.floating, np.integer)):
+            raise ValueError("Task duration must be numeric")
+        if not np.isfinite(elapsed_ms) or elapsed_ms < 0:
+            raise ValueError("Task duration must be finite and nonnegative")
+        key = f"{exercise}/{target}"
+        if status == "experimental_source_label_score":
+            self.scored_task_ms.append(float(elapsed_ms))
+            self.task_scored_ms[key].append(float(elapsed_ms))
+        elif status == "abstain":
+            self.abstained_task_ms.append(float(elapsed_ms))
+            self.task_abstained_ms[key].append(float(elapsed_ms))
+        else:
+            raise ValueError("Unknown source-label prediction status for timing")
 
     def record(self, exercise: str, landmarks: Any, reports: dict[str, dict],
                *, pose_ms: float, model_ms: float, frame_ms: float) -> None:
@@ -134,6 +160,20 @@ class LiveSessionDiagnostics:
             self.abstention_reasons[path][reason] += 1
 
     def summary(self, *, elapsed_seconds: float) -> dict:
+        admission = {}
+        for (exercise, target) in REQUIRED_BY_TASK:
+            denominator = int(self.by_exercise[exercise])
+            if denominator == 0:
+                continue
+            path = f"{exercise}/{target}"
+            scored = int(self.score_counts[path])
+            abstained = sum(self.abstention_reasons[path].values())
+            admission[path] = {
+                "source_frames_seen": denominator,
+                "scores_emitted": scored,
+                "abstentions": abstained,
+                "score_admission_rate": round(scored / denominator, 4),
+            }
         return {
             "frames_processed": self.frames,
             "pose_detected_frames": self.pose_detected_frames,
@@ -143,6 +183,7 @@ class LiveSessionDiagnostics:
                 if self.frames else None),
             "frames_by_exercise": dict(sorted(self.by_exercise.items())),
             "scored_by_target": dict(sorted(self.score_counts.items())),
+            "source_label_score_admission_by_target": dict(sorted(admission.items())),
             "abstentions_by_target_and_reason": {
                 task: dict(sorted(counts.items()))
                 for task, counts in sorted(self.abstention_reasons.items())
@@ -152,9 +193,21 @@ class LiveSessionDiagnostics:
                 for task, counts in sorted(self.low_joint_counts.items())
             },
             "timing_window_frames": len(self.frame_ms),
+            "timed_successful_task_calls_in_window": len(self.scored_task_ms),
+            "timed_abstained_task_calls_in_window": len(self.abstained_task_ms),
             "timing_ms": {
                 "pose_process": _time_stats(self.pose_ms),
                 "model_scoring": _time_stats(self.model_ms),
+                "successful_model_task_inference": _time_stats(self.scored_task_ms),
+                "abstained_model_task_call": _time_stats(self.abstained_task_ms),
+                "by_target_successful_task_inference": {
+                    task: _time_stats(samples)
+                    for task, samples in sorted(self.task_scored_ms.items())
+                },
+                "by_target_abstained_task_call": {
+                    task: _time_stats(samples)
+                    for task, samples in sorted(self.task_abstained_ms.items())
+                },
                 "full_frame_including_display": _time_stats(self.frame_ms),
             },
             "observed_fps_including_display": (
@@ -166,7 +219,10 @@ class LiveSessionDiagnostics:
                 "Basic gate diagnosis is supplemental; ModelRegistry remains authoritative",
                 "Live camera pose tracking/viewpoint differ from publisher train images",
                 "Observed frame rate includes webcam capture, rendering and waitKey",
-                "Latency distribution covers only the latest 3600 frames (bounded memory)",
+                "Latency distribution covers only the latest 3600 frames or 3600 task calls (bounded memory)",
+                "Successful task timing includes feature extraction and RF predict_proba",
+                "Score-admission rate is NOT classification accuracy, precision or recall",
+                "Displayed-frame model stage may combine scored and abstained tasks",
                 "No model recalibration, diagnostic photo collection or publisher TEST access",
             ],
         }
