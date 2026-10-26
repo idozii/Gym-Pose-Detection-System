@@ -40,7 +40,7 @@ def load_frames(path: Path, split: str) -> pd.DataFrame:
     for name in (*TARGETS, "any_of_two_annotated_errors"):
         if not df[name].isin([0, 1]).all():
             raise ValueError(f"{path.name}: nonbinary label {name}")
-    calculated_or = df[TARGETS].max(axis=1)
+    calculated_or = df[list(TARGETS)].max(axis=1)
     if not calculated_or.eq(df["any_of_two_annotated_errors"]).all():
         raise ValueError(f"{path.name}: any_of_two_annotated_errors mismatch")
     if (df["timestamp_s"] < 0).any() or (df["frame_index"] < 0).any():
