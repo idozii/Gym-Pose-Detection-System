@@ -1,5 +1,25 @@
 # Gym Pose Detection (Real-Time Correct vs Incorrect Form)
 
+## Milestone 13A: Overhead Press pose extraction pilot
+
+OHP now has a **separate versioned 111-feature schema** (103 compatible
+MediaPipe pose columns plus 8 OHP-specific upper-body geometry features),
+with critical visibility checks for elbows and wrists.
+
+```bash
+# First 8 source train clips + 8 source validation clips, source TEST LOCKED:
+python -m scripts.extract_fitness_aqa_ohp --split train-val --max-videos-per-split 8
+
+# Once source video/prediction coverage has been inspected:
+python -m scripts.extract_fitness_aqa_ohp --split train-val --max-videos-per-split 0
+```
+
+Outputs stay under `data/features/fitness_aqa_ohp/` (ignored by Git).
+No OHP model performance claims until full train/val extraction and evaluation.
+See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
+
+---
+
 ## Milestone 12: Fitness-AQA multi-exercise dataset foundation
 
 The research dataset foundation now supports the original publisher's **three
