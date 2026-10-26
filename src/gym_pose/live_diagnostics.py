@@ -9,7 +9,7 @@ exact per-model pose-quality gates or make models more permissive.
 """
 from __future__ import annotations
 
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from typing import Any
 
 import numpy as np
@@ -79,7 +79,7 @@ def source_gate_diagnostic(
     return "passes_basic_visibility_geometry_checks", ()
 
 
-def _time_stats(values: list[float]) -> dict:
+def _time_stats(values) -> dict:
     if not values:
         return {"mean": None, "p95": None, "max": None}
     arr = np.asarray(values, dtype=float)
@@ -100,9 +100,11 @@ class LiveSessionDiagnostics:
         self.abstention_reasons: dict[str, Counter[str]] = defaultdict(Counter)
         self.low_joint_counts: dict[str, Counter[str]] = defaultdict(Counter)
         self.score_counts: Counter[str] = Counter()
-        self.pose_ms: list[float] = []
-        self.model_ms: list[float] = []
-        self.frame_ms: list[float] = []
+        # A bounded rolling window avoids unbounded memory in a long webcam
+        # session; overall FPS still covers the complete session.
+        self.pose_ms = deque(maxlen=3600)
+        self.model_ms = deque(maxlen=3600)
+        self.frame_ms = deque(maxlen=3600)
 
     def record(self, exercise: str, landmarks: Any, reports: dict[str, dict],
                *, pose_ms: float, model_ms: float, frame_ms: float) -> None:
@@ -149,6 +151,7 @@ class LiveSessionDiagnostics:
                 task: dict(sorted(counts.items()))
                 for task, counts in sorted(self.low_joint_counts.items())
             },
+            "timing_window_frames": len(self.frame_ms),
             "timing_ms": {
                 "pose_process": _time_stats(self.pose_ms),
                 "model_scoring": _time_stats(self.model_ms),
@@ -163,6 +166,7 @@ class LiveSessionDiagnostics:
                 "Basic gate diagnosis is supplemental; ModelRegistry remains authoritative",
                 "Live camera pose tracking/viewpoint differ from publisher train images",
                 "Observed frame rate includes webcam capture, rendering and waitKey",
+                "Latency distribution covers only the latest 3600 frames (bounded memory)",
                 "No model recalibration, diagnostic photo collection or publisher TEST access",
             ],
         }
