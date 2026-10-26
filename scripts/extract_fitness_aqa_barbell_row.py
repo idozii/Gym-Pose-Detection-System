@@ -26,6 +26,11 @@ import numpy as np
 from gym_pose.barbell_row_features import (
     FEATURE_NAMES, SCHEMA_VERSION, TARGETS, pose_to_barbell_row_features,
 )
+from gym_pose.barbell_row_torso4_features import (
+    FEATURE_NAMES as TORSO4_FEATURE_NAMES,
+    SCHEMA_VERSION as TORSO4_SCHEMA_VERSION,
+    pose_to_torso4_features,
+)
 from gym_pose.fitness_aqa_sources import (
     IMAGE_EXTENSIONS, ROW_TASKS, inspect_barbell_row, load_splits,
     read_json, ROW_KEY,
@@ -33,6 +38,8 @@ from gym_pose.fitness_aqa_sources import (
 
 META = ("image_id", "split", "target", "error_label", "candidate_clip_prefix")
 COLUMNS = (*META, *FEATURE_NAMES)
+PROFILE_NAMES = ("full8", "torso4")  # default preserves the legacy extractor
+
 
 
 def _pilot_selection(ids: list[str], labels: dict, *, max_images: int, seed: int) -> list[str]:
@@ -92,7 +99,9 @@ def extract(archive_path: Path, annotations: Path, output_dir: Path, *,
             max_images_per_task_split: int = 12, seed: int = 42,
             min_visibility: float = .5, max_image_mb: int = 24,
             max_pixels: int = 30_000_000,
-            cv2_api=None, mp_api=None) -> dict:
+            cv2_api=None, mp_api=None, feature_profile: str = "full8") -> dict:
+    if feature_profile not in PROFILE_NAMES:
+        raise ValueError(f"Unknown Barbell Row feature profile: {feature_profile}")
     if (not selected_splits or len(set(selected_splits)) != len(selected_splits)
         or any(s not in ("train", "val") for s in selected_splits)):
         raise ValueError("Only source TRAIN and VAL images permitted; publisher TEST locked")
@@ -138,6 +147,19 @@ def extract(archive_path: Path, annotations: Path, output_dir: Path, *,
         }
         for task in TARGETS
     }
+    if feature_profile == "torso4":
+        feature_names = TORSO4_FEATURE_NAMES
+        schema_version = TORSO4_SCHEMA_VERSION
+        extraction_function = pose_to_torso4_features
+        report_basename = "fitness_aqa_barbell_row_torso4_extraction_summary.json"
+        media_prefix = "fitness_aqa_barbell_row_torso4"
+    else:
+        feature_names = FEATURE_NAMES
+        schema_version = SCHEMA_VERSION
+        extraction_function = pose_to_barbell_row_features
+        report_basename = "fitness_aqa_barbell_row_extraction_summary.json"
+        media_prefix = "fitness_aqa_barbell_row"
+    output_columns = (*META, *feature_names)
     if cv2_api is None or mp_api is None:
         from gym_pose.camera import _camera_libraries
         cv2_api, mp_api = _camera_libraries()
@@ -145,7 +167,9 @@ def extract(archive_path: Path, annotations: Path, output_dir: Path, *,
     summary = {
         "status": "barbell_row_image_pose_extraction_source_train_val_NO_TEST",
         "exercise": "barbell_row", "media_type": "image",
-        "schema_version": SCHEMA_VERSION, "feature_count": len(FEATURE_NAMES),
+        "schema_version": schema_version, "feature_count": len(feature_names),
+        "feature_profile": feature_profile,
+        "feature_names": list(feature_names),
         "targets": list(TARGETS),
         "source_split_type": "publisher_TASK_SPECIFIC_image_ID_NOT_verified_subject_or_clip_disjoint",
         "source_test_images_decoded": 0,
@@ -160,7 +184,8 @@ def extract(archive_path: Path, annotations: Path, output_dir: Path, *,
             "A zero is only absence of the named publisher annotation, not globally correct form",
             "The two targets have DISTINCT publisher source splits; never naively unify for modeling",
             "The filename prefix is an unverified clip heuristic, not source video or athlete identity",
-            "Lumbar-spine curvature cannot be directly measured from MediaPipe eight-joint pose",
+            "Lumbar-spine curvature is NOT directly measurable from these MediaPipe landmarks",
+            "Torso4 features use shoulders and hips ONLY; not a medical spinal assessment",
             "No sequence, clip-level temporal model, training, performance scoring or TEST pixel access",
             "Pilot selection is label-stratified and not representative of publisher prevalence",
             "Pose abstentions are missing observations, never automatically class 0",
@@ -190,7 +215,7 @@ def extract(archive_path: Path, annotations: Path, output_dir: Path, *,
                     },
                 }
                 paths = {
-                    task: output_dir / f"fitness_aqa_barbell_row_{task}_{split}_pose.csv"
+                    task: output_dir / f"{media_prefix}_{task}_{split}_pose.csv"
                     for task in TARGETS
                 }
                 with ExitStack() as stack:
@@ -200,7 +225,7 @@ def extract(archive_path: Path, annotations: Path, output_dir: Path, *,
                         for task in TARGETS
                     }
                     writers = {
-                        task: csv.DictWriter(dest[task], fieldnames=COLUMNS)
+                        task: csv.DictWriter(dest[task], fieldnames=output_columns)
                         for task in TARGETS
                     }
                     for writer in writers.values():
@@ -222,7 +247,7 @@ def extract(archive_path: Path, annotations: Path, output_dir: Path, *,
                                 image, cv2_api.COLOR_BGR2RGB))
                             points = (result.pose_landmarks.landmark
                                       if result.pose_landmarks else None)
-                            vector = (pose_to_barbell_row_features(
+                            vector = (extraction_function(
                                 points, min_visibility=min_visibility)
                                 if points is not None else None)
                         except (OSError, ValueError, TypeError, zipfile.BadZipFile,
@@ -266,7 +291,7 @@ def extract(archive_path: Path, annotations: Path, output_dir: Path, *,
                     row["csv"] = str(paths[task])
                 summary["splits"][split] = stats
 
-    report_path = output_dir / "fitness_aqa_barbell_row_extraction_summary.json"
+    report_path = output_dir / report_basename
     report_path.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     summary["summary_file"] = str(report_path)
     return summary
