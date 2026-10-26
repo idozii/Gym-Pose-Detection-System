@@ -154,3 +154,32 @@ def test_invalid_row_source_key_structure(tmp_path):
     _json(base / "annotations" / "splits" / "lumbar" / "train_ids.json", ["201_1_0.jpg"])
     with pytest.raises(ValueError, match="valid publisher"):
         inspect_barbell_row(base)
+
+
+def test_ohp_publisher_unsorted_intervals_are_valid_and_not_modified(tmp_path):
+    base = make_ohp(tmp_path)
+    # Real OHP elbow source 79916_1 has windows with start times 2.88 and 0.60.
+    original = [[2.88, 3.6], [.6, 1.33]]
+    overlapping = [[0., .53], [.52, 1.87]]
+    labels = {"101_1": original, "101_2": overlapping,
+              "102_1": [], "103_1": []}
+    _json(base / "annotations" / "error_elbows.json", labels)
+    result = inspect_ohp(base)
+    elbow = result["targets"]["error_elbows"]
+    assert elbow["videos_with_annotated_error"] == 2
+    assert elbow["annotated_intervals"] == 4
+    assert elbow["videos_with_out_of_order_intervals"] == 1
+    assert elbow["out_of_order_video_examples"] == ["101_1"]
+    assert elbow["videos_with_overlapping_intervals"] == 1
+    assert elbow["overlapping_video_examples"] == ["101_2"]
+    assert labels["101_1"] == original
+    assert json.loads((base / "annotations" / "error_elbows.json").read_text())["101_1"] == original
+
+
+@pytest.mark.parametrize("bad", [
+    [[-1., 1.]], [[1., 1.]], [[2., 1.]], [[float("inf"), 3.]],
+    [[float("nan"), 3.]], [[0., "bad"]], [[0.]], [[0., 1., 2.]],
+])
+def test_ohp_invalid_intervals_still_rejected(bad):
+    with pytest.raises(ValueError, match="invalid annotation interval"):
+        validate_intervals({"101_1": bad}, {"101_1"}, task="error_elbows")
