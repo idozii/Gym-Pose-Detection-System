@@ -20,6 +20,30 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 14A: Barbell Row image pose extraction
+
+The publisher Barbell Row dataset is **images** with two separately
+split binary error targets, `torso_angle` and `lumbar` (not video
+time intervals). A dedicated 32-feature, quality-gated image pose
+extractor processes original TRAIN/VAL images only:
+
+```bash
+# Source JSONs / images already verified in milestone 12.
+python -m scripts.extract_fitness_aqa_barbell_row --max-images-per-task-split 12
+
+# After pilot success, complete publisher TRAIN+VAL images for each task:
+python -m scripts.extract_fitness_aqa_barbell_row --max-images-per-task-split 0
+```
+
+Outputs are local and ignored under `data/features/fitness_aqa_barbell_row/`.
+**Publisher TEST pixels are never decoded.** The image-ID prefix is an
+unverified clip identifier, and 8-joint MediaPipe geometry cannot directly
+measure lumbar-spine curvature.
+
+[Milestone 14 Barbell Row extraction guide](docs/FITNESS_AQA_BARBELL_ROW_M14.md).
+
+---
+
 ## Milestone 12: Fitness-AQA multi-exercise dataset foundation
 
 The research dataset foundation now supports the original publisher's **three
