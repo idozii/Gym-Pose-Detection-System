@@ -114,7 +114,7 @@ def test_unordered_elbow_labels_and_boundary_margin(tmp_path, monkeypatch):
     writer.writeheader()
     with zipfile.ZipFile(archive_path) as z:
         counters = ohp.run_clip(
-            z.getinfo("videos/100_1.mp4"), z, Pose(), CV2, writer,
+            z.getinfo("videos/100_1.mp4"), z, Pose(static_image_mode=True), CV2, writer,
             video_id="100_1", split="train",
             elbow_windows=[[.35,.65],[.05,.12]], knee_windows=[],
             sample_fps=2., boundary_margin=.0, min_visibility=.5,
