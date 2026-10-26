@@ -20,6 +20,29 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 15C: Squat original source-error RF registry
+
+The two genuine source-error targets `error_knees_forward` and
+`error_knees_inward` are separate from the notebook's binary
+`correct/incorrect` model. M15C packages new **103-feature Squat
+source-label RFs** using source TRAIN video-group calibration and
+publisher VAL reporting, without touching publisher TEST:
+
+```bash
+python -m scripts.train_fitness_aqa_squat_source_errors --seed 42 --trees 300
+# Only load your OWN trusted local artifacts:
+python -m scripts.check_fitness_aqa_model_registry --trust-local-artifacts
+```
+
+Original source TRAIN/VAL pose CSVs are reused; no ZIP/media extraction.
+Both Squat source-error slots can become available alongside OHP/Row,
+with an explicit experimental-only result and fail-closed abstention.
+Six software model slots do **not** mean the exercise coach is ready.
+
+[M15C Squat source-error integration guide](docs/M15C_SQUAT_SOURCE_ERROR_REGISTRY.md).
+
+---
+
 ## Milestone 15B: OHP registry feature adapter restored
 
 M15A could already load both local Barbell Row models, but initially
@@ -36,8 +59,7 @@ python -m scripts.check_fitness_aqa_model_registry --trust-local-artifacts
 ```
 
 After trusting the original locally created models, the two OHP and two
-Barbell Row tasks can report `loaded_experimental_only`. Two separate
-Squat source knee-error models are still not integrated. This is
+Barbell Row tasks can report `loaded_experimental_only`. Squat original knee-error model contracts are supplied by M15C after the user's local TRAIN-only run. This is
 experimental source-label inference, **not** a trustworthy realtime
 exercise-safety coach.
 
