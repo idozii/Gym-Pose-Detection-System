@@ -233,7 +233,8 @@ def main() -> int:
     parser.add_argument("--min-visibility", type=float, default=0.5)
     parser.add_argument("--max-video-mb", type=int, default=250)
     options = parser.parse_args()
-    splits = (("train", "val", "test") if options.split == "all" else\n              ("train", "val") if options.split == "train-val" else (options.split,))
+    splits = (("train", "val", "test") if options.split == "all" else
+              ("train", "val") if options.split == "train-val" else (options.split,))
     try:
         report = extract(
             options.zip, options.annotations, options.output_dir,
