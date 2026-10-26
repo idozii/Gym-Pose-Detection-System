@@ -19,8 +19,7 @@ def _synthetic_frames():
         for split, n_clips in (("train", 48), ("val", 16)):
             data = []
             for i in range(n_clips):
-                video_id = f"{task_i+1}{1000 if split=='train' else 2000+i}" if False else (
-                    f"{task_i + 1}_{split}_{i:03d}")
+                video_id = f"{task_i + 1}_{split}_{i:03d}"
                 is_positive = (i % 3 == 0) if target == "error_elbows" else (i % 2 == 0)
                 for idx in range(3):
                     row = {
