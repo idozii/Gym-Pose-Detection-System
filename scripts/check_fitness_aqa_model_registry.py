@@ -18,6 +18,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--trust-local-artifacts", action="store_true",
                         help="Opt in to executing deserialization of your OWN locally trained joblib files")
+    parser.add_argument("--squat-artifacts", type=Path,
+                        default=Path("artifacts/fitness_aqa_squat_source_rf"))
     parser.add_argument("--ohp-artifacts", type=Path,
                         default=Path("artifacts/fitness_aqa_ohp_task_rf"))
     parser.add_argument("--row-artifacts", type=Path,
@@ -26,7 +28,8 @@ def main() -> int:
     paths = {}
     for (exercise, target), path in DEFAULT_PATHS.items():
         paths[exercise, target] = (
-            (args.ohp_artifacts if exercise == "ohp" else args.row_artifacts)
+            (args.squat_artifacts if exercise == "squat" else
+             args.ohp_artifacts if exercise == "ohp" else args.row_artifacts)
             / path.name
         )
     registry = ModelRegistry(paths=paths)
@@ -38,9 +41,7 @@ def main() -> int:
     else:
         status = {
             f"{exercise}/{target}": (
-                "not_trained_as_source_error_detector"
-                if (exercise, target) not in DEFAULT_PATHS
-                else "unloaded_requires_explicit_trust")
+                "unloaded_requires_explicit_trust")
             for exercise, target in KNOWN_TASKS
         }
     print(json.dumps({

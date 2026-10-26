@@ -99,7 +99,7 @@ def test_two_OHP_models_load_and_score_with_local_trust_only(tmp_path):
     assert all(states[f"ohp/{t}"] == "loaded_experimental_only" for t in TASKS)
     assert states["barbell_row/lumbar"] == "model_artifact_missing"
     assert states["barbell_row/torso_angle"] == "model_artifact_missing"
-    assert states["squat/error_knees_forward"] == "not_trained_as_source_error_detector"
+    assert states["squat/error_knees_forward"] == "model_artifact_missing"
     for task in TASKS:
         p = registry.score_landmarks("ohp", task, landmarks())
         assert p["status"] == "experimental_source_label_score"

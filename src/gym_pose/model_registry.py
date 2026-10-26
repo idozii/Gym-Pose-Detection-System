@@ -28,8 +28,17 @@ from .ohp_task_features import (
     SCHEMA_BY_TASK as OHP_SCHEMA_BY_TASK,
     pose_to_task_features,
 )
+from .features import (
+    FEATURE_NAMES as SQUAT_FEATURE_NAMES,
+    SCHEMA_VERSION as SQUAT_SCHEMA_VERSION,
+    pose_to_features as pose_to_squat_features,
+)
 
 DEFAULT_PATHS = {
+    ("squat", "error_knees_forward"): Path(
+        "artifacts/fitness_aqa_squat_source_rf/rf_error_knees_forward_static_source.joblib"),
+    ("squat", "error_knees_inward"): Path(
+        "artifacts/fitness_aqa_squat_source_rf/rf_error_knees_inward_static_source.joblib"),
     ("ohp", "error_elbows"): Path(
         "artifacts/fitness_aqa_ohp_task_rf/error_elbows_static.joblib"),
     ("ohp", "error_knees"): Path(
@@ -66,10 +75,14 @@ def _contract(exercise: str, target: str, *, path: Path | None = None) -> ModelC
     if key not in KNOWN_TASKS:
         raise ValueError(f"Unknown exercise/source label: {exercise}/{target}")
     if key not in DEFAULT_PATHS:
-        # Two Squat original publisher source errors exist, but the project's
-        # notebook correctness classifier is NOT their error detector.
         return None
     model_path = Path(path) if path is not None else DEFAULT_PATHS[key]
+    if exercise == "squat":
+        # These exact 103 features are shared with the old notebook,
+        # but its unrelated "correct"/"incorrect" LABELS are forbidden.
+        return ModelContract(
+            exercise, target, SQUAT_SCHEMA_VERSION, SQUAT_FEATURE_NAMES,
+            "threshold_selected_on_train_groups_only", "static", model_path)
     if exercise == "barbell_row":
         return ModelContract(
             exercise, target, ROW_SCHEMA_VERSION, ROW_FEATURE_NAMES,
@@ -104,7 +117,12 @@ def _validate_bundle(bundle: Any, contract: ModelContract) -> dict:
     if bundle.get("feature_names") != list(contract.feature_names):
         raise ValueError("Model feature order/names mismatch")
     if contract.variant is not None and bundle.get("variant") != contract.variant:
-        raise ValueError("Only OHP STATIC bundle is supported by the single-frame registry")
+        raise ValueError("Only the STATIC source-error bundle is supported by the single-frame registry")
+    if contract.exercise == "squat" and (
+        bundle.get("annotation_semantics") != "publisher_named_error_interval_NOT_correctness"
+        or bundle.get("classes") != [0, 1]
+    ):
+        raise ValueError("Source Squat model must attest named publisher knee-error labels (not correct/incorrect)")
     if bundle.get("source_train_only") is not True:
         raise ValueError("Model must be fit from source TRAIN only")
     if bundle.get("publisher_test_untouched") is not True:
@@ -235,6 +253,9 @@ class ModelRegistry:
         elif exercise == "ohp":
             features = pose_to_task_features(
                 landmarks, task=target, min_visibility=min_visibility)
+        elif exercise == "squat":
+            features = pose_to_squat_features(
+                landmarks, min_visibility=min_visibility)
         else:
-            return _abstain(exercise, target, "squat_source_error_model_not_integrated")
+            return _abstain(exercise, target, "source_error_model_not_integrated")
         return self.score_features(exercise, target, features)
