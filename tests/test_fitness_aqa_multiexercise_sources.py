@@ -105,7 +105,7 @@ def test_row_preserves_two_separate_label_splits(tmp_path):
     assert manifest["tasks"]["lumbar"]["targets"]["lumbar"]["positive_images"] == 2
     assert manifest["cross_task_split_audit"]["images_with_different_splits_between_tasks"] == 0
     assert manifest["archive"]["missing_keys_count"] == 0
-    assert manifest["ready_for_unified_multitask_training"] is False  # candidate clip prefix overlaps splits
+    assert manifest["ready_for_unified_multitask_training"] is True  # no ID or candidate-prefix conflict in this fixture
 
 
 def test_cross_task_image_split_conflicts_detected_without_rejection(tmp_path):
