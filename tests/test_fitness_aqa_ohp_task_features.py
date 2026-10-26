@@ -162,8 +162,12 @@ def test_extract_two_different_validated_csvs_without_test_or_legacy_overwrite(t
             assert not df.sample_id.duplicated().any()
             assert set(df["video_id"]) <= (
                 {"101_1","102_1"} if split=="train" else {"201_1"})
-            assert totals["tasks"][task]["accepted_frames"] == 2 * totals["selected_videos"] // 1 - sum(
-                1 for _ in [] ) or True
+            expected = {
+                "train": {"error_elbows": 3, "error_knees": 2},
+                "val": {"error_elbows": 1, "error_knees": 2},
+            }
+            assert totals["tasks"][task]["accepted_frames"] == expected[split][task]
+            assert totals["tasks"][task]["positive_frames"] <= expected[split][task]
     assert not (out / "fitness_aqa_ohp_error_elbows_test_pose.csv").exists()
     assert not (out / "fitness_aqa_ohp_error_knees_test_pose.csv").exists()
 
