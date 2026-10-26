@@ -20,6 +20,7 @@ import numpy as np
 
 from .model_registry import ModelRegistry
 from .live_diagnostics import LiveSessionDiagnostics, source_gate_diagnostic
+from .framing_guide import PANEL_WIDTH, draw_framing_guide
 
 TASKS_BY_EXERCISE = {
     "squat": ("error_knees_forward", "error_knees_inward"),
@@ -101,6 +102,7 @@ def run_live_viewer(
     registry: ModelRegistry, *,
     exercise: str = "squat", camera_index: int = 0,
     max_frames: int | None = None,
+    show_framing_guide: bool = True,
     cv2_api=None, mp_api=None,
 ) -> dict:
     """Show local webcam analysis only; return aggregate abstention counts.
@@ -114,6 +116,8 @@ def run_live_viewer(
         raise ValueError("camera_index must be a nonnegative integer")
     if max_frames is not None and (not isinstance(max_frames, int) or max_frames < 1):
         raise ValueError("max_frames must be positive or omitted")
+    if not isinstance(show_framing_guide, bool):
+        raise ValueError("show_framing_guide must be a boolean")
     if cv2_api is None or mp_api is None:
         from .camera import _camera_libraries
         cv2_api, mp_api = _camera_libraries()
@@ -172,7 +176,19 @@ def run_live_viewer(
                     elif gate != "passes_basic_visibility_geometry_checks":
                         hint = "Pose geometry: " + gate
                 draw_status(frame, cv2_api, current, reports, diagnostic_hint=hint)
-                cv2_api.imshow("Gym Pose - Experimental Source Label Viewer", frame)
+                # Only the DISPLAY is enlarged: original camera pixels sent
+                # to MediaPipe are never cropped/padded/reused for training.
+                if show_framing_guide:
+                    height, width = frame.shape[:2]
+                    display = np.zeros(
+                        (height, width + PANEL_WIDTH, 3), dtype=frame.dtype)
+                    display[:, :width] = frame
+                    draw_framing_guide(
+                        display, cv2_api, original_width=width,
+                        exercise=current, landmarks=landmarks)
+                else:
+                    display = frame
+                cv2_api.imshow("Gym Pose - Experimental Source Label Viewer", display)
                 frames += 1
                 key = cv2_api.waitKey(1) & 0xff
                 diagnostics.record(
@@ -201,6 +217,7 @@ def run_live_viewer(
         "alerts_issued": 0,
         "rep_counting_enabled": False,
         "last_selected_exercise": current,
+        "on_screen_framing_guide": show_framing_guide,
         "diagnostics": diagnostics.summary(elapsed_seconds=elapsed_seconds),
         "warning": VIEWER_DISCLAIMER,
     }
