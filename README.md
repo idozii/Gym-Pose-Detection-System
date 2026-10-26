@@ -20,6 +20,33 @@ See [M13A OHP guide](docs/FITNESS_AQA_OHP_M13.md).
 
 ---
 
+## Milestone 16A: Local real-time *research* viewer (experimental)
+
+The owner's M15C local run confirmed six source-label error-model
+artifacts are loaded correctly (Squat, Overhead Press, Barbell Row).
+However, source-validation precision/recall and pose acceptance remain
+too weak to claim reliable technique or injury-prevention feedback.
+
+An opt-in OpenCV webcam **research viewer** displays the manually
+selected exercise's pose and two original-source *annotation scores*.
+It never turns scores into coaching advice, safe/correct labels,
+automatic movement alerts, rep counting, uploads or recordings.
+
+```bash
+python -m pytest -q
+python -m scripts.check_fitness_aqa_model_registry --trust-local-artifacts
+python -m scripts.run_fitness_aqa_research_viewer --exercise squat --camera 0 --trust-local-artifacts
+```
+
+Use keys `1` Squat, `2` OHP, `3` Barbell Row, `q` to exit.
+Models must be your **own trusted local joblib** files (pickle can run
+code). Missing or low-quality poses produce visible **ABSTAIN**, not
+'correct form'. OpenCV GUI and MediaPipe camera extras are required.
+
+[Milestone 16A real-time research viewer](docs/M16A_REALTIME_RESEARCH_VIEWER.md).
+
+---
+
 ## Milestone 15C: Squat original source-error RF registry
 
 The two genuine source-error targets `error_knees_forward` and
