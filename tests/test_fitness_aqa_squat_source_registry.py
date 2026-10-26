@@ -31,7 +31,7 @@ def fixtures(tmp_path):
         "limit_per_split": 8,
         "splits": {},
     }
-    for split, num_videos in (("train", 48), ("val", 18)):
+    for split, num_videos in (("train", 48), ("val", 32)):
         rows = []
         for video in range(num_videos):
             video_id = f"{1100 if split == 'train' else 2200 + video}_{video:03d}"
@@ -97,7 +97,7 @@ def test_full_dataset_provenance_refuses_pilot(tmp_path):
     x, summary = squat.load_source(root, require_full=False)
     assert set(x) == {"train", "val"}
     assert len(x["train"]) == 192
-    assert len(x["val"]) == 72
+    assert len(x["val"]) == 128
     assert summary["splits"]["val"]["videos_failed"] == 0
 
 
