@@ -41,7 +41,7 @@ def _create(tmp_path, gate, *, invalid_labels=False):
                     r["error_knees_forward"], r["error_knees_inward"])
                 records.append(r)
         if invalid_labels and split == "val":
-            records[0]["error_knees_inward"] = int(not records[0]["error_knees_inward"])
+            records[2]["error_knees_inward"] = int(not records[2]["error_knees_inward"])\n            records[2]["any_of_two_annotated_errors"] = max(\n                records[2]["error_knees_forward"], records[2]["error_knees_inward"])
         pd.DataFrame(records).to_csv(root / f"fitness_aqa_{split}_pose.csv", index=False)
         summary["splits"][split] = {
             "selected_videos": clips, "frames_sampled": clips * 8,
