@@ -28,8 +28,8 @@ def load_training_data(path: str | Path) -> pd.DataFrame:
     if df.empty or set(df.label.dropna().unique()) != set(LABELS) or df.label.isna().any():
         raise ValueError("Nonempty data with both 'correct' and 'incorrect' labels required")
     df = df.copy()
-    df.loc[:, FEATURE_NAMES] = df.loc[:, FEATURE_NAMES].apply(pd.to_numeric, errors="raise")
-    if not np.isfinite(df.loc[:, FEATURE_NAMES].to_numpy(dtype=float)).all():
+    df.loc[:, list(FEATURE_NAMES)] = df.loc[:, list(FEATURE_NAMES)].apply(pd.to_numeric, errors="raise")
+    if not np.isfinite(df.loc[:, list(FEATURE_NAMES)].to_numpy(dtype=float)).all():
         raise ValueError("Non-finite features are not supported")
     return df
 
@@ -39,7 +39,7 @@ def train(csv_path: str | Path, model_path: str | Path, *, group_column: str | N
     df = load_training_data(csv_path)
     if not 0.0 < test_size < 1.0:
         raise ValueError("test_size must be between 0 and 1")
-    features = df.loc[:, FEATURE_NAMES].astype("float64")
+    features = df.loc[:, list(FEATURE_NAMES)].astype("float64")
     targets = df["label"]
     if group_column:
         if group_column not in ("subject_id", "session_id") or group_column not in df.columns:
