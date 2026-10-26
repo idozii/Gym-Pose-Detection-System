@@ -97,7 +97,7 @@ def _load(source_dir: Path, *, require_full: bool = True) -> tuple[dict, dict]:
             if not (df["image_id"].str.rsplit("_", n=1).str[0] ==
                     df["candidate_clip_prefix"]).all():
                 raise ValueError(f"{file}: candidate prefix/source ID mismatch")
-            features = df.loc[:, FEATURE_NAMES].to_numpy(dtype=float)
+            features = df.loc[:, list(FEATURE_NAMES)].to_numpy(dtype=float)
             if not np.isfinite(features).all():
                 raise ValueError(f"{file}: nonfinite numeric pose features")
             retained = len(df)
@@ -249,8 +249,8 @@ def benchmark(
             raise ValueError(f"{task}: too few held-out positive image labels")
         fit_idx, cal_idx = train_only_prefix_calibration(
             train, seed=seed + task_i)
-        xtrain = train.loc[:, FEATURE_NAMES].astype(float)
-        xval = val.loc[:, FEATURE_NAMES].astype(float)
+        xtrain = train.loc[:, list(FEATURE_NAMES)].astype(float)
+        xval = val.loc[:, list(FEATURE_NAMES)].astype(float)
         ytrain = train.error_label.to_numpy(dtype=int)
         yval = val.error_label.to_numpy(dtype=int)
         temporary = make_rf(seed=seed, trees=trees)
