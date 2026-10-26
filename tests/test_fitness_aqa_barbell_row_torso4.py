@@ -18,9 +18,64 @@ from gym_pose.barbell_row_torso4_features import (
 )
 from scripts import extract_fitness_aqa_barbell_row as extractor
 from scripts import extract_fitness_aqa_barbell_row_torso4 as cli
-from tests.test_fitness_aqa_barbell_row_extraction import (
-    FakeCv2, pose_points, source_fixture,
-)
+def pose_points(low=(), invalid_unused=False):
+    ps = [
+        SimpleNamespace(x=.03 * i, y=.015 * (i + (i % 3)),
+                        z=.001 * i, visibility=.99 if i not in low else .2)
+        for i in range(33)
+    ]
+    if invalid_unused:
+        ps[0].x = float("nan")
+    return ps
+
+
+def source_fixture(tmp_path: Path):
+    import json
+    import zipfile
+    root = tmp_path / "barbell_row" / "labeled"
+    ann = root / "annotations"
+    split_ids = {
+        "train": ["201_1_0", "201_1_1", "201_1_2", "202_2_0"],
+        "val": ["301_1_0", "301_1_1", "302_1_0"],
+        "test": ["901_1_0", "902_1_0"],
+    }
+    ids = set().union(*split_ids.values())
+    for task in ("torso_angle", "lumbar"):
+        for split, image_ids in split_ids.items():
+            file = ann / "splits" / task / f"{split}_ids.json"
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_text(json.dumps(image_ids))
+        labels = {
+            key: int(int(key.rsplit("_", 1)[-1]) % 2 == (1 if task == "torso_angle" else 0))
+            for key in ids
+        }
+        file = ann / (
+            "labels_torso_angle_error.json"
+            if task == "torso_angle" else "labels_lumbar_error.json")
+        file.write_text(json.dumps(labels))
+    with zipfile.ZipFile(root / "images.zip", "w") as z:
+        for key in sorted(ids):
+            z.writestr(
+                f"publisher/{key}.jpg",
+                b"NEVER_DECODE_TEST" if key.startswith("90") else key.encode())
+    return root
+
+
+class FakeCv2:
+    IMREAD_COLOR = 1
+    COLOR_BGR2RGB = 4
+    seen = []
+    @classmethod
+    def imdecode(cls, data, _flag):
+        raw = bytes(data)
+        if raw == b"NEVER_DECODE_TEST":
+            raise AssertionError("Attempt to decode publisher TEST image")
+        cls.seen.append(raw.decode())
+        return np.zeros((8, 8, 3), dtype=np.uint8)
+    @staticmethod
+    def cvtColor(frame, _flag):
+        return frame
+
 
 
 def test_new_20_feature_schema_does_not_use_leg_or_elbow_coordinates():
