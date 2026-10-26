@@ -1,4 +1,52 @@
-# Gym Pose Detection (Real-Time Correct vs Incorrect Form)
+# Gym Pose Detection — Experimental Fitness-AQA Research Viewer
+
+**Research-only software prototype, not a validated fitness coach or
+medical/injury-prevention detector.**
+
+The current code supports a local MediaPipe/OpenCV webcam research viewer
+and **six separately versioned source-annotation classifiers** across
+Squat, Overhead Press and Barbell Row. It presents annotation scores
+or explicit `ABSTAIN`; it never interprets missing labels as proper
+technique, and does not issue autonomous exercise safety alerts.
+
+The owner demonstrated **201 passing tests** and a **180-frame Ubuntu
+Squat webcam run with 360 successful source-label calls**, observed
+**15.78 displayed FPS** and **11.16ms mean successful per-task
+feature+RF inference**. This is an engineering runtime demonstration,
+not a test of correctness or robust generalization. Evaluation is
+exploratory on repeatedly consulted publisher validation samples.
+
+### Research release candidate — M17
+
+[Read the M17 experimental results, original source-label tables,
+real webcam runtime evidence, privacy scope, historical TEST exposure,
+and explicit release readiness/blockers](docs/M17_RESEARCH_REPORT_AND_RELEASE_READINESS.md).
+
+```bash
+python -m pip install -e '.[dev]'
+python -m pytest -q
+
+# Status-only; no joblib loading or camera:
+python -m scripts.check_fitness_aqa_model_registry
+
+# Only run with artifacts that YOU trained and trust (joblib uses pickle):
+python -m scripts.check_fitness_aqa_model_registry --trust-local-artifacts
+
+# Optional local webcam demo, no image recording:
+python -m pip install -e '.[camera,dev]'
+python -m scripts.run_fitness_aqa_research_viewer \
+  --exercise squat --camera 0 --max-frames 180 --trust-local-artifacts
+```
+
+Source code/tests do not bundle Fitness-AQA original videos/images,
+raw features, or the owner's local trained joblib artifacts. A historical
+pilot previously inspected some publisher TEST clips, so **do not claim
+the full project history kept original TEST pristine**. Independent
+athlete-level or clinical claims have NOT been established.
+
+---
+
+# Historical implementation and milestone notes
 
 ## Milestone 13A: Overhead Press pose extraction pilot
 
