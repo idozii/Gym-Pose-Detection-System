@@ -16,6 +16,27 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### Research release source integrity — M17B
+
+The owner confirmed **218 tests passed** and all **six** trusted local
+original-source error models loaded on M17A. M17B checks that
+the source release has the six correct versioned task contracts,
+the original TRAIN/VAL research reproduction scripts, and no newly
+tracked private Fitness-AQA media or derived features. Run:
+
+```bash
+python -m pytest -q
+python -m scripts.audit_research_release
+```
+
+The new audit **does not** load model pickle files, access a webcam
+or evaluate publisher TEST. The repo still tracks two **historical**
+notebook assets (`models/squat_form_rf.joblib` and `models/yolov8s.pt`);
+they are disclosed as legacy warnings, not confused with the six
+newly trained source-label RF artifacts or silently deleted.
+
+[Release checklist, older OHP PR reconciliation, and handoff](docs/M17B_RELEASE_AUDIT_AND_HANDOFF.md).
+
 ### Research release candidate — M17
 
 [Read the M17 experimental results, original source-label tables,
