@@ -1,5 +1,24 @@
 # Gym Pose Detection (Real-Time Correct vs Incorrect Form)
 
+## Milestone 2: Data provenance and subject-independent evaluation
+
+The new commands validate a consented image manifest, extract traceable features, and
+benchmark a Random Forest on **held-out subjects** with metrics per camera view.
+The code ships without a real dataset or fabricated model accuracy.
+
+```bash
+gym-pose manifest-template
+# Fill data/manifest.csv using real subject/session/view IDs and real image paths.
+gym-pose validate-manifest
+gym-pose extract-manifest
+gym-pose benchmark
+```
+
+See [Milestone 2 protocol, outputs and data policy](docs/MILESTONE_2.md).
+A random-frame validation split is **not** evidence of generalization across subjects.
+
+---
+
 ## Milestone 1: Modular baseline (new)
 
 The original notebook below remains available as a historical baseline. A new
