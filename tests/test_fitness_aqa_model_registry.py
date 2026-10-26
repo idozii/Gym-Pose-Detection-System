@@ -63,7 +63,8 @@ def test_missing_models_and_squat_source_error_slots_fail_closed():
         assert out["status"] == "abstain"
         assert out["source_label_flag"] is None
         assert out["error_probability"] is None
-    assert reg._contract("squat","error_knees_forward") is None
+    assert reg._contract("squat","error_knees_forward") is not None
+    assert reg._contract("squat","error_knees_forward").schema_version == "squat-103-v1"
     with pytest.raises(ValueError, match="Unknown"):
         registry.score_features("bench_press","not_a_task",{})
 
@@ -156,4 +157,4 @@ def test_fail_closed_on_corrupt_or_mislabeled_artifacts(tmp_path,metadata_overri
 
 def test_registry_paths_refuse_masqueraded_squat_models(tmp_path):
     with pytest.raises(ValueError, match="No trained artifact contract"):
-        reg.ModelRegistry(paths={("squat","error_knees_forward"):tmp_path/"model.joblib"})
+        reg.ModelRegistry(paths={("squat","legacy_correct_incorrect"):tmp_path/"model.joblib"})
