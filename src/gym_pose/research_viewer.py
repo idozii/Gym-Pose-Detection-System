@@ -34,12 +34,16 @@ MAX_TARGET_TEXT = 70
 
 def analyze_landmarks(
     registry: ModelRegistry, exercise: str, landmarks: Any,
+    *, on_task_timing=None,
 ) -> dict[str, dict]:
     """Frame-local static analysis; never carry labels across frames/exercises."""
     if exercise not in TASKS_BY_EXERCISE:
         raise ValueError(f"Unsupported viewer exercise: {exercise}")
     output = {}
     for target in TASKS_BY_EXERCISE[exercise]:
+        # Time each source-label call separately; a frame's aggregate model
+        # stage mixes scored and abstained tasks in OHP's different pose gates.
+        started = perf_counter()
         # Registry is the only source of schema, pose admission and model status.
         try:
             result = registry.score_landmarks(
@@ -52,6 +56,10 @@ def analyze_landmarks(
                 "error_probability": None, "threshold": None,
                 "source_label_flag": None, "experimental_only": True,
             }
+        if on_task_timing is not None:
+            on_task_timing(
+                exercise, target, result["status"],
+                (perf_counter() - started) * 1000.0)
         output[target] = result
     return output
 
@@ -157,7 +165,9 @@ def run_live_viewer(
                 if landmark_holder is not None:
                     mp_api.solutions.drawing_utils.draw_landmarks(
                         frame, landmark_holder, mp_api.solutions.pose.POSE_CONNECTIONS)
-                reports = analyze_landmarks(registry, current, landmarks)
+                reports = analyze_landmarks(
+                    registry, current, landmarks,
+                    on_task_timing=diagnostics.record_task_timing)
                 scored_at = perf_counter()
                 for value in reports.values():
                     key = (
