@@ -58,3 +58,46 @@ history and use a history-rewrite tool only with collaborator coordination.
 Keep code, manifests *without private identifying data*, instructions, split definitions,
 dataset provenance and lightweight metric reports in Git. Keep original raw videos
 and frames in external storage.
+
+
+## After downloading the labeled Squat video ZIP — next steps
+
+Only 5 tiny annotation/split JSON files are needed to validate the video archive;
+these files are supplied by the original dataset publisher.
+
+```bash
+mkdir -p data/external/fitness_aqa/squat/labeled/annotations
+AQA_JSON=data/external/fitness_aqa/squat/labeled/annotations
+
+gdown 11ew1zELHx_d4vWlQ993IMeSW9-iDUASv -O "$AQA_JSON/train_keys.json"
+gdown 1v450hOnfjcUjRORmA8Ac_aMoTZ_iFV2K -O "$AQA_JSON/val_keys.json"
+gdown 1OtE4QheK-sd1bCZr9_A10-p0aY4s25D1 -O "$AQA_JSON/test_keys.json"
+gdown 1v5n0gZDnN0WjZ5TNhT4U5i9wxANtv_qY -O "$AQA_JSON/error_knees_forward.json"
+gdown 1DtJ9w8oX1wv7vtUEixbnBmCYWhgv6Cki -O "$AQA_JSON/error_knees_inward.json"
+
+# Inspect ZIP integrity and contents WITHOUT extracting videos:
+unzip -t data/external/fitness_aqa/squat/labeled/videos.zip
+unzip -Z -1 data/external/fitness_aqa/squat/labeled/videos.zip | head -30
+
+# Compare every ZIP video ID with the publisher-provided split and error labels:
+python scripts/inspect_fitness_aqa.py
+```
+
+Dataset JSON files examined on October 26, 2026:
+- train: 1,136 video IDs
+- validation: 243 video IDs
+- test: 244 video IDs
+- combined: 1,623 unique video IDs, no overlap between splits
+- annotation dictionaries contain matching keys for all 1,623 IDs
+
+These counts describe split/annotation metadata only; the ZIP video filename
+coverage cannot be confirmed until you run the local inspector on your downloaded ZIP.
+
+The independent research pipeline must **not** equate knees-forward or knees-inward
+annotations with globally "correct/incorrect" exercise form. Keep error types
+and video/time intervals separate. Likewise, split membership is video-ID-disjoint,
+not confirmed athlete/subject-disjoint.
+
+If the inspector finds unknown extensions, archive structures, or missing IDs,
+review its `first_video_paths` / missing examples and correct path matching
+before extracting. Do not invent files to satisfy validation.
