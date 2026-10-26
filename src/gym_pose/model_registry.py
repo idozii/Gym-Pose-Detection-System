@@ -23,6 +23,11 @@ from .barbell_row_torso4_features import (
     SCHEMA_VERSION as ROW_SCHEMA_VERSION,
     pose_to_torso4_features,
 )
+from .ohp_task_features import (
+    FEATURES_BY_TASK as OHP_FEATURES_BY_TASK,
+    SCHEMA_BY_TASK as OHP_SCHEMA_BY_TASK,
+    pose_to_task_features,
+)
 
 DEFAULT_PATHS = {
     ("ohp", "error_elbows"): Path(
@@ -69,14 +74,11 @@ def _contract(exercise: str, target: str, *, path: Path | None = None) -> ModelC
         return ModelContract(
             exercise, target, ROW_SCHEMA_VERSION, ROW_FEATURE_NAMES,
             "threshold_train_prefix_calibration", None, model_path)
-    # OHP source modules are still in their research PRs. Don't duplicate an
-    # unmerged schema or confuse the legacy 111-column OHP pose format.
-    try:
-        from .ohp_task_features import FEATURES_BY_TASK, SCHEMA_BY_TASK
-    except ImportError:
-        return None
+    # M15B integrates exactly the OHP source 30-feature extraction schema.
+    # Never coerce it to the earlier 111-column baseline, and never silently
+    # serve a causal temporal 42-feature model in a static frame context.
     return ModelContract(
-        exercise, target, SCHEMA_BY_TASK[target], FEATURES_BY_TASK[target],
+        exercise, target, OHP_SCHEMA_BY_TASK[target], OHP_FEATURES_BY_TASK[target],
         "threshold_selected_on_train_groups_only", "static", model_path)
 
 
@@ -231,10 +233,6 @@ class ModelRegistry:
             features = pose_to_torso4_features(
                 landmarks, min_visibility=min_visibility)
         elif exercise == "ohp":
-            try:
-                from .ohp_task_features import pose_to_task_features
-            except ImportError:
-                return _abstain(exercise, target, "feature_schema_not_integrated")
             features = pose_to_task_features(
                 landmarks, task=target, min_visibility=min_visibility)
         else:
