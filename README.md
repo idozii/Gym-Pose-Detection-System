@@ -16,6 +16,27 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M26 - Frozen original M20 validation comparison (no TEST)
+
+Real owner M25 LOSO on original TRAIN: Full paired 54.96%
+balanced accuracy, Upper paired 56.39%, Upper expanded 53.57%.
+Paired subject-bootstrap interval estimates for both upper
+variants' balanced accuracy differences cross zero, so no
+form-label accuracy improvement is established. The upper-body
+gate remains a **coverage** improvement, not a validated coaching
+model.
+
+[M26 predeclared Push-up VAL protocol](docs/M26_FROZEN_PUSHUP_VALIDATION.md)
+uses the fixed original M20 participant split, extracts **only
+original VAL Push-up video clips**, and compares fixed 200-tree
+full-body-trained and upper-expanded RF candidates on identical
+paired VAL clips using the same 64-feature schema. Recovered
+upper-only clips and gate coverage are reported separately.
+No original TEST video, inference endpoint or hosted model is
+accessed or updated.
+
+---
+
 ### M25 - Push-up TRAIN-only LOSO reliability and subject uncertainty
 
 The owner's M24 grouped TRAIN cross-validation showed increased
