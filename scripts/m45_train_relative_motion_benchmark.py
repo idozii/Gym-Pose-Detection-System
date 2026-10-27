@@ -195,9 +195,14 @@ def _aggregate_pairwise(records, condition):
 
 
 def run(*, archive: Path, root: Path, report_path: Path, limit: int = 20,
-        select_fn=None, extract_fn=None, compare_fn=None) -> dict:
+        select_fn=None, extract_fn=None, compare_fn=None,
+        cohort_offset: int = 0) -> dict:
     if type(limit) is not int or not 1 <= limit <= 20:
         raise ValueError("M45 requires 1..20 fixed hash publisher TRAIN clips")
+    # Exactly one preregistered fresh-TRAIN replication offset is offered.
+    # Prevent outcome-guided browsing of arbitrary cohort offsets.
+    if type(cohort_offset) is not int or cohort_offset not in (0, 20):
+        raise ValueError("M46 only allows frozen hash cohort offsets 0 or 20")
     if report_path.exists():
         raise FileExistsError("M45 output exists; refusing overwrite")
     if not archive.is_file() or not archive.name.lower().endswith((".tar.gz", ".tgz")):
@@ -206,11 +211,14 @@ def run(*, archive: Path, root: Path, report_path: Path, limit: int = 20,
     extractor = extract_fn or extract_pose_trace
     comparator = compare_fn or compare_node
     root.mkdir(parents=True, exist_ok=True)
-    clips, train_sha = selector(
-        archive, root, split="train", limit=limit,
-        require_explicit_split=True, selection_policy="stable_hash",
-        selection_seed=SEED
-    )
+    select_options = {
+        "split": "train", "limit": limit, "require_explicit_split": True,
+        "selection_policy": "stable_hash", "selection_seed": SEED
+    }
+    # Preserve exactly the original M45 loader API for offset=0.
+    if cohort_offset:
+        select_options["selection_offset"] = cohort_offset
+    clips, train_sha = selector(archive, root, **select_options)
     if (not isinstance(train_sha, str) or len(train_sha) != 64 or
         any(ch not in "0123456789abcdef" for ch in train_sha)):
         raise ValueError("M45 requires original publisher TRAIN CSV SHA256")
@@ -266,12 +274,20 @@ def run(*, archive: Path, root: Path, report_path: Path, limit: int = 20,
                 "usable_but_no_low_in_gt_window"]):
             raise ValueError("M45 frozen M43/M44 aggregate reproduction failed")
     report = {
-        "protocol": PROTOCOL, "study_type": "post_hoc_exploratory_train_only_relative_excursion",
+        "protocol": PROTOCOL,
+        "study_type": (
+            "prespecified_unseen_train_source_file_replication"
+            if cohort_offset == 20 else
+            "post_hoc_exploratory_train_only_relative_excursion"
+        ),
         "source_split": "train",
         "source_mode": "owner_local_author_archive_provenance_unverified",
         "publisher_train_annotation_sha256": train_sha,
         "source_selection": {
             "policy": "stable_hash", "seed": SEED, "limit": limit,
+            "source_hash_rank_offset": cohort_offset,
+            "source_clip_filename_disjoint_from_m40_m45": cohort_offset == 20,
+            "subject_or_view_disjointness_verified": False,
             "pose_observation_target_ms": 200,
             "400ms_subsample_shares_dense_tracker_history": True
         },
@@ -284,7 +300,14 @@ def run(*, archive: Path, root: Path, report_path: Path, limit: int = 20,
         "original_m43_diagnostics": m43,
         "original_m44_diagnostics": original_m44,
         "interpretation_limits": [
-            "The relative algorithm was designed AFTER reviewing these exact TRAIN data; all scores are exploratory and may be overfit.",
+            (
+                "The relative rule was frozen after observing the first 20 TRAIN clips; "
+                "the new hash-rank-offset-20 source videos were not used to design it. "
+                "They remain publisher TRAIN, not TEST; person/view disjointness is unknown."
+                if cohort_offset == 20 else
+                "The relative algorithm was designed AFTER reviewing these exact TRAIN data; "
+                "all scores are exploratory and may be overfit."
+            ),
             "Candidate counts are not evidence of valid exercise form, biomechanics or injury safety.",
             "FP rise and per-video worsened counts must be considered alongside recovered TP.",
             "The cohort contains no publisher-labeled zero-rep Squat TRAIN clips. Negative-control specificity is unavailable.",
@@ -307,12 +330,17 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-archive", required=True, type=Path)
     parser.add_argument("--max-videos", type=int, default=20)
+    parser.add_argument("--cohort-offset", type=int, choices=(0, 20),
+                        default=0,
+                        help="0: original M45 TRAIN development set; "
+                             "20: M46 frozen next-hash-rank TRAIN replication")
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--report", type=Path, default=REPORT)
     args = parser.parse_args(argv)
     try:
         output = run(archive=args.source_archive, root=args.root,
-                     report_path=args.report, limit=args.max_videos)
+                     report_path=args.report, limit=args.max_videos,
+                     cohort_offset=args.cohort_offset)
     except (OSError, RuntimeError, ValueError, TypeError, KeyError,
             json.JSONDecodeError) as error:
         print("M45 stopped: " + str(error), file=sys.stderr)
