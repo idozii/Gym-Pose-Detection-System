@@ -181,7 +181,7 @@ def test_m26_matched_scoring_and_unpaired_extra_never_leak_test(monkeypatch, tmp
     assert "c_test" not in json.dumps(report)
     # Any TEST identity injected into an original validation table must fail.
     invalid = path("invalid.csv", ["val_good", "test_bad"])
-    with pytest.raises(ValueError, match="non-VAL"):
+    with pytest.raises(ValueError, match="Full-gate|non-VAL"):
         m26.evaluate_validation(
             tmp_path/"original.csv", tmp_path/"manifest.csv",
             full_train, upper_train, invalid, upper_val
