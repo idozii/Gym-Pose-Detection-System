@@ -3,7 +3,9 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HF_HUB_DISABLE_TELEMETRY=1
 COPY pyproject.toml README.md /app/
 COPY src /app/src
-RUN python -m pip install --no-cache-dir '.[webapi,hfmodels]'
+# Original owner RF bundles were pickled using scikit-learn 1.8.0.
+# Using newer 1.9.x may silently change or break the deserialized estimator.
+RUN python -m pip install --no-cache-dir '.[webapi,hfmodels]' 'scikit-learn==1.8.0'
 # DO NOT COPY owner model artifacts or publisher media into this public image.
 # Render Free has no SSH or persistent disk, only temporary verified downloads.
 RUN groupadd --gid 10001 pose && \

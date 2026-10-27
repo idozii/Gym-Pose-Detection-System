@@ -43,6 +43,8 @@ def test_free_dockerfile_never_embeds_owner_models_or_ssh():
     assert "COPY models" not in docker
     assert "USER pose:pose" in docker
     assert "private_model_bootstrap" in docker
+    # The owner serialized the six RandomForest models with sklearn 1.8.0.
+    assert "scikit-learn==1.8.0" in docker
     assert "PORT:-8000" in docker
     assert "--no-access-log" in docker
     assert "--shell /usr/sbin/nologin" in docker

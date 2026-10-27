@@ -104,6 +104,19 @@ If any manifest is invalid, token is missing or downloaded bytes differ,
 startup aborts. No model is ever loaded if verification fails. Model
 deserialization happens only after the owner opted into these trusted files.
 
+### Model runtime compatibility
+
+The original uploaded joblib RandomForest estimators report serialization
+under **scikit-learn 1.8.0**. Render originally installed scikit-learn 1.9.1
+and emitted `InconsistentVersionWarning` during startup. The cloud
+`backend/Dockerfile` explicitly pins `scikit-learn==1.8.0` to match
+the owner's model serialization. The operator must use and trust the
+original six bundles; a successful pickle load does not prove that
+cross-MediaPipe camera source-label scores are scientifically valid.
+
+Render startup logs now record ONLY the loaded six-model count without
+printing Hugging Face tokens, artifact paths or landmark contents.
+
 ## Step 3 — verify six-model readiness BEFORE connecting Vercel
 
 On the local computer, run (replace with the real hostname Render gave you):

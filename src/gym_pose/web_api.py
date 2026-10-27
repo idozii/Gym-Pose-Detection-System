@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 import json
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import SimpleNamespace
@@ -94,6 +95,12 @@ def create_app(registry: ModelRegistry | None = None, *,
             # Only the server OPERATOR can opt into unsafe pickle execution.
             # Client request fields cannot set this. Never download models.
             states = registry.load_local(trust_local_pickle_files=True)
+        # Log ONLY aggregate readiness, never artifact paths, tokens or landmarks.
+        loaded = sum(v == "loaded_experimental_only" for v in states.values())
+        logging.getLogger("uvicorn.error").info(
+            "Gym Pose original-source research models loaded: %d/%d",
+            loaded, len(KNOWN_TASKS),
+        )
         application.state.registry = registry
         application.state.models = states
         yield
