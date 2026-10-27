@@ -68,6 +68,26 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M43 - Frozen TRAIN temporal error audit (descriptive, not a new model)
+
+[M43 temporal error analysis](docs/M43_TRAIN_TEMPORAL_ERROR_AUDIT.md)
+inspects publisher half-open GT windows, matching tolerance and
+temporal angle evidence to partition **unmatched** GT and detected
+events for original frozen M39 low-to-high at shared-tracker
+200ms versus every-other-sample 400ms. It records paired
+annotated-event recovery (both/dense-only/sparse-only/neither),
+reproduces original M41 metrics, and aggregates counts only.
+
+On the owner's M41 20-clip TRAIN cohort, dense low-to-high
+obtained TP=149, FP=11, FN=163 (F1 63.14%), whereas sparse
+had TP=118, FP=3, FN=194 (F1 54.50%). The original TRAIN CSV
+has no publisher-annotated Squat zero-rep clips; the M42
+negative-control study correctly reported unavailable evidence.
+M43 is post-hoc descriptive, not causal, held-out accuracy
+or a physically safe/unsafe squat classifier.
+
+---
+
 ### M42 - Publisher-annotated zero-rep TRAIN negative controls
 
 [M42 negative-control evaluation protocol](docs/M42_TRAIN_ZERO_REP_NEGATIVE_CONTROLS.md)
