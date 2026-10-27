@@ -415,6 +415,9 @@ def run(*, split: str, limit: int, root: Path,
         local_source: Path | None = None) -> dict:
     if report_path.exists():
         raise FileExistsError("M37 output report exists; refusing overwrite")
+    # The Hugging Face downloader creates root for remote mode, but
+    # authorized local-source mode must create the private temp parent itself.
+    root.mkdir(parents=True, exist_ok=True)
     if not 1 <= limit <= 20:
         raise ValueError("Only 1..20 clips allowed for first M37 pilot")
     if local_source is not None:
