@@ -64,7 +64,9 @@ def validate_against_m43(record: dict, m43: dict) -> None:
         raise ValueError("Missing M43 paired diagnostics")
     for cond in CONDITIONS:
         row = record[cond]
-        prior = m43["conditions"][cond]
+        # Per-video M43 diagnostics use cadence keys at their root.
+        # Only cohort-aggregated M43 uses a nested "conditions" key.
+        prior = m43[cond]
         if row["unmatched_gt_no_low_inside"] != prior[
             "unmatched_gt_window_observations"
         ]["usable_but_no_low_in_gt_window"]:
