@@ -1,6 +1,7 @@
 import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { TASKS, requiredJointIndices, readiness, taskReadiness } from './pose.js';
 import { API_URL, ResearchInferenceClient, scoreState, sixModelReady } from './inference.js';
+import { CAMERA_FACING, cameraConstraints, mirrorPreview, cameraFallbackMessage } from './camera.js';
 import './style.css';
 
 const ASSET_VERSION = '1.1.1';
@@ -8,7 +9,8 @@ const WASM_URL = `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${ASSET_V
 const MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
 const state = {
-  exercise: 'squat', running: false, starting: false, token: 0,
+  exercise: 'squat', facingMode: CAMERA_FACING.FRONT, mirrorSelfie: true,
+  running: false, starting: false, token: 0,
   stream: null, landmarker: null, raf: null, frames: 0,
   poseFrames: 0, fps: 0, lastFrameClock: 0, lastVideoTime: -1,
   lastRendered: 0, landmarks: null,
@@ -22,37 +24,38 @@ document.querySelector('#app').innerHTML = `
   <div class="shell">
     <header class="topbar">
       <a class="brand" href="/" aria-label="Gym Pose Lab home">
-        <span class="brand-logo">G<span>•</span></span>
+        <span class="brand-logo"><span class="brand-mark">G</span><span class="brand-spark">✳</span></span>
         <span>GYM POSE <strong>LAB</strong></span>
       </a>
       <div class="top-right">
         <span class="top-separator"></span>
-        <span class="version">EXPERIMENTAL WEB PREVIEW <span class="version-dot"></span> 0.1</span>
+        <span class="version"><span class="version-dot"></span> RESEARCH MODE / V0.2</span>
         <a class="github-link" href="https://github.com/idozii/Gym-Pose-Detection-System" target="_blank" rel="noopener noreferrer">View source ↗</a>
       </div>
     </header>
 
     <main>
       <section class="intro">
-        <div class="eyebrow"><span class="eyebrow-line"></span> LOCAL-FIRST COMPUTER VISION</div>
-        <h1>See the motion.<br><em>Understand the pose.</em></h1>
-        <p>Turn on your camera to explore how MediaPipe sees your movement. View joint visibility in real time — directly in your browser.</p>
+        <div class="eyebrow"><span class="eyebrow-line"></span> MOVEMENT INTELLIGENCE / LAB 01</div>
+        <h1>Every rep.<br><em>Another perspective.</em></h1>
+        <p>Turn your phone into a private movement lab. Observe joint tracking, explore three research exercises, and switch between selfie and rear camera in seconds.</p>
+        <div class="hero-pills"><span><i></i> ON-DEVICE POSE TRACKING</span><span>03 EXERCISES</span><span>06 EXPERIMENTAL MODELS</span></div>
       </section>
 
       <section class="workbench" aria-label="Pose detection workbench">
         <div class="video-area">
           <div class="video-bar">
-            <div class="bar-left"><span class="lens-dot"></span> LIVE POSE STUDIO</div>
+            <div class="bar-left"><span class="lens-dot"></span> MOVEMENT STUDIO <span class="camera-mode-indicator" id="cameraModeIndicator">FRONT / MIRRORED</span></div>
             <span class="runtime-label" id="runtimeStatus">CAMERA OFFLINE</span>
           </div>
           <div class="camera-stage">
             <video id="sourceVideo" muted playsinline autoplay aria-hidden="true"></video>
             <canvas id="poseCanvas" width="960" height="720" aria-label="Live camera with pose landmark overlay" role="img"></canvas>
             <div class="stage-placeholder" id="placeholder">
-              <div class="placeholder-glyph" aria-hidden="true">◎</div>
-              <div class="placeholder-title">Your camera, your space.</div>
-              <p>Enable your webcam to start local pose tracking.<br>No camera frames are saved or sent to our server.</p>
-              <div class="placeholder-faint">CAMERA READY WHEN YOU ARE</div>
+              <div class="placeholder-glyph" aria-hidden="true"><span>✳</span></div>
+              <div class="placeholder-title">Your studio starts here.</div>
+              <p>Choose front camera for a mirrored selfie view,<br>or rear camera to observe someone else training.</p>
+              <div class="placeholder-faint">PRIVATE PREVIEW / NO VIDEO UPLOAD</div>
             </div>
             <div class="live-indicator" id="liveIndicator" hidden><span class="red-dot"></span> LIVE</div>
             <div class="video-footer" id="videoFooter" hidden>
@@ -60,15 +63,24 @@ document.querySelector('#app').innerHTML = `
             </div>
           </div>
           <div class="controls">
-            <button class="primary-btn" type="button" id="cameraButton"><span aria-hidden="true">◉</span> Start camera</button>
-            <span class="control-hint" id="controlHint">Requires camera permission and HTTPS or localhost.</span>
+            <div class="camera-actions">
+              <button class="primary-btn" type="button" id="cameraButton"><span aria-hidden="true">◉</span> Start camera</button>
+              <label class="camera-picker" for="cameraFacing"><span>CAMERA</span>
+                <select id="cameraFacing" aria-label="Choose front or rear camera">
+                  <option value="user">Front / Selfie</option>
+                  <option value="environment">Rear / Observer</option>
+                </select>
+              </label>
+              <button type="button" class="mirror-btn" id="mirrorButton" aria-pressed="true" aria-label="Disable mirrored front camera preview">⇋ <span>Mirror on</span></button>
+            </div>
+            <span class="control-hint" id="controlHint" role="status" aria-live="polite">Use HTTPS, allow camera access, then choose your angle. No recording.</span>
           </div>
         </div>
 
         <aside class="inspector">
           <div class="panel-header">
-            <div><div class="small-label">WORKBENCH</div><h2>Pose inspector</h2></div>
-            <span class="outline-pill">LIVE DATA</span>
+            <div><div class="small-label">THE CONTROL DECK</div><h2>Pose inspector<span class="title-accent">.</span></h2></div>
+            <span class="outline-pill"><span class="tiny-pulse"></span> LIVE READOUT</span>
           </div>
 
           <div class="field-group">
@@ -82,8 +94,8 @@ document.querySelector('#app').innerHTML = `
           </div>
 
           <div class="metrics-grid">
-            <div class="metric"><span>POSE SEEN</span><strong id="poseMetric">—</strong></div>
-            <div class="metric"><span>FPS</span><strong id="fpsMetric">—</strong></div>
+            <div class="metric"><span>POSE SEEN</span><strong id="poseMetric">-</strong></div>
+            <div class="metric"><span>FPS</span><strong id="fpsMetric">-</strong></div>
           </div>
 
           <div class="section-divider"></div>
@@ -103,15 +115,15 @@ document.querySelector('#app').innerHTML = `
           </div>
           <div id="models" class="models"></div>
           <div class="notice">
-            <div class="notice-icon" aria-hidden="true">i</div>
-            <div><strong>Research preview only</strong>
+            <div class="notice-icon" aria-hidden="true">!</div>
+            <div><strong>Research preview / not coaching</strong>
               <p>Only original source-annotation scores from operator-trusted RF models may appear, after consent. The Python models are not bundled with this website. The browser pose estimator differs from the source training pipeline; results have <strong>unvalidated domain shift</strong> and cannot determine safe or correct technique.</p>
             </div>
           </div>
         </aside>
       </section>
       <footer class="site-footer">
-        <span>GYM POSE LAB / EXPERIMENTAL RESEARCH SOFTWARE</span>
+        <span>GYM POSE LAB <strong>©</strong> MOVEMENT RESEARCH</span>
         <p>Camera video runs in your browser. If you separately enable research inference, only 33 pose landmarks are transmitted to the configured backend. No video uploading or automated technique and injury advice. MediaPipe assets are fetched from Google/CDN.</p>
       </footer>
     </main>
@@ -122,6 +134,9 @@ const ui = {
   video: document.querySelector('#sourceVideo'),
   canvas: document.querySelector('#poseCanvas'),
   button: document.querySelector('#cameraButton'),
+  cameraFacing: document.querySelector('#cameraFacing'),
+  mirrorButton: document.querySelector('#mirrorButton'),
+  cameraModeIndicator: document.querySelector('#cameraModeIndicator'),
   exercise: document.querySelector('#exerciseSelect'),
   help: document.querySelector('#exerciseHelp'),
   models: document.querySelector('#models'),
@@ -140,6 +155,20 @@ const ui = {
   inferenceToggle: document.querySelector('#enableInference'),
   inferenceState: document.querySelector('#inferenceState')
 };
+
+function updateCameraControls() {
+  const front = state.facingMode === CAMERA_FACING.FRONT;
+  ui.cameraFacing.value = state.facingMode;
+  ui.mirrorButton.disabled = !front;
+  ui.mirrorButton.setAttribute('aria-pressed', String(front && state.mirrorSelfie));
+  ui.mirrorButton.setAttribute('aria-label', front
+    ? (state.mirrorSelfie ? 'Disable mirrored selfie preview' : 'Enable mirrored selfie preview')
+    : 'Rear camera preview is never mirrored');
+  ui.mirrorButton.querySelector('span').textContent = front
+    ? (state.mirrorSelfie ? 'Mirror on' : 'Mirror off') : 'Rear unmirrored';
+  ui.cameraModeIndicator.textContent = front
+    ? (state.mirrorSelfie ? 'FRONT / MIRRORED' : 'FRONT / NATURAL') : 'REAR / OBSERVER';
+}
 
 function setStatus(text, hint) {
   ui.status.textContent = text;
@@ -170,8 +199,8 @@ function renderModels() {
 function updateInspector() {
   const data = readiness(state.exercise, state.landmarks);
   const rawPoseSeen = state.running && Array.isArray(state.landmarks);
-  ui.poseMetric.textContent = state.frames === 0 ? '—' : `${Math.round(state.poseFrames / state.frames * 100)}%`;
-  ui.fpsMetric.textContent = state.frames === 0 ? '—' : state.fps.toFixed(1);
+  ui.poseMetric.textContent = state.frames === 0 ? '-' : `${Math.round(state.poseFrames / state.frames * 100)}%`;
+  ui.fpsMetric.textContent = state.frames === 0 ? '-' : state.fps.toFixed(1);
   ui.jointCount.textContent = `${data.visibleCount}/${data.total}`;
   ui.jointProgress.style.width = `${data.visibleCount / data.total * 100}%`;
   ui.jointList.innerHTML = data.entries.map((joint) => {
@@ -277,9 +306,14 @@ function drawFrame() {
     canvas.height = video.videoHeight || 720;
   }
   context.clearRect(0, 0, canvas.width, canvas.height);
+  context.save();
+  if (mirrorPreview(state.facingMode, state.mirrorSelfie)) {
+    context.translate(canvas.width, 0);
+    context.scale(-1, 1);
+  }
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
   const points = state.landmarks;
-  if (!Array.isArray(points)) return;
+  if (!Array.isArray(points)) { context.restore(); return; }
   const connections = PoseLandmarker.POSE_CONNECTIONS ?? [];
   context.lineWidth = Math.max(2, canvas.width / 380);
   context.strokeStyle = 'rgba(163, 255, 190, .85)';
@@ -301,6 +335,7 @@ function drawFrame() {
     context.fillStyle = important.has(i) && (p.visibility ?? 0) < .5 ? '#fbbf87' : '#adffd1';
     context.fill();
   }
+  context.restore();
 }
 
 function loop(token, timestamp) {
@@ -377,9 +412,9 @@ async function startCamera() {
   let tempLandmarker = null;
   try {
     // Only begins after explicit button click. Does not transmit webcam images.
-    tempStream = await navigator.mediaDevices.getUserMedia({
-      audio: false, video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } }
-    });
+    tempStream = await navigator.mediaDevices.getUserMedia(cameraConstraints(state.facingMode));
+    const actualFacing = tempStream.getVideoTracks()[0]?.getSettings?.().facingMode;
+    const fallback = cameraFallbackMessage(state.facingMode, actualFacing);
     if (token !== state.token) throw new Error('Camera start cancelled');
     ui.video.srcObject = tempStream;
     await ui.video.play();
@@ -407,11 +442,13 @@ async function startCamera() {
     ui.videoFooter.hidden = false;
     ui.button.disabled = false;
     ui.button.innerHTML = '<span aria-hidden="true">■</span> Stop camera';
-    setStatus('LOCAL POSE ACTIVE', 'Webcam pixels remain local. Remote source inference requires separate opt-in.');
+    setStatus('LOCAL POSE ACTIVE', fallback || 'Live local preview. Research inference requires a separate opt-in.');
     state.raf = requestAnimationFrame((timestamp) => loop(token, timestamp));
   } catch (error) {
     tempStream?.getTracks().forEach((track) => track.stop());
     tempLandmarker?.close();
+    // A previous camera request can resolve after a newer switch. Never stop the new stream.
+    if (token !== state.token) return;
     stopCamera();
     setStatus('COULD NOT START CAMERA',
       `Check camera permission, browser support and internet for first-time model download. ${error.message || ''}`);
@@ -419,6 +456,25 @@ async function startCamera() {
 }
 
 ui.button.addEventListener('click', () => state.running ? stopCamera() : startCamera());
+ui.cameraFacing.addEventListener('change', () => {
+  const next = ui.cameraFacing.value;
+  if (!Object.values(CAMERA_FACING).includes(next) || next === state.facingMode) return;
+  const wasActive = state.running || state.starting;
+  // Close the previous physical camera before opening another (required on iOS).
+  // As a privacy boundary, a camera switch revokes remote inference consent.
+  stopCamera();
+  state.facingMode = next;
+  state.mirrorSelfie = next === CAMERA_FACING.FRONT;
+  updateCameraControls();
+  if (wasActive) void startCamera();
+});
+ui.mirrorButton.addEventListener('click', () => {
+  if (state.facingMode !== CAMERA_FACING.FRONT) return;
+  state.mirrorSelfie = !state.mirrorSelfie;
+  updateCameraControls();
+  // Pixels are mirrored only in drawFrame; model coordinates stay untouched.
+  if (state.running) drawFrame();
+});
 ui.inferenceToggle.disabled = !API_URL;
 ui.inferenceToggle.addEventListener('change', () => { void enableResearchInference(); });
 ui.exercise.addEventListener('change', () => {
@@ -439,5 +495,6 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', stopCamera);
 ui.help.textContent = TASKS[state.exercise].subtitle;
+updateCameraControls();
 renderModels();
 updateInspector();
