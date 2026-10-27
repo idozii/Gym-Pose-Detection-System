@@ -188,11 +188,18 @@ def _copy_selected(tar: tarfile.TarFile, member: tarfile.TarInfo, destination: P
 def selected_from_tar_archive(
     archive: Path, root: Path, *, split: str = "validation",
     limit: int = 3, annotations_csv: Path | None = None,
-    require_explicit_split: bool = False
+    require_explicit_split: bool = False,
+    selection_policy: str = "archive_order", selection_seed: int = 2026
 ) -> tuple[list[dict], str]:
     _require_tar(archive)
     if split not in MATCH_SPLITS or type(limit) is not int or not 1 <= limit <= 20:
         raise ValueError("Use a valid RepCount split and 1..20 selected videos")
+    if selection_policy not in ("archive_order", "stable_hash"):
+        raise ValueError("Unsupported RepCount video selection policy")
+    if type(selection_seed) is not int or not 0 <= selection_seed <= 2**32 - 1:
+        raise ValueError("Selection seed must be a nonnegative 32-bit integer")
+    if selection_policy == "stable_hash" and not require_explicit_split:
+        raise ValueError("Stable-hash selection requires an explicit source split")
     if annotations_csv is not None:
         if not annotations_csv.is_file() or annotations_csv.suffix.lower() != ".csv":
             raise ValueError("Expected original authors' annotation CSV")
@@ -202,6 +209,15 @@ def selected_from_tar_archive(
     else:
         source = _embedded_csv(archive, split)
     labels = {row["video"].lower(): row for row in parse_official_csv(source)}
+    # Choose from publisher annotations BEFORE decoding or evaluating any clip.
+    # Original archive_order remains untouched for M37/M39 reproducibility.
+    eligible_names = None
+    if selection_policy == "stable_hash":
+        salt = f"repcount-m40-train-v1:{selection_seed}:".encode("ascii")
+        ranked = sorted(labels, key=lambda name: (
+            hashlib.sha256(salt + name.encode("ascii")).digest(), name
+        ))
+        eligible_names = set(ranked[:limit])
     extracted = []
     copied = set()
     member_count = 0
@@ -216,6 +232,8 @@ def selected_from_tar_archive(
             continue
         key = path.name.lower()
         if key not in labels or not _member_matches_split(path, split):
+            continue
+        if eligible_names is not None and key not in eligible_names:
             continue
         # Development-only M39 requires proof from the TAR member path
         # itself that the video belongs to the requested publisher split.
