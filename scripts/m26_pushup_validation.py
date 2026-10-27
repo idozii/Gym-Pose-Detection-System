@@ -194,7 +194,7 @@ def evaluate_validation(original_csv: Path, manifest_path: Path,
         "upper_expanded": train_upper,
     }
     val_tables = {
-        "full_paired": val_full,
+        "full_paired": val_full.loc[paired],
         "upper_expanded": val_upper.loc[paired],
     }
 
