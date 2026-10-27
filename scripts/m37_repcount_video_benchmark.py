@@ -255,7 +255,13 @@ def fetch_small_squat_cohort(root: Path, *, split: str = "validation",
 
 
 def extract_pose_trace(video: Path, annotation: dict, *,
-                       max_duration_s: int = MAX_DURATION_S) -> dict:
+                       max_duration_s: int = MAX_DURATION_S,
+                       sample_ms: int = 400) -> dict:
+    # Existing M37/M39/M40 calls use exactly 400ms, preserving their policy.
+    # M41 may request 200ms to construct 400ms subsamples from identical
+    # pose-inference context; do not use a data-dependent sampling choice.
+    if type(sample_ms) is not int or sample_ms not in (200, 400):
+        raise ValueError("Pose sampling must be 200ms or 400ms")
     try:
         import cv2
         import mediapipe as mp
@@ -274,7 +280,7 @@ def extract_pose_trace(video: Path, annotation: dict, *,
         claimed_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         if claimed_frames <= 0 or claimed_frames > fps * max_duration_s + fps:
             raise ValueError("Source video frame count out of frozen 120s limit")
-        stride = max(1, round(fps * .4))
+        stride = max(1, round(fps * (sample_ms / 1000)))
         frames = []
         total = 0
         with mp.solutions.pose.Pose(
