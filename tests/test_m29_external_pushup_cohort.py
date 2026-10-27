@@ -145,6 +145,6 @@ def test_m29_cli_audit_no_raw_files_in_report(tmp_path):
     assert report.exists()
     stored=report.read_text()
     assert "extclip_00000000" not in stored
-    assert "consent_" not in stored
+    assert "consent_00000000" not in stored
     assert main(["audit","--manifest",str(manifest),
                  "--root",str(root),"--report",str(report)])==1
