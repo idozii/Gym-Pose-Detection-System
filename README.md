@@ -71,8 +71,9 @@ No fabricated labels, rep scores or production claims.
 ### M37 - Automatic RepCount real-video Squat evaluation (no user labeling)
 
 [M37 automated RepCount benchmark](docs/M37_REPCOUNT_REAL_VIDEO_EVALUATION.md)
-retrieves only a small, already-annotated **third-party academic-use**
-RepCount-A Squat subset (default three validation clips), extracts
+selectively reads an already-annotated RepCount-A Squat subset
+(default three validation clips) from the owner's author-hosted
+`RepCountA.tar.gz` or an eligible third-party mirror, extracts
 chronological local MediaPipe Python poses with OpenCV, and replays
 them through the **exact M34 JavaScript `RepCycleCounter`** to
 compare event timestamps against published cycle-frame bounds.
@@ -87,11 +88,23 @@ byte-level provenance or OHP/Row event ground truth is
 claimed by CI. No user-created CSV, manual webcam rep count,
 private data, model training or original M20 TEST access.
 
-On Ubuntu: `python -m pip install "huggingface_hub>=0.27,<2"`,
-then `python -m scripts.m37_repcount_video_benchmark --max-videos 3`
-from the root with your existing research venv and Node 22.
-Requires eligible research access to the third-party mirror
-and enough local disk/CPU for video pose extraction.
+On Ubuntu, for the inspected 8.9 GB archive with the built-in
+`LLSP/annotation/valid.csv`, run from the repo root with
+the existing research venv and Node 22:
+
+```bash
+python -m scripts.m37_repcount_video_benchmark \
+  --source-archive ~/Downloads/RepCountA.tar.gz \
+  --split validation --max-videos 3
+```
+
+No Hugging Face download or external CSV is required for this
+archive layout. The author's archive remains local; only
+selected clips are extracted. The old documented fallback
+`TransRAC/open_set/new_valid.csv` contains front-raise labels,
+not Squat, and should **not** be used for this pilot.
+Actual accuracy metrics remain pending an owner-machine
+run of the genuine annotated video pipeline.
 
 ---
 
