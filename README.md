@@ -68,6 +68,23 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M46 - Frozen M45 replication on unused TRAIN source videos
+
+[M46 frozen TRAIN source-file replication](docs/M46_FROZEN_UNUSED_TRAIN_REPLICATION.md)
+reuses the **unchanged M45 relative-excursion and M39 baseline**
+rules on fixed SHA256 TRAIN filename ranks 21-40 rather than
+the already-investigated first 20. M45's owner-run development
+cohort at 200ms yielded event F1 72.76% and count MAE 5.8,
+versus M39 F1 63.14% and MAE 7.9 (312 source GT reps).
+Those initial TRAIN results motivated freezing, **not**
+further parameter search. New cohort selection uses
+`--cohort-offset 20` and never borrows validation/TEST.
+Source-file disjointness is enforced; participant/session
+disjointness remains unknown. Negative-control specificity
+and external TEST performance remain unmeasured.
+
+---
+
 ### M45 - Experimental relative-excursion rep comparator (TRAIN only)
 
 [M45 relative excursion experiment](docs/M45_TRAIN_RELATIVE_EXCURSION_STUDY.md)
