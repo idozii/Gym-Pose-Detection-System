@@ -26,6 +26,8 @@ import subprocess
 import sys
 import tempfile
 
+from scripts.m37_repcount_archive import inspect_archive, selected_from_zip
+
 REPO = "momo321654/RepCountA-videos"
 REPO_TYPE = "dataset"
 MIRROR_CARD = "https://huggingface.co/datasets/momo321654/RepCountA-videos"
@@ -344,7 +346,7 @@ def _node_replay(trace_path: Path, output_path: Path,
 
 def summarise(results: list[dict], exclusions: Counter,
               *, split: str, revision: str, source_hash: str,
-              candidates: int) -> dict:
+              candidates: int, source_mode: str = "huggingface_third_party_mirror") -> dict:
     if not results:
         raise ValueError(
             "No RepCount Squat video was successfully decoded and evaluated; "
@@ -359,11 +361,17 @@ def summarise(results: list[dict], exclusions: Counter,
     return {
         "study": "M37 pre-registered heuristic M34 Squat real video evaluation",
         "evaluation": PROTOCOL,
-        "source": REPO,
+        "source": (
+            "RepCount-A author-hosted archive (user-provided; content unverified)"
+            if source_mode == "author_archive"
+            else "RepCount-A local copies (user-provided; content unverified)"
+            if source_mode == "local_mirror" else REPO
+        ),
+        "source_mode": source_mode,
         "upstream_official_dataset": ORIGINAL,
         "mirror_card": MIRROR_CARD,
         "source_split": split,
-        "mirror_revision_requested": revision,
+        "mirror_revision_requested": revision if source_mode == "huggingface_third_party_mirror" else None,
         "annotation_sha256": source_hash,
         "squat_candidate_videos": candidates,
         "squat_evaluated_videos": n,
@@ -412,7 +420,9 @@ def summarise(results: list[dict], exclusions: Counter,
 def run(*, split: str, limit: int, root: Path,
         report_path: Path, revision: str = "main",
         download_fn=None, trace_fn=None, replay_fn=None,
-        local_source: Path | None = None) -> dict:
+        local_source: Path | None = None,
+        source_zip: Path | None = None,
+        annotations_csv: Path | None = None) -> dict:
     if report_path.exists():
         raise FileExistsError("M37 output report exists; refusing overwrite")
     # The Hugging Face downloader creates root for remote mode, but
@@ -420,10 +430,21 @@ def run(*, split: str, limit: int, root: Path,
     root.mkdir(parents=True, exist_ok=True)
     if not 1 <= limit <= 20:
         raise ValueError("Only 1..20 clips allowed for first M37 pilot")
-    if local_source is not None:
+    if source_zip is not None and local_source is not None:
+        raise ValueError("Choose --source-zip OR --local-source, not both")
+    if annotations_csv is not None and source_zip is None:
+        raise ValueError("--annotations-csv is valid only with --source-zip")
+    if source_zip is not None:
+        selected, source_hash = selected_from_zip(
+            source_zip, root, split=split, limit=limit,
+            annotations_csv=annotations_csv
+        )
+        source_mode = "author_archive"
+    elif local_source is not None:
         selected, source_hash = fetch_local_squat_cohort(
             root, local_source, split=split, limit=limit
         )
+        source_mode = "local_mirror"
     else:
         if download_fn is None:
             probe_huggingface_source(split=split, revision=revision)
@@ -431,6 +452,7 @@ def run(*, split: str, limit: int, root: Path,
             root, split=split, limit=limit, revision=revision,
             download_fn=download_fn
         )
+        source_mode = "huggingface_third_party_mirror"
     extractor = trace_fn or extract_pose_trace
     replay = replay_fn or _node_replay
     exclusions = Counter()
@@ -457,7 +479,8 @@ def run(*, split: str, limit: int, root: Path,
                 exclusions[code] += 1
     report = summarise(
         results, exclusions, split=split, revision=revision,
-        source_hash=source_hash, candidates=len(selected)
+        source_hash=source_hash, candidates=len(selected),
+        source_mode=source_mode
     )
     report_path.parent.mkdir(parents=True, exist_ok=True)
     with report_path.open("x", encoding="utf-8") as handle:
@@ -475,13 +498,23 @@ def main(argv=None):
                         help="Verify the HF repository and exact annotation/video paths; download nothing")
     parser.add_argument("--local-source", type=Path,
                         help="Existing legally obtained RepCount-A mirrored-layout files, no Hugging Face API")
+    parser.add_argument("--source-zip", type=Path,
+                        help="Downloaded original-author RepCountA ZIP containing split video files")
+    parser.add_argument("--annotations-csv", type=Path,
+                        help="Author's original RepCount-A split CSV if outside ZIP (no manual labels)")
+    parser.add_argument("--inspect-source-zip", type=Path,
+                        help="Inspect archive layout/annotation paths without extracting any video")
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     args = parser.parse_args(argv)
     try:
-        if args.check_source:
-            if args.local_source is not None:
-                raise ValueError("Choose only one of --check-source or --local-source")
+        if args.inspect_source_zip is not None:
+            if args.check_source or args.source_zip is not None or args.local_source is not None:
+                raise ValueError("--inspect-source-zip cannot be combined with a benchmark source")
+            result = inspect_archive(args.inspect_source_zip, split=args.split)
+        elif args.check_source:
+            if args.local_source is not None or args.source_zip is not None:
+                raise ValueError("Choose only one data source")
             result = probe_huggingface_source(
                 split=args.split, revision=args.revision
             )
@@ -489,7 +522,8 @@ def main(argv=None):
             result = run(
                 split=args.split, limit=args.max_videos,
                 root=args.root, report_path=args.report,
-                revision=args.revision, local_source=args.local_source
+                revision=args.revision, local_source=args.local_source,
+                source_zip=args.source_zip, annotations_csv=args.annotations_csv
             )
     except (OSError, RuntimeError, ValueError, TypeError, json.JSONDecodeError) as error:
         print(f"M37 stopped: {error}", file=sys.stderr)
