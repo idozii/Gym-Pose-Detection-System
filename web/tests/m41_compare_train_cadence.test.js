@@ -43,7 +43,7 @@ test('M41 sees a temporal excursion unavailable in paired every-other downsample
 test('M41 handles publisher zero-rep negative controls without invented recall', () => {
   const report = pairedCadenceComparison(makeTrace(Array(20).fill(170), []));
   for (const name of ['dense_200ms', 'subsample_400ms']) {
-    assert.equal(report[name].annotated_rep_count, 0);
+    assert.equal(report[name].annotation_rep_count, 0);
     assert.equal(report[name].low_to_high.predicted_count, 0);
     assert.equal(report[name].low_to_high.event_recall, null);
     assert.equal(report[name].low_to_high.event_f1, null);
