@@ -108,19 +108,24 @@ def _aggregate(entries: list[dict], name: str) -> dict:
 
 
 def run(*, archive: Path, root: Path, report_path: Path, limit: int = 5,
-        select_fn=None, extract_fn=None, compare_fn=None) -> dict:
+        select_fn=None, extract_fn=None, compare_fn=None,
+        selection_policy: str = "archive_order", selection_seed: int = 2026) -> dict:
     if report_path.exists():
         raise FileExistsError("M39 output exists; refusing overwrite")
     if type(limit) is not int or not 1 <= limit <= 20:
         raise ValueError("M39 permits only 1..20 deterministic publisher TRAIN videos")
     if not archive.is_file() or not archive.name.lower().endswith((".tar.gz", ".tgz")):
         raise ValueError("M39 requires existing authorized RepCountA.tar.gz")
+    if selection_policy not in ("archive_order", "stable_hash"):
+        raise ValueError("Unknown M39 selection policy")
+    if type(selection_seed) is not int or not 0 <= selection_seed <= 2**32 - 1:
+        raise ValueError("M39 selection seed must be a nonnegative 32-bit integer")
     root.mkdir(parents=True, exist_ok=True)
     select = select_fn or selected_from_tar_archive
-    cohort, source_hash = select(
-        archive, root, split="train", limit=limit,
-        require_explicit_split=True
-    )
+    options = {"split": "train", "limit": limit, "require_explicit_split": True}
+    if selection_policy == "stable_hash":
+        options.update(selection_policy=selection_policy, selection_seed=selection_seed)
+    cohort, source_hash = select(archive, root, **options)
     if not isinstance(source_hash, str) or len(source_hash) != 64:
         raise ValueError("M39 requires original TRAIN annotation SHA256")
     collected = []
@@ -151,6 +156,9 @@ def run(*, archive: Path, root: Path, report_path: Path, limit: int = 5,
         "source_mode": "user_provided_author_archive_provenance_unverified",
         "source_split": "train",
         "source_annotation_sha256": source_hash,
+        "selection_policy": selection_policy,
+        "selection_seed": selection_seed if selection_policy == "stable_hash" else None,
+        "requested_max_videos": limit,
         "candidate_videos": len(cohort),
         "evaluated_videos": len(collected),
         "excluded_videos": len(cohort) - len(collected),
@@ -171,7 +179,8 @@ def run(*, archive: Path, root: Path, report_path: Path, limit: int = 5,
         "inference_limits": [
             "TRAIN cohort only: neither publisher validation nor TEST touched.",
             "The low-to-high rule is an untrained developmental baseline.",
-            "Video selection follows source archive order; small N is not population inference.",
+            "Video selection uses a deterministic development-only policy; small N is not population inference.",
+            "Hash-selected filenames do NOT establish participant-disjoint sampling.",
             "Publisher annotation/video synchronization and browser/Python estimator parity unverified.",
             "No exercise form correctness or injury-safety classification.",
             "Original pose traces and video names never written to the aggregate JSON."
@@ -191,12 +200,17 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-archive", required=True, type=Path)
     parser.add_argument("--max-videos", type=int, default=5)
+    parser.add_argument("--selection-policy", choices=("archive_order", "stable_hash"),
+                        default="archive_order")
+    parser.add_argument("--selection-seed", type=int, default=2026)
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     args = parser.parse_args(argv)
     try:
         report = run(archive=args.source_archive, root=args.root,
-                     report_path=args.report, limit=args.max_videos)
+                     report_path=args.report, limit=args.max_videos,
+                     selection_policy=args.selection_policy,
+                     selection_seed=args.selection_seed)
     except (OSError, RuntimeError, ValueError, TypeError,
             json.JSONDecodeError) as error:
         print(f"M39 stopped: {error}", file=sys.stderr)
