@@ -132,6 +132,14 @@ occurs, there is no honest six-model free cloud deployment on this Render
 plan without further quantization, reducing memory/feature runtime, or
 choosing an alternative free resource with sufficient RAM.
 
+**Basic backend overload protection** is built in: set
+\`POSE_SCORE_GLOBAL_10S_LIMIT=30\` on the Render Free environment
+(default 0 = disabled for local development). This sets a shared 30/10-second
+request budget and maximum two concurrent scoring requests; requests over
+the budget get HTTP 429. No IPs, user identities or pose coordinates are
+stored for this gate. It is **not distributed rate limiting**, DDoS mitigation
+or authentication, and shared quotas can reject simultaneous viewers.
+
 **Before enabling public traffic** protect CPU and abuse: the existing
 browser paces to 2 requests/sec and the API has CORS/body caps, but these
 **do not** stop direct nonbrowser spam. Implement/enable appropriate
