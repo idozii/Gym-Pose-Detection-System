@@ -189,13 +189,18 @@ def selected_from_tar_archive(
     archive: Path, root: Path, *, split: str = "validation",
     limit: int = 3, annotations_csv: Path | None = None,
     require_explicit_split: bool = False,
-    selection_policy: str = "archive_order", selection_seed: int = 2026
+    selection_policy: str = "archive_order", selection_seed: int = 2026,
+    count_filter: str = "all"
 ) -> tuple[list[dict], str]:
     _require_tar(archive)
     if split not in MATCH_SPLITS or type(limit) is not int or not 1 <= limit <= 20:
         raise ValueError("Use a valid RepCount split and 1..20 selected videos")
     if selection_policy not in ("archive_order", "stable_hash"):
         raise ValueError("Unsupported RepCount video selection policy")
+    if count_filter not in ("all", "zero"):
+        raise ValueError("Unsupported publisher rep-count filter")
+    if count_filter != "all" and (split != "train" or not require_explicit_split):
+        raise ValueError("Rep-count selection filter requires an explicit TRAIN split")
     if type(selection_seed) is not int or not 0 <= selection_seed <= 2**32 - 1:
         raise ValueError("Selection seed must be a nonnegative 32-bit integer")
     if selection_policy == "stable_hash" and not require_explicit_split:
@@ -209,6 +214,17 @@ def selected_from_tar_archive(
     else:
         source = _embedded_csv(archive, split)
     labels = {row["video"].lower(): row for row in parse_official_csv(source)}
+    # M42: strict negatives from publisher count=0 and EMPTY paired bounds.
+    # Filter annotations BEFORE deterministic filename selection or decoding.
+    # Never infer a negative from missing/corrupt pose or an unlabeled video.
+    if count_filter == "zero":
+        labels = {name: row for name, row in labels.items()
+                  if row["annotated_count"] == 0 and not row["cycle_bounds_frames"]}
+        if not labels:
+            raise ValueError(
+                "No publisher-annotated zero-rep Squat examples in TRAIN CSV; "
+                "cannot run an M42 negative-control experiment"
+            )
     # Choose from publisher annotations BEFORE decoding or evaluating any clip.
     # Original archive_order remains untouched for M37/M39 reproducibility.
     eligible_names = None
