@@ -1,4 +1,4 @@
-# Gym Pose Detection — Experimental Fitness-AQA Research Viewer
+# Gym Pose Detection - Experimental Fitness-AQA Research Viewer
 
 **Research-only software prototype, not a validated fitness coach or
 medical/injury-prevention detector.**
@@ -122,7 +122,7 @@ requires HTTPS/localhost and permission.
 
 ---
 
-### Research release source integrity — M17B
+### Research release source integrity - M17B
 
 The owner confirmed **218 tests passed** and all **six** trusted local
 original-source error models loaded on M17A. M17B checks that
@@ -143,7 +143,7 @@ newly trained source-label RF artifacts or silently deleted.
 
 [Release checklist, older OHP PR reconciliation, and handoff](docs/M17B_RELEASE_AUDIT_AND_HANDOFF.md).
 
-### Research release candidate — M17
+### Research release candidate - M17
 
 [Read the M17 experimental results, original source-label tables,
 real webcam runtime evidence, privacy scope, historical TEST exposure,
@@ -405,12 +405,12 @@ curvature.
 
 ---
 
-## Milestone 14C: Barbell Row shoulder–hip 20-feature extraction
+## Milestone 14C: Barbell Row shoulder-hip 20-feature extraction
 
 The source TRAIN/VAL PR #22 audit established that requiring knees
-and ankles was a major cause of the earlier **4–5%** Barbell Row pose
+and ankles was a major cause of the earlier **4-5%** Barbell Row pose
 coverage. On equal-size label-stratified audit subsets, a strict
-shoulder+hip four-joint gate admitted approximately **68–75%** of
+shoulder+hip four-joint gate admitted approximately **68-75%** of
 images per task/split. These sample rates are **not** model accuracy.
 
 A new independent `barbell-row-torso4-image-20-v1` schema uses only
@@ -436,7 +436,7 @@ measurement or reliable real-time coaching.
 ## Milestone 14B prerequisite: Barbell Row Pose Coverage Audit
 
 The original source Barbell Row TRAIN/VAL image extraction succeeded,
-but strict 8-joint MediaPipe pose coverage was only **4–5%** across
+but strict 8-joint MediaPipe pose coverage was only **4-5%** across
 the two tasks. The source lum-bar validation subset retained only
 **8 positive error images**. Training a classifier now would risk
 substantial source selection bias.

@@ -1,10 +1,10 @@
-# Milestone 14C — Barbell Row shoulder–hip-only static image pose extraction
+# Milestone 14C - Barbell Row shoulder-hip-only static image pose extraction
 
 ## Evidence from the owner's M14B source-image audit
 
 The dataset is IMAGE-based, with publisher train/val/test **specific to each
 target**, not an OHP video sequence. The real original full extraction of
-8-joint/32-feature images retained only 4.1–4.9% of task-selected images,
+8-joint/32-feature images retained only 4.1-4.9% of task-selected images,
 including just **8 positive lumbar validation** samples.
 
 The owner ran PR #22's train/validation source-image annotation-stratified

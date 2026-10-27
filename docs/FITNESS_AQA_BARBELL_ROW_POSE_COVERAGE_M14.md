@@ -1,4 +1,4 @@
-# Milestone 14B prerequisite — Barbell Row pose coverage failure audit
+# Milestone 14B prerequisite - Barbell Row pose coverage failure audit
 
 ## User's real source dataset results (M14A / PR #21)
 
@@ -69,12 +69,12 @@ The full source extraction above remains the population reference.
 
 | Candidate gate | Required joints | Minimum visibility | Is its feature schema already implemented? |
 | --- | --- | --- | --- |
-| `all8_050_production` | shoulders, hips, knees, ankles | 0.50 | YES — original 32 features |
+| `all8_050_production` | shoulders, hips, knees, ankles | 0.50 | YES - original 32 features |
 | `all8_035` | Same eight | 0.35 | Could reuse 32 features, but reliability unverified |
 | `all8_025` | Same eight | 0.25 | Higher pose-error risk |
-| `six_no_ankles_050` | shoulders, hips, knees | 0.50 | NO — would require separate new features |
-| `torso4_050` | shoulders, hips only | 0.50 | NO — needs new feature schema |
-| `torso4_035` | shoulders, hips only | 0.35 | NO — needs new feature schema |
+| `six_no_ankles_050` | shoulders, hips, knees | 0.50 | NO - would require separate new features |
+| `torso4_050` | shoulders, hips only | 0.50 | NO - needs new feature schema |
+| `torso4_035` | shoulders, hips only | 0.35 | NO - needs new feature schema |
 
 Each policy reports source-label positive and negative acceptance
 separately, and how many new positives/negatives it hypothetically

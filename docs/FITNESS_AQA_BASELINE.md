@@ -75,7 +75,7 @@ python -m scripts.benchmark_fitness_aqa_errors
 ```
 
 The runner:
-- reads **train and val** CSVs only — never test;
+- reads **train and val** CSVs only - never test;
 - preserves `video_id` and publisher clip splits (not verified subject splits);
 - trains separate classifiers for `error_knees_forward` and `error_knees_inward`;
 - refuses training when either split has fewer than 20 positive frames,
