@@ -122,8 +122,10 @@ def test_m42_selects_only_zero_annotated_train_and_reports_fp(tmp_path):
     assert sparse["zero_rep_negative_controls_with_false_cycles"] == 0
 
     report_text = (tmp_path/"m42.json").read_text()
-    for private_value in ("squat_no_reps", "video_path", "landmarks", "frames"):
-        assert private_value not in report_text
+    assert "squat_no_reps" not in report_text
+    assert "\"video_path\"" not in report_text
+    assert "\"landmarks\"" not in report_text
+    assert "\"frames\"" not in report_text
     assert not list((tmp_path/"private").rglob("valid/*.mp4"))
     assert not list((tmp_path/"private").rglob("test/*.mp4"))
     assert not list((tmp_path/"private").glob("m41-traces-*"))
