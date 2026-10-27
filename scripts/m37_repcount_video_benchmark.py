@@ -27,6 +27,7 @@ import sys
 import tempfile
 
 from scripts.m37_repcount_archive import inspect_archive, selected_from_zip
+from scripts.m37_repcount_tar import inspect_tar_archive, selected_from_tar_archive
 
 REPO = "momo321654/RepCountA-videos"
 REPO_TYPE = "dataset"
@@ -435,11 +436,18 @@ def run(*, split: str, limit: int, root: Path,
     if annotations_csv is not None and source_zip is None:
         raise ValueError("--annotations-csv is valid only with --source-zip")
     if source_zip is not None:
-        selected, source_hash = selected_from_zip(
-            source_zip, root, split=split, limit=limit,
-            annotations_csv=annotations_csv
-        )
-        source_mode = "author_archive"
+        if source_zip.name.lower().endswith((".tar.gz", ".tgz")):
+            selected, source_hash = selected_from_tar_archive(
+                source_zip, root, split=split, limit=limit,
+                annotations_csv=annotations_csv
+            )
+            source_mode = "author_archive"
+        else:
+            selected, source_hash = selected_from_zip(
+                source_zip, root, split=split, limit=limit,
+                annotations_csv=annotations_csv
+            )
+            source_mode = "author_archive"
     elif local_source is not None:
         selected, source_hash = fetch_local_squat_cohort(
             root, local_source, split=split, limit=limit
@@ -498,12 +506,12 @@ def main(argv=None):
                         help="Verify the HF repository and exact annotation/video paths; download nothing")
     parser.add_argument("--local-source", type=Path,
                         help="Existing legally obtained RepCount-A mirrored-layout files, no Hugging Face API")
-    parser.add_argument("--source-zip", type=Path,
-                        help="Downloaded original-author RepCountA ZIP containing split video files")
+    parser.add_argument("--source-zip", "--source-archive", type=Path,
+                        help="Downloaded original-author RepCountA ZIP or TAR.GZ archive (selective videos)")
     parser.add_argument("--annotations-csv", type=Path,
                         help="Author's original RepCount-A split CSV if outside ZIP (no manual labels)")
-    parser.add_argument("--inspect-source-zip", type=Path,
-                        help="Inspect archive layout/annotation paths without extracting any video")
+    parser.add_argument("--inspect-source-zip", "--inspect-source-archive", type=Path,
+                        help="Inspect original ZIP or TAR.GZ without extracting video; TAR.GZ inspection scans the entire compressed stream")
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     args = parser.parse_args(argv)
@@ -511,7 +519,10 @@ def main(argv=None):
         if args.inspect_source_zip is not None:
             if args.check_source or args.source_zip is not None or args.local_source is not None:
                 raise ValueError("--inspect-source-zip cannot be combined with a benchmark source")
-            result = inspect_archive(args.inspect_source_zip, split=args.split)
+            if args.inspect_source_zip.name.lower().endswith((".tar.gz", ".tgz")):
+                result = inspect_tar_archive(args.inspect_source_zip, split=args.split)
+            else:
+                result = inspect_archive(args.inspect_source_zip, split=args.split)
         elif args.check_source:
             if args.local_source is not None or args.source_zip is not None:
                 raise ValueError("Choose only one data source")
