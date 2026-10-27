@@ -16,6 +16,27 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M24 - Compare new Push-up RFs on exactly matched TRAIN-only clips
+
+Real M23 owner extraction recovered **14 previously rejected front-view
+Push-up clips** in original TRAIN: **69/84** accepted using full-body
+admission, versus **83/84** using upper-body admission, with no file
+failures. Both original publisher good/bad labels gained seven
+front-view clips.
+
+[M24 participant-heldout paired RF evaluation](docs/M24_PUSHUP_GROUPED_CV.md)
+compares original full-admitted video features against upper-admitted
+video features on **identical held-out common clips**, using 5-fold
+subject-separated cross-validation exclusively within the original
+frozen TRAIN subjects. Expanded upper-gate training also uses
+newly recovered TRAIN-only clips; their extra held-out predictions
+are reported separately instead of changing the common denominator.
+
+This is an offline analysis and **does not touch the original M20
+validation/TEST scoring or deployed Fitness-AQA detectors**.
+
+---
+
 ### M23 - Frozen Push-up participant split and new upper-body clip schema
 
 Owner M22 TRAIN ablation: baseline original full-body accepted
