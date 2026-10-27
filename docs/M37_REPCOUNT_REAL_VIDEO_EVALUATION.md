@@ -182,10 +182,10 @@ source .venv-m20/bin/activate
 python -m pytest tests/test_m37_repcount_video_benchmark.py -q
 npm test --prefix web
 
-python -m scripts.m37_repcount_video_benchmark \\
-  --source-archive ~/Downloads/RepCountA.tar.gz \\
-  --split validation --max-videos 3 \\
-  --root data/external/m37_repcount_diag_pilot \\
+python -m scripts.m37_repcount_video_benchmark \
+  --source-archive ~/Downloads/RepCountA.tar.gz \
+  --split validation --max-videos 3 \
+  --root data/external/m37_repcount_diag_pilot \
   --report data/processed/m37_repcount_squat_observability_pilot.json
 python - <<'PY'
 import json
