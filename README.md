@@ -30,6 +30,26 @@ change the Vercel production site.
 
 ---
 
+### M31 - Bicep Curl participant-paired stability of temporal features
+
+Real owner M30 (15 original TRAIN subjects, 90 Bicep Curl clips):
+baseline 264-feature RF yielded **60.00%** Balanced Accuracy
+in both GroupKFold(5) and LOSO. Temporal 280 improved Group5
+to **62.22%**, but worsened LOSO to **57.78%**, with lower
+bad recall. Tracking-proxy 268 and kinematic 276 also
+failed to improve LOSO versus baseline.
+
+[M31 subject robustness audit](docs/M31_CURL_PAIRED_SUBJECT_STABILITY.md)
+re-runs these fixed original TRAIN-only models on identical
+video/participant-heldout folds, exactly verifies the earlier
+M30 report, and reports approximate paired 1000-draw
+participant-bootstrap differences and anonymous per-subject
+better/equal/worse counts. Neither source video, original
+VAL/TEST samples nor public backend are accessed.
+No new model performance claim is made until locally run.
+
+---
+
 ### M30 - Bicep Curl temporal TRAIN research + Push-up local web preview
 
 **Push-up is now selectable on the website** as an on-device,
