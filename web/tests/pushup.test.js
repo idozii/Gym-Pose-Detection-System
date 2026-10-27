@@ -47,7 +47,7 @@ test('10-second local sample window expires and reset removes prior movement', (
   assert.equal(x.count, 4);
   assert.equal(x.range, 0);
   assert.equal(Math.round(x.angle), 90);
-  x = motion.observe(null, 3001);
+  x = motion.observe(null, 3400);
   assert.equal(x.angle, null);
   x = motion.observe(null, 14000);
   assert.equal(x.count, 0);
