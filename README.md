@@ -30,6 +30,31 @@ change the Vercel production site.
 
 ---
 
+### M36 - Measure real rep-count error before any form grading
+
+M34 observed cycle counts worked reasonably well in the
+owner's informal webcam test, and M35 now provides
+non-diagnostic local feedback. [M36 Rep Counting Validation](docs/M36_REP_COUNT_VALIDATION.md)
+adds a **local, consented, manually annotated session audit**:
+compare independently counted whole-set repetitions with
+the M34 website's observed cycles, for Squat, OHP and
+Barbell Row across front/side/diagonal camera views.
+It reports per-set MAE/bias/RMSE, exact count agreement,
+within-one agreement, explicit tracking abstentions,
+and anonymous per-exercise/view aggregates.
+
+Session count agreement **cannot** establish rep-level
+precision/recall/F1 or form correctness. This tool
+therefore never invents those figures. Optional
+descriptive bootstrap intervals resample whole people;
+a single-user pilot remains exploratory. All input
+sessions are stored locally within Git-ignored
+`data/external/` and only aggregate results in
+`data/processed/`. No model, original VAL/TEST,
+hosted inference or web camera UX is changed.
+
+---
+
 ### M35 - Explainable movement feedback, not a form/safety verdict
 
 The owner tested M34 observed cycle counts on their Ubuntu
