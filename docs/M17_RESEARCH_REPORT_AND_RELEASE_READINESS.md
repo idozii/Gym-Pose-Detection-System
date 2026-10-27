@@ -1,4 +1,4 @@
-# Milestone 17A — Research Report and Release Candidate Readiness
+# Milestone 17A - Research Report and Release Candidate Readiness
 
 **Status:** *experimental research prototype*, **NOT** a validated
 fitness-safety product, clinical device, or reproducible academic
@@ -26,7 +26,7 @@ Original error-label 0 means **absence of that particular named
 annotation**, not globally correct technique. Barbell Row's
 shoulder/hip landmarks **cannot measure lumbar spinal curvature**.
 
-## Evidence — original publisher validation, exploratory only
+## Evidence - original publisher validation, exploratory only
 
 The owner ran these training/validation scripts locally with full
 source features. Numbers are **not independent-person performance**
@@ -34,10 +34,10 @@ and not prospective live-webcam error-detection accuracy.
 
 | Original source target | Pose coverage (train/val) | Validation AP | AP prevalence reference | Macro-F1 | Error precision | Error recall | FPR |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Squat — knees forward | 50.21% / 52.12% | .3769 | .2175 | .6212 | .3676 | .7850 | **.3753** |
-| Squat — knees inward | 50.21% / 52.12% | .1600 | .0407 | .5910 | .1961 | **.2500** | .0434 |
-| Barbell Row — torso angle | 70.14% / 69.77% | .4460 | .1118 | .6908 | .4408 | .4650 | .0743 |
-| Barbell Row — lumbar | 70.20% / 70.86% | .5056 | .1591 | .6900 | .6133 | **.3665** | .0437 |
+| Squat - knees forward | 50.21% / 52.12% | .3769 | .2175 | .6212 | .3676 | .7850 | **.3753** |
+| Squat - knees inward | 50.21% / 52.12% | .1600 | .0407 | .5910 | .1961 | **.2500** | .0434 |
+| Barbell Row - torso angle | 70.14% / 69.77% | .4460 | .1118 | .6908 | .4408 | .4650 | .0743 |
+| Barbell Row - lumbar | 70.20% / 70.86% | .5056 | .1591 | .6900 | .6133 | **.3665** | .0437 |
 
 OHP source task-specific static vs causal temporal RF investigation
 (separate train/validation populations per task):
@@ -105,7 +105,7 @@ not guarantee robust operation across subjects, positions or lighting.
   has **not** been verified as independent clip/athlete identity.
 - **Historical caveat:** an earlier pilot described in
   `docs/FITNESS_AQA_BASELINE.md` reports processing *eight source
-  TEST videos*. Later M13–M16 extraction/modeling code was designed
+  TEST videos*. Later M13-M16 extraction/modeling code was designed
   to **not** access original publisher TEST, and M16D reported
   `publisher_test_accessed=false`; nevertheless the entire
   repository history must **not** claim that source TEST was

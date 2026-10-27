@@ -1,4 +1,4 @@
-# Milestone 14D — Barbell Row Static RF Baselines (publisher train+val only)
+# Milestone 14D - Barbell Row Static RF Baselines (publisher train+val only)
 
 The owner completed M14C's **full, real-data** Barbell Row torso4 extraction:
 132 tests passed; 12,729 distinct original TRAIN and 2,736 distinct
@@ -10,7 +10,7 @@ images decoded and 0 exact-image cross-task split conflicts.
 | Torso angle error | 8,333/11,881 = **70.14%** | **758** | 1,789/2,564 = **69.77%** | **200** |
 | Lumbar error | 7,273/10,360 = **70.20%** | **1,023** | 1,578/2,227 = **70.86%** | **251** |
 
-M14A's old eight-joint pose extractor achieved 4–5% coverage, and
+M14A's old eight-joint pose extractor achieved 4-5% coverage, and
 only 8 positive lumbar validation samples. The new shoulder/hip
 **four-joint** extractor genuinely uses ONLY those four reliable
 landmarks (20-feature schema) and keeps far more original-label

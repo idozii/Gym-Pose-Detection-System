@@ -77,4 +77,4 @@ The recommended subsequent research work is:
    temporal alarm debouncing only after reliability evaluation.
 
 `error_knees_inward=0` / `error_knees_forward=0` means the named error
-was not annotated in that interval — not that the squat was perfect.
+was not annotated in that interval - not that the squat was perfect.

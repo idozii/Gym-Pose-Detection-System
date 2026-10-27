@@ -1,4 +1,4 @@
-# Milestone 14A — Fitness-AQA Barbell Row image pose extraction
+# Milestone 14A - Fitness-AQA Barbell Row image pose extraction
 
 ## Why Row requires a separate pipeline
 

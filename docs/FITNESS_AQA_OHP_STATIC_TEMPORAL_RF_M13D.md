@@ -1,4 +1,4 @@
-# Milestone 13D — OHP Static vs Causal Temporal RF (train-calibrated)
+# Milestone 13D - OHP Static vs Causal Temporal RF (train-calibrated)
 
 This is a **source-video-group-aware, exploratory** benchmark for the two
 genuinely different OHP task-specific feature schemas from PR #18.

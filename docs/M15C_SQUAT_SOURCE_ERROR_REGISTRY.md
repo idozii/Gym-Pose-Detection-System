@@ -1,4 +1,4 @@
-# Milestone 15C — genuine Fitness-AQA Squat named-error RFs, six-slot registry
+# Milestone 15C - genuine Fitness-AQA Squat named-error RFs, six-slot registry
 
 ## Owner-confirmed M15B status
 

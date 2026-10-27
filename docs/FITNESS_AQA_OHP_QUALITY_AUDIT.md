@@ -1,4 +1,4 @@
-# Milestone 13B prerequisite — OHP pose gate failure audit
+# Milestone 13B prerequisite - OHP pose gate failure audit
 
 ## Owner's **complete** source TRAIN+VALIDATION extraction
 

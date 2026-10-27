@@ -1,4 +1,4 @@
-# Milestone 16A — local real-time research viewer (NOT a fitness coach)
+# Milestone 16A - local real-time research viewer (NOT a fitness coach)
 
 ## Prerequisite: the owner's M15C model/registry result
 

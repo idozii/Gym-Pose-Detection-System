@@ -19,7 +19,7 @@ improved apparent macro-F1, but makes evaluation optimistic for threshold select
    with `GroupShuffleSplit` (seed 42, 25% video groups for calibration).
 2. Fit a temporary RF on fit clips, predict calibration clips and select
    a threshold using **train-only** calibration macro-F1 (predeclared
-   threshold grid 0.05–0.95 in increments of 0.05).
+   threshold grid 0.05-0.95 in increments of 0.05).
 3. Fit final RF on the entire source train data, using that threshold.
 4. Report final performance on the **untouched publisher validation clips**.
    The source test clips are never read.

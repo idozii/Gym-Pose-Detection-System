@@ -1,4 +1,4 @@
-# Browser Research Viewer — Web MVP (Vercel-ready static frontend)
+# Browser Research Viewer - Web MVP (Vercel-ready static frontend)
 
 ## What actually works in this version
 
@@ -110,7 +110,7 @@ privacy and error abstention behavior are demonstrated.
 | No publisher TEST use | YES, no dataset import |
 | Camera video uploads | NONE implemented |
 | Pose visibility | Browser-only 3-exercise UI |
-| Six RF inference | **NO — not deployed** |
+| Six RF inference | **NO - not deployed** |
 | Original Python research viewer | Unmodified |
 | Source-label safety claims | Explicitly disallowed |
 | Live Vercel URL | Pending actual deployment |

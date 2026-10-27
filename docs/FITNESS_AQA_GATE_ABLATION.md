@@ -22,7 +22,7 @@ inward-negative frames **in this stratified audit only**.
 This is sufficient motivation to test 0.35, **not evidence** it will
 improve model quality.
 
-## Exact next experiment — do not overwrite the original 0.50 dataset
+## Exact next experiment - do not overwrite the original 0.50 dataset
 
 From the repository root:
 ```bash

@@ -1,4 +1,4 @@
-# Milestone 2 — Dataset provenance and subject-independent benchmark
+# Milestone 2 - Dataset provenance and subject-independent benchmark
 
 The code and tests implement a **workflow**, not a claim that the current squat model
 generalizes. No real user data or measured real-world scores ship with this PR.

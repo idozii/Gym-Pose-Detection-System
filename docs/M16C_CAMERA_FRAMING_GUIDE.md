@@ -1,4 +1,4 @@
-# Milestone 16C — live camera framing checklist for source-pose quality
+# Milestone 16C - live camera framing checklist for source-pose quality
 
 ## Grounded in the owner's real M16B 120-frame live webcam result
 

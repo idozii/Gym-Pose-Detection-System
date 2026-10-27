@@ -1,4 +1,4 @@
-# Milestone 15B — OHP source error feature adapter is integrated into the offline registry
+# Milestone 15B - OHP source error feature adapter is integrated into the offline registry
 
 ## Why the owner's M15A output initially reported missing OHP schemas
 

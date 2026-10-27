@@ -60,7 +60,7 @@ dataset provenance and lightweight metric reports in Git. Keep original raw vide
 and frames in external storage.
 
 
-## After downloading the labeled Squat video ZIP — next steps
+## After downloading the labeled Squat video ZIP - next steps
 
 Only 5 tiny annotation/split JSON files are needed to validate the video archive;
 these files are supplied by the original dataset publisher.

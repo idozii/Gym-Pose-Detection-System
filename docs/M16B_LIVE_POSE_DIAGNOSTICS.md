@@ -1,4 +1,4 @@
-# Milestone 16B — explain live pose abstentions & measure runtime
+# Milestone 16B - explain live pose abstentions & measure runtime
 
 ## Owner-run M16A evidence
 

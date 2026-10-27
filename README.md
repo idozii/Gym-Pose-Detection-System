@@ -1,4 +1,4 @@
-# Gym Pose Detection — Experimental Fitness-AQA Research Viewer
+# Gym Pose Detection - Experimental Fitness-AQA Research Viewer
 
 **Research-only software prototype, not a validated fitness coach or
 medical/injury-prevention detector.**
@@ -15,6 +15,25 @@ Squat webcam run with 360 successful source-label calls**, observed
 feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
+
+### M19 mobile cameras, premium studio UI and new dataset research
+
+The mobile site now offers Front / Selfie and Rear / Observer camera
+selection; mirror on/off flips **only the front preview**, not the numeric
+MediaPipe landmarks supplied to the experimental source-label models.
+Switching physical cameras stops the prior stream and resets research
+inference consent. A full responsive movement-studio redesign highlights
+camera controls, joint visibility and model status on mobile.
+
+Tracked human-readable docs and source use simple ASCII hyphen instead of
+Unicode en or em dashes. Valid CLI `--flags` and CSS `--properties` are
+preserved. CI enforces this convention.
+
+[M19 mobile camera and UX acceptance](docs/M19_MOBILE_CAMERA_WEB_REFRESH.md)
+and [additional exercise dataset research](docs/M19_EXERCISE_DATASET_EXPANSION.md).
+**No fourth exercise or newly trained model has been deployed.**
+
+---
 
 ### M18 zero-cost deployment preparation (no paid Render plan)
 
@@ -122,7 +141,7 @@ requires HTTPS/localhost and permission.
 
 ---
 
-### Research release source integrity — M17B
+### Research release source integrity - M17B
 
 The owner confirmed **218 tests passed** and all **six** trusted local
 original-source error models loaded on M17A. M17B checks that
@@ -143,7 +162,7 @@ newly trained source-label RF artifacts or silently deleted.
 
 [Release checklist, older OHP PR reconciliation, and handoff](docs/M17B_RELEASE_AUDIT_AND_HANDOFF.md).
 
-### Research release candidate — M17
+### Research release candidate - M17
 
 [Read the M17 experimental results, original source-label tables,
 real webcam runtime evidence, privacy scope, historical TEST exposure,
@@ -405,12 +424,12 @@ curvature.
 
 ---
 
-## Milestone 14C: Barbell Row shoulder–hip 20-feature extraction
+## Milestone 14C: Barbell Row shoulder-hip 20-feature extraction
 
 The source TRAIN/VAL PR #22 audit established that requiring knees
-and ankles was a major cause of the earlier **4–5%** Barbell Row pose
+and ankles was a major cause of the earlier **4-5%** Barbell Row pose
 coverage. On equal-size label-stratified audit subsets, a strict
-shoulder+hip four-joint gate admitted approximately **68–75%** of
+shoulder+hip four-joint gate admitted approximately **68-75%** of
 images per task/split. These sample rates are **not** model accuracy.
 
 A new independent `barbell-row-torso4-image-20-v1` schema uses only
@@ -436,7 +455,7 @@ measurement or reliable real-time coaching.
 ## Milestone 14B prerequisite: Barbell Row Pose Coverage Audit
 
 The original source Barbell Row TRAIN/VAL image extraction succeeded,
-but strict 8-joint MediaPipe pose coverage was only **4–5%** across
+but strict 8-joint MediaPipe pose coverage was only **4-5%** across
 the two tasks. The source lum-bar validation subset retained only
 **8 positive error images**. Training a classifier now would risk
 substantial source selection bias.

@@ -1,4 +1,4 @@
-# Web v2 — six real Fitness-AQA source-error RFs (opt-in research API)
+# Web v2 - six real Fitness-AQA source-error RFs (opt-in research API)
 
 ## Zero-cost hosting update (M18)
 

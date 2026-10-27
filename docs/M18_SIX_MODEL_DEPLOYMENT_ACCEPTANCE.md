@@ -1,4 +1,4 @@
-# M18 — Six-detector deployment acceptance (fail-closed)
+# M18 - Six-detector deployment acceptance (fail-closed)
 
 **Status:** deploy-time validation integrated; **public six-model backend not provisioned**.
 This is a research-only Fitness-AQA source-annotation association demo, NOT
@@ -15,7 +15,7 @@ was absent when M18 work began. **No backend origin may be fabricated.**
 
 M18 adds:
 - `/health`: exact 6/6 model count, names, and `ready_for_six_detector_demo`.
-  1–5 loaded is explicitly `partial_model_artifacts`, not `research_api_ready`.
+  1-5 loaded is explicitly `partial_model_artifacts`, not `research_api_ready`.
 - `/ready`: 200 **only** when all six original source-label models are loaded;
   otherwise 503 (suitable for container/liveness routing).
 - Frontend consent/inference remains disabled unless all six correct slots load.
