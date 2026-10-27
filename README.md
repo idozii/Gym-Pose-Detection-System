@@ -68,6 +68,26 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M38 - Reproducible 3-video real-pilot failure audit (no data reload)
+
+[M38 research protocol and aggregate baseline](docs/M38_PILOT_FAILURE_AUDIT.md)
+checks the already-generated M37/M37.1/M37.2 JSON reports are
+consistent, and compares M34 to an always-zero counting control.
+The owner-run 3-video pilot observed **1 of 45** Squat events,
+F1 ~4.35%, 14.67 video-level count MAE versus **15.0** MAE for
+the always-zero baseline. These are limited exploratory findings,
+not successful generalization, browser parity or evidence of
+safe exercise technique.
+
+Run with \`python -m scripts.m38_pilot_aggregate_audit\` and the
+three local reports (full command in the M38 document). No
+video/pose decode, manual labels, external downloads, M34 tuning,
+or touching TEST is required. A separate development cohort and
+genuinely held-out TEST are required before any new method can
+claim independent improvements.
+
+---
+
 ### M37 - Automatic RepCount real-video Squat evaluation (no user labeling)
 
 [M37 automated RepCount benchmark](docs/M37_REPCOUNT_REAL_VIDEO_EVALUATION.md)
