@@ -198,6 +198,52 @@ def test_m37_1_diagnostics_aggregate_without_clip_identity_or_invented_zeros():
         ])
 
 
+
+def test_m37_2_aggregate_phase_windows_preserves_old_report_and_privacy():
+    fields = {key: 0 for key in m37._PHASE_WINDOW_FIELDS}
+    fields.update({
+        "accepted_await_high": 4, "accepted_await_low": 3,
+        "accepted_await_return": 1,
+        "high_while_await_high": 2, "low_while_await_low": 2,
+        "high_while_await_return": 1, "annotated_cycles": 2,
+        "gt_cycles_accepted_lt4": 1, "gt_cycles_accepted_lt6": 2,
+        "gt_cycles_usable_lt4": 1, "gt_cycles_usable_lt6": 2,
+        "gt_cycles_no_usable_angle": 0,
+        "gt_cycles_with_high_and_low": 1,
+        "gt_cycles_with_low_then_high": 1,
+        "gt_cycles_with_two_high_and_two_low": 1
+    })
+    sample = {
+        "video": "private_not_reported.mp4",
+        "annotated_rep_count": 2, "website_observed_cycles": 0,
+        "absolute_count_error": 2, "event_tp": 0,
+        "event_fp": 0, "event_fn": 2, "pose_sample_coverage": .75,
+        "m37_phase_window_diagnostics": {
+            **fields, "protocol": "m37-squat-phase-window-v1"
+        }
+    }
+    result = m37.summarise([sample], {}, split="validation",
+                           revision="main", source_hash="a"*64, candidates=1)
+    diag = result["m37_phase_window_diagnostics"]
+    assert diag["annotated_cycles"] == 2
+    assert diag["gt_cycles_usable_lt4"] == 1
+    assert diag["fraction_annotated_cycles_usable_lt4"] == .5
+    assert diag["fraction_annotated_cycles_with_low_then_high"] == .5
+    assert "private_not_reported" not in json.dumps(result)
+    assert "cycle_bounds_frames" not in json.dumps(result)
+    old = {k: v for k, v in sample.items()
+           if k != "m37_phase_window_diagnostics"}
+    assert m37.summarise([old], {}, split="validation",
+                         revision="main", source_hash="a"*64,
+                         candidates=1)["m37_phase_window_diagnostics"] is None
+    with pytest.raises(ValueError, match="annotated cycle total"):
+        m37._aggregate_phase_windows([{**sample,
+            "m37_phase_window_diagnostics": {
+                **fields, "protocol": "m37-squat-phase-window-v1",
+                "annotated_cycles": 100
+            }}])
+
+
 def test_m37_full_orchestrator_with_fake_download_extraction_and_replay(tmp_path):
     requests = []
     def fake_download(*, repo_id, filename, repo_type, revision, local_dir):
