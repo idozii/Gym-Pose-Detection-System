@@ -30,6 +30,30 @@ change the Vercel production site.
 
 ---
 
+### M36 Auto - deterministic cycle stress suite (no manual validation)
+
+The owner does **not** want to manually count repetitions,
+label videos or populate session CSV files. The updated
+[M36 automated validation guide](docs/M36_AUTOMATED_CYCLE_VALIDATION.md)
+provides a **one-command regression audit** running the
+unmodified M34 `RepCycleCounter` on **216 generated
+angle-cycle scenarios** across Squat/OHP/Barbell Row,
+two observed limbs, in-plane image perturbations, jitter,
+tracking loss, partial movement and stationary periods.
+`npm run validate:m36 --prefix web` produces a local
+Git-ignored synthetic metrics JSON, and GitHub Actions
+runs it on each change automatically. It requires **no
+camera, videos, manual CSV, annotation, ML retraining or
+additional paid hosting**.
+
+Passing these artificial tests is *engineering validation
+only*, not independently measured human repetition
+counting accuracy. The earlier manual M36 pilot remains
+**optional** for a future annotated-human study, not
+a prerequisite for the next milestone.
+
+---
+
 ### M36 - Measure real rep-count error before any form grading
 
 M34 observed cycle counts worked reasonably well in the
