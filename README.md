@@ -68,6 +68,20 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M41 - Paired TRAIN pose observation cadence sensitivity
+
+[M41 paired 200ms and 400ms observation study](docs/M41_TRAIN_PAIRED_CADENCE_STUDY.md)
+compares original M34, frozen M39 low-to-high and zero baseline
+using 200ms-target MediaPipe TRAIN pose traces and every-other
+sample 400ms subseries. M34's internal 400ms gate stays unchanged.
+The 400ms subsample shares the dense pose tracker history, so this
+is not an independent 400ms MediaPipe run. In owner-run M40,
+20 TRAIN clips yielded M39 F1 48.57% and count MAE 10.4,
+versus M34 F1 8.59% and count MAE 14.9. No TEST score or
+independent generalization is claimed.
+
+---
+
 ### M40 - Larger fixed-sampling TRAIN-only development cohort
 
 [M40 TRAIN hash cohort protocol](docs/M40_TRAIN_HASH_COHORT.md)
