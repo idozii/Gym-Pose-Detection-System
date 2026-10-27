@@ -4,7 +4,7 @@
  * NOT from our detector output. No threshold selection/tuning here.
  * Node replay uses the original browser RepCycleCounter implementation.
  */
-import { RepCycleCounter } from '../src/rep_counter.js';
+import { RepCycleCounter, REP_POLICIES } from '../src/rep_counter.js';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -85,6 +85,25 @@ export function evaluateTrace(source) {
   }
   const counter = new RepCycleCounter();
   const predictedMs = [];
+  // Post-hoc observability is DESCRIPTIVE, not a tuning experiment.
+  // Use the exact existing M34 counter and its published thresholds;
+  // expose only aggregate counters (no poses, names or timestamps).
+  const observability = {
+    protocol: 'm37-squat-counter-observability-v1',
+    input_frame_samples: source.frames.length,
+    counter_accepted_ticks: 0,
+    sampling_gate_skips: 0,
+    knee_angle_usable_ticks: 0,
+    knee_angle_unavailable_ticks: 0,
+    knee_angle_high_ticks: 0,
+    knee_angle_low_ticks: 0,
+    knee_angle_middle_ticks: 0,
+    confirmed_initial_high_transitions: 0,
+    confirmed_low_transitions: 0,
+    completed_return_transitions: 0,
+    tracked_side_changes: 0,
+    tracking_gap_resets: 0
+  };
   let previousTime = -Infinity, validFrames = 0;
   let previousCount = 0;
   for (const sample of source.frames) {
@@ -101,7 +120,42 @@ export function evaluateTrace(source) {
       }
       validFrames++;
     }
+    const previousTick = counter.lastTick;
+    const previousSide = counter.side;
+    const previousGood = counter.lastGood;
+    const previousPhase = counter.phase;
     const out = counter.observe('squat', sample.landmarks, sample.time_ms);
+    if (previousGood !== null &&
+        sample.time_ms - previousGood > counter.trackingGapMs) {
+      observability.tracking_gap_resets++;
+    }
+    if (counter.lastTick === previousTick) {
+      observability.sampling_gate_skips++;
+    } else {
+      observability.counter_accepted_ticks++;
+      if (out.tracking === 'visible' && Number.isFinite(out.angle)) {
+        observability.knee_angle_usable_ticks++;
+        if (out.angle >= REP_POLICIES.squat.highDeg) {
+          observability.knee_angle_high_ticks++;
+        } else if (out.angle <= REP_POLICIES.squat.lowDeg) {
+          observability.knee_angle_low_ticks++;
+        } else {
+          observability.knee_angle_middle_ticks++;
+        }
+        if (previousSide !== null && out.side !== previousSide) {
+          observability.tracked_side_changes++;
+        }
+      } else {
+        observability.knee_angle_unavailable_ticks++;
+      }
+      if (previousPhase === 'await_high' && out.phase === 'await_low') {
+        observability.confirmed_initial_high_transitions++;
+      } else if (previousPhase === 'await_low' && out.phase === 'await_return') {
+        observability.confirmed_low_transitions++;
+      } else if (previousPhase === 'await_return' && out.phase === 'await_low') {
+        observability.completed_return_transitions++;
+      }
+    }
     if (out.cycles > previousCount) {
       if (out.cycles !== previousCount + 1) throw new Error('Counter increased by multiple events');
       predictedMs.push(sample.time_ms);
@@ -128,6 +182,7 @@ export function evaluateTrace(source) {
     frame_samples: source.frames.length,
     pose_visible_samples: validFrames,
     pose_sample_coverage: validFrames / source.frames.length,
+    m37_observability: observability,
     event_tp: match.tp,
     event_fp: match.fp,
     event_fn: match.fn,

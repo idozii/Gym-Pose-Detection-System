@@ -149,6 +149,55 @@ def test_m37_aggregate_reports_zero_rep_negative_control_without_false_recall():
 
 
 
+def test_m37_1_diagnostics_aggregate_without_clip_identity_or_invented_zeros():
+    diag = {
+        "protocol": "m37-squat-counter-observability-v1",
+        "input_frame_samples": 10,
+        "counter_accepted_ticks": 8, "sampling_gate_skips": 2,
+        "knee_angle_usable_ticks": 5, "knee_angle_unavailable_ticks": 3,
+        "knee_angle_high_ticks": 2, "knee_angle_low_ticks": 2,
+        "knee_angle_middle_ticks": 1,
+        "confirmed_initial_high_transitions": 1,
+        "confirmed_low_transitions": 1,
+        "completed_return_transitions": 0,
+        "tracked_side_changes": 1,
+        "tracking_gap_resets": 2,
+    }
+    clip = {
+        "video": "not_for_report.mp4",
+        "annotated_rep_count": 2,
+        "website_observed_cycles": 0,
+        "absolute_count_error": 2,
+        "event_tp": 0, "event_fp": 0, "event_fn": 2,
+        "pose_sample_coverage": .8,
+        "m37_observability": diag
+    }
+    report = m37.summarise(
+        [clip, clip], {}, split="validation", revision="main",
+        source_hash="b" * 64, candidates=2
+    )
+    aggregate = report["m37_observability"]
+    assert aggregate["videos_included"] == 2
+    assert aggregate["sampling_gate_skips"] == 4
+    assert aggregate["knee_angle_usable_ticks"] == 10
+    assert aggregate["fraction_ticks_sampling_gate_skipped"] == .2
+    assert aggregate["fraction_accepted_ticks_with_usable_knee_angle"] == 5 / 8
+    assert "not_for_report" not in json.dumps(report)
+    missing = m37.summarise(
+        [{key: value for key, value in clip.items()
+          if key != "m37_observability"}],
+        {}, split="validation", revision="main",
+        source_hash="b" * 64, candidates=1
+    )
+    assert missing["m37_observability"] is None
+    with pytest.raises(ValueError, match="Inconsistent M37.1"):
+        m37._aggregate_observability([
+            {**clip, "m37_observability": {
+                **diag, "knee_angle_high_ticks": 100
+            }}
+        ])
+
+
 def test_m37_full_orchestrator_with_fake_download_extraction_and_replay(tmp_path):
     requests = []
     def fake_download(*, repo_id, filename, repo_type, revision, local_dir):
