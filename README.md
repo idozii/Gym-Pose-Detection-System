@@ -16,6 +16,26 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M20 - additional gym exercises (local research pipeline, not yet deployed)
+
+The scientific aim is **exercise movement-quality research**, not merely
+drawing pose skeletons. The deployed 6 RFs perform real source-label
+association for Squat, OHP and Row; their outputs are NOT independently
+validated technique-correctness or injury-safety judgements.
+
+A new **opt-in local** research pipeline downloads one 2.9 GB publisher
+Mendeley Gym7 ZIP, builds owner-reviewable subject labels, extracts clip
+features one video at a time, and trains grouped **Push-up and Bicep Curl**
+good/bad *video-level* Random Forest pilots. Original per-video good/bad
+labels are kept separate from the original named Fitness-AQA error labels.
+TEST is locked by default, training files are ignored by Git, and new
+models are NOT silently offered in the live single-frame scoring API.
+This repository cannot write directly to the owner's Linux computer.
+
+[Run the M20 local download, extraction and training guide](docs/M20_GYM7_LOCAL_TRAINING.md).
+
+---
+
 ### M19 mobile cameras, premium studio UI and new dataset research
 
 The mobile site now offers Front / Selfie and Rear / Observer camera
