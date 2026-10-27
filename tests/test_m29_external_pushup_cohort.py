@@ -12,7 +12,7 @@ from scripts.m29_external_pushup_cohort import (
 
 def setup_samples(tmp_path):
     root=tmp_path/"private_videos"
-    root.mkdir()
+    root.mkdir(exist_ok=True)
     rows=[]
     for person in range(5):
         for view in ("front","side","diagonal"):
