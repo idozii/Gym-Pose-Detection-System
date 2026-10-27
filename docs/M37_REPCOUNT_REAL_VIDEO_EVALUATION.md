@@ -140,6 +140,79 @@ This reads the original publisher CSV embedded in
 RepCountA.tar.gz and extracts only selected Squat clips.
 It never asks you to manually count or annotate reps.
 
+
+## M37.1 - Observability follow-up after the first real Squat pilot (27 October 2026)
+
+The owner supplied the original M37 aggregate report from **three**
+RepCount-A validation Squat videos, with **45** annotated reps and
+**one** M34 observed count-increment event: event TP=1, FP=0,
+FN=44, precision=1.0, recall=1/45 (~0.0222), F1=2/46 (~0.0435),
+per-video count MAE=44/3 (~14.67), and mean raw pose-detection
+coverage ~0.7467. All three videos decoded, none excluded.
+These are **user-run exploratory findings**, not independently
+replicated by CI, not a successful real-world benchmark, and not
+evidence of form/safety quality. The apparent 100% precision is
+based on just one prediction; it should not be described as
+high precision without its denominator.
+
+**Hypotheses, not established causes:** inadequate 2D knee-angle
+visibility despite raw MediaPipe pose detection, large numbers
+of sampling-gate skips near the fixed 400ms schedule, insufficient
+consecutive high/low observations, tracking timeouts or side switches,
+camera-plane viewpoint mismatch, or annotated-event timing differences.
+
+M37.1 adds **non-invasive aggregate-only, post-hoc observability** to
+the already-existing Node replay. It logs the original M34 accepted
+ticks vs gate skips, usable 2D knee-angle ticks, existing high/low/
+middle threshold categories, number of completed high/low/return
+phase transitions, selected-side changes and tracking-gap resets.
+The underlying counter, thresholds, rep-event matching, and data
+selection are unchanged. This is an *exploratory error analysis*,
+not another preregistered accuracy evaluation. The metrics cannot
+by themselves prove which issue caused the missed reps.
+
+The original report will **not** contain these new fields because
+raw poses are discarded after each prior run for privacy. To
+regenerate diagnostics from the same first-three-video selection,
+run in Ubuntu from the repo root:
+
+```bash
+git pull --ff-only
+source .venv-m20/bin/activate
+python -m pytest tests/test_m37_repcount_video_benchmark.py -q
+npm test --prefix web
+
+python -m scripts.m37_repcount_video_benchmark \\
+  --source-archive ~/Downloads/RepCountA.tar.gz \\
+  --split validation --max-videos 3 \\
+  --root data/external/m37_repcount_diag_pilot \\
+  --report data/processed/m37_repcount_squat_observability_pilot.json
+python - <<'PY'
+import json
+from pathlib import Path
+report = json.loads(Path(
+    'data/processed/m37_repcount_squat_observability_pilot.json'
+).read_text())
+print('Event TP/FP/FN:', report['event_tp'], report['event_fp'], report['event_fn'])
+print('Post-hoc observability:', json.dumps(report['m37_observability'], indent=2))
+PY
+```
+
+The distinct `--root` and `--report` preserve the old results,
+prevent overwriting already-extracted clips, and keep the new metrics
+under Git-ignored data paths. **This command scans the ~8.9 GB
+archive again**, may require two sequential compressed passes,
+and extracts only the selected three source videos. No 9 GB
+video upload, browser webcam collection or manually relabeled
+records are required. Do not claim any new diagnostic values
+until this has been run successfully.
+
+A fair new detector or parameter policy should be developed on a
+separate designated training/development split, with a predeclared
+held-out test split left untouched until final evaluation. Changing
+M34 thresholds or sample cadence based on these exact validation
+clips and reporting on them as independent performance is invalid.
+
 ## Original RepCountA TAR.GZ support (owner's actual 8.9 GB download)
 
 The user confirmed the official author-hosted source was downloaded as:
