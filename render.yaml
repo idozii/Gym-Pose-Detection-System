@@ -20,6 +20,8 @@ services:
         value: /tmp/gym-pose-models
       - key: POSE_WEB_ORIGINS
         value: https://gym-pose-detection-system.vercel.app
+      - key: POSE_SCORE_GLOBAL_10S_LIMIT
+        value: "30"
       - key: POSE_TRUST_LOCAL_ARTIFACTS
         value: "0"
       # Fill only from your owner-uploaded PRIVATE model repo, not public data.
