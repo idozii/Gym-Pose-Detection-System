@@ -237,10 +237,18 @@ def selected_from_tar_archive(
             continue
         # Development-only M39 requires proof from the TAR member path
         # itself that the video belongs to the requested publisher split.
-        if require_explicit_split and not any(
-            folder.lower() in MATCH_SPLITS[split] for folder in path.parts[:-1]
-        ):
-            continue
+        if require_explicit_split:
+            folders = {folder.lower() for folder in path.parts[:-1]}
+            known_split_names = set().union(*(
+                set(names) for names in MATCH_SPLITS.values()
+            ))
+            # A path with BOTH train and validation/test segments is not
+            # demonstrably TRAIN-only; reject it, never guess its split.
+            if (not folders.intersection(MATCH_SPLITS[split]) or
+                folders.intersection(known_split_names).difference(
+                    MATCH_SPLITS[split]
+                )):
+                continue
         if key in copied:
             raise ValueError("Ambiguous duplicate selected Squat video name in TAR.GZ")
         record = labels[key]
