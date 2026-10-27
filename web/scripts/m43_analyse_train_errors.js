@@ -27,7 +27,7 @@ export const FP_KEYS = Object.freeze([
   'unmatched_outside_all_gt_end_tolerances'
 ]);
 
-function gtEvents(source) {
+export function gtEvents(source) {
   const bounds = source.cycle_bounds_frames;
   const gt = [];
   for (let i = 0; i < bounds.length; i += 2) {
