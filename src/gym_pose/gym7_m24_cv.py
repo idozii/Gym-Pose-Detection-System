@@ -47,9 +47,13 @@ def _read_table(path: Path):
         raise ValueError("Invalid original camera view")
     if not table.subject_id.map(lambda x: isinstance(x, str) and bool(x.strip())).all():
         raise ValueError("Missing subject IDs")
-    features = table.loc[:, FEATURE_COLUMNS].to_numpy(dtype=float)
+    # CSV blanks are parsed as empty strings; coerce them to NaN so the
+    # validation error remains stable and explicit across Python versions.
+    features = table.loc[:, FEATURE_COLUMNS].apply(
+        pd.to_numeric, errors="coerce"
+    ).to_numpy(dtype=float)
     if not np.isfinite(features).all():
-        raise ValueError("Nonfinite feature input")
+        raise ValueError("Nonfinite or nonnumeric feature input")
     return table.set_index("video_id", drop=False)
 
 
