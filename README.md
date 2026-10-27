@@ -16,6 +16,25 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M25 - Push-up TRAIN-only LOSO reliability and subject uncertainty
+
+The owner's M24 grouped TRAIN cross-validation showed increased
+Push-up upper-body coverage (83 vs 69 admitted clips) without an
+improvement in matched-video Balanced Accuracy: 56.22% full vs
+47.69% upper-paired vs 49.24% upper-expanded on 69 matched
+held-out TRAIN clips. Upper-expanded improved bad-label recall
+(47.06% vs 35.29%) but nearly doubled false-positive bad
+predictions (17 vs 8 out of 35 good clips).
+
+[M25 original TRAIN participant LOSO and cluster uncertainty](docs/M25_PUSHUP_LOSO_ROBUSTNESS.md)
+repeats an individual-subject-heldout comparison and estimates
+approximate paired subject-bootstrap intervals on fixed out-of-fold
+predictions. Data provenance checks and privacy-safe aggregate
+output are built in. Original M20 validation and final TEST
+remain untouched, and no new Push-up model is deployed.
+
+---
+
 ### M24 - Compare new Push-up RFs on exactly matched TRAIN-only clips
 
 Real M23 owner extraction recovered **14 previously rejected front-view
