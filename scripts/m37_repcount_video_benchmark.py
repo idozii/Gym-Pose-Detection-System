@@ -310,7 +310,12 @@ def extract_pose_trace(video: Path, annotation: dict, *,
                 total += 1
         if not (8 <= len(frames) <= 3000):
             raise ValueError("Insufficient valid chronological source frame samples")
-        if max(annotation["cycle_bounds_frames"]) > total:
+        # A valid publisher zero-repetition Squat clip has no L* frame
+        # bounds. It is a useful false-positive negative control rather
+        # than an invalid annotation or an empty max() crash.
+        if annotation["cycle_bounds_frames"] and (
+            max(annotation["cycle_bounds_frames"]) > total
+        ):
             raise ValueError(
                 "RepCount annotated cycle frame index exceeds actual "
                 "decoded source video: annotation/clip alignment mismatch"
@@ -357,8 +362,17 @@ def summarise(results: list[dict], exclusions: Counter,
     tp = sum(r["event_tp"] for r in results)
     fp = sum(r["event_fp"] for r in results)
     fn = sum(r["event_fn"] for r in results)
-    precision = tp / (tp + fp) if tp + fp else 0.
-    recall = tp / (tp + fn) if tp + fn else 0.
+    # A cohort made entirely of publisher zero-rep examples has no
+    # positive ground truth and cannot have event recall/F1. Report
+    # undefined as JSON null, not an invented 0% or 100% statistic.
+    precision = tp / (tp + fp) if tp + fp else None
+    recall = tp / (tp + fn) if tp + fn else None
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if precision is not None and recall is not None and precision + recall
+        else 0. if precision is not None and recall is not None
+        else None
+    )
     return {
         "study": "M37 pre-registered heuristic M34 Squat real video evaluation",
         "evaluation": PROTOCOL,
@@ -376,6 +390,13 @@ def summarise(results: list[dict], exclusions: Counter,
         "annotation_sha256": source_hash,
         "squat_candidate_videos": candidates,
         "squat_evaluated_videos": n,
+        "zero_rep_negative_control_videos": sum(
+            r["annotated_rep_count"] == 0 for r in results
+        ),
+        "zero_rep_negative_controls_with_false_cycles": sum(
+            r["annotated_rep_count"] == 0 and r["website_observed_cycles"] > 0
+            for r in results
+        ),
         "excluded_videos": candidates - n,
         "exclusion_reasons": dict(exclusions),
         "source_total_annotated_reps": sum(r["annotated_rep_count"] for r in results),
@@ -391,13 +412,18 @@ def summarise(results: list[dict], exclusions: Counter,
         ) / n,
         "event_tp": tp, "event_fp": fp, "event_fn": fn,
         "event_precision": precision, "event_recall": recall,
-        "event_f1": 2 * precision * recall / (precision + recall)
-                    if precision + recall else 0.,
+        "event_f1": f1,
         "per_video_pose_sample_coverage_mean": sum(
             r["pose_sample_coverage"] for r in results
         ) / n,
         "event_matching_tolerance": (
             "max(750ms, 35% ground-truth duration), cap 2500ms"
+        ),
+        "zero_rep_handling": (
+            "Publisher count=0 plus blank L* boundaries is a negative "
+            "control. False counted cycles contribute event FP and count MAE. "
+            "Per-video recall is undefined with no annotated events; global "
+            "precision/recall/F1 are null if their denominator is zero."
         ),
         "real_video_measured": True,
         "media_pipe_python_solutions_used": True,

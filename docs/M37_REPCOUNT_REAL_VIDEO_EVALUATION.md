@@ -79,6 +79,67 @@ third-party videos and replaying M34 outputs**. All Python/Node
 GitHub CI tests use *synthetic local fixture files*, and CI
 does not contact or download the dataset.
 
+## M37 zero-repetition source annotation fix (original LLSP valid.csv)
+
+The owner's real RepCountA.tar.gz inspection confirmed
+`LLSP/annotation/valid.csv` and 1,041 archive videos.
+Before this patch, `--source-archive` failed while
+reading original labels with:
+
+```text
+M37 stopped: RepCount count must be integer between 1 and 200
+```
+
+A publicly accessible LLSP `valid.csv` copy contains
+`stu9_67.mp4` labeled Squat with `count=0` and blank
+L1/L2 and remaining L* columns. This is an informative
+**publisher-annotated zero-repetition negative control**,
+not evidence of a corrupt archive. The source file in
+the user's private tar.gz has not been byte-verified
+against this public copy.
+
+The revised strict parser:
+
+- Accepts counts **0 to 200 inclusive**, but for `count=0`
+  requires exactly **zero** populated rep event boundaries.
+  Any zero-count annotation with nonempty L* values
+  remains an error.
+- Retains zero-rep Squat videos as candidate evaluation
+  sessions; does **not** invent a single repetition.
+- Checks that M34 emits no spurious cycles on these
+  negative-control clips. Any observed cycle is counted
+  as event FP and session count error.
+- Avoids calling `max([])` on the original empty
+  ground-truth boundary list.
+- Records `zero_rep_negative_control_videos` and
+  `zero_rep_negative_controls_with_false_cycles`
+  in the aggregate real-video result.
+- Leaves per-clip event recall/F1 undefined (`null`)
+  when a clip has no ground-truth reps. If all selected
+  videos have no positive reps, the aggregate metric
+  with no positive denominator is also `null`;
+  count agreement and false-cycle totals still work.
+
+Nothing changes in M34 rep-count thresholds, dataset
+split selection, audio/video access, or exercise-form
+quality interpretation.
+
+To retry using the already downloaded author archive:
+
+```bash
+cd ~/Desktop/Gym-Pose-Detection-System
+git pull --ff-only
+source .venv-m20/bin/activate
+
+python -m scripts.m37_repcount_video_benchmark \
+  --source-archive ~/Downloads/RepCountA.tar.gz \
+  --split validation --max-videos 3
+```
+
+This reads the original publisher CSV embedded in
+RepCountA.tar.gz and extracts only selected Squat clips.
+It never asks you to manually count or annotate reps.
+
 ## Original RepCountA TAR.GZ support (owner's actual 8.9 GB download)
 
 The user confirmed the official author-hosted source was downloaded as:

@@ -19,7 +19,6 @@ function gtEvents(metadata) {
       !Number.isFinite(metadata.fps) || metadata.fps <= 0 ||
       !Number.isInteger(metadata.total_frames) || metadata.total_frames <= 5 ||
       !Array.isArray(metadata.cycle_bounds_frames) ||
-      !metadata.cycle_bounds_frames.length ||
       metadata.cycle_bounds_frames.length % 2 !== 0 ||
       metadata.cycle_bounds_frames.length > 400) {
     throw new Error('M37 requires unmodified paired Squat frame bounds and video FPS');
@@ -110,11 +109,17 @@ export function evaluateTrace(source) {
     }
   }
   const match = matchEvents(predictedMs, gt);
-  const precision = predictedMs.length ? match.tp / predictedMs.length : 0;
-  const recall = match.tp / gt.length;
+  // Per-clip event recall is mathematically undefined when this
+  // publisher-annotated source has zero positive repetitions. Report null
+  // rather than NaN or an invented 0%/100%; event FP still counts.
+  const precision = predictedMs.length ? match.tp / predictedMs.length : null;
+  const recall = gt.length ? match.tp / gt.length : null;
+  const f1 = precision !== null && recall !== null
+    ? (precision + recall ? 2 * precision * recall / (precision + recall) : 0)
+    : null;
   return {
     protocol: EVAL_PROTOCOL,
-    dataset: 'RepCount-A third-party mirror with original cycle event annotations',
+    dataset: 'RepCount-A source video with original cycle annotations; archive provenance separately verifiable',
     action: 'squat',
     annotated_rep_count: gt.length,
     website_observed_cycles: predictedMs.length,
@@ -128,7 +133,9 @@ export function evaluateTrace(source) {
     event_fn: match.fn,
     event_precision: precision,
     event_recall: recall,
-    event_f1: precision + recall ? 2 * precision * recall / (precision + recall) : 0,
+    event_f1: f1,
+    zero_annotated_rep_negative_control: gt.length === 0,
+    negative_control_spurious_cycles: gt.length === 0 ? predictedMs.length : null,
     mean_absolute_matched_end_error_ms: match.mean_absolute_matched_end_error_ms,
     tolerance_policy: 'max(750ms, 35% labeled cycle duration), capped 2500ms',
     source_frame_bounds_within_decoded_clip: true,

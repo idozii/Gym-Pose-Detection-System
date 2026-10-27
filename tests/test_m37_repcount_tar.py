@@ -84,6 +84,34 @@ def test_embedded_original_labels_select_only_preannotated_squat(tmp_path):
     assert not (root / "official_tar_selected" / "validation" / "test_press.mp4").exists()
 
 
+
+def test_actual_LLSP_style_tar_zero_rep_annotation_is_supported(tmp_path):
+    # The public LLSP valid split contains a Squat entry like stu9_67.mp4
+    # count=0 with empty L fields: a valid negative-control video.
+    csv_stream = io.StringIO()
+    writer = csv.DictWriter(csv_stream, fieldnames=[
+        "name", "type", "count", "L1", "L2"
+    ])
+    writer.writeheader()
+    writer.writerow({
+        "name": "stu9_67.mp4", "type": "squat",
+        "count": "0", "L1": "", "L2": ""
+    })
+    archive = tmp_path / "RepCountA.tar.gz"
+    with tarfile.open(archive, "w:gz") as tf:
+        _add_bytes(tf, "LLSP/annotation/valid.csv",
+                   csv_stream.getvalue().encode("utf-8"))
+        _add_bytes(tf, "LLSP/video/valid/stu9_67.mp4", b"v" * 12000)
+    selected, source_hash = selected_from_tar_archive(
+        archive, tmp_path / "local_private", limit=1
+    )
+    assert selected[0]["annotated_count"] == 0
+    assert selected[0]["cycle_bounds_frames"] == []
+    assert selected[0]["video_path"].is_file()
+    assert len(source_hash) == 64
+
+
+
 def test_publisher_csv_outside_archive_is_one_pass_and_no_human_labels(tmp_path):
     archive = sample_tar(tmp_path, with_csv=False)
     csv_file = tmp_path / "official_new_valid.csv"

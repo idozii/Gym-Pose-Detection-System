@@ -112,6 +112,43 @@ def test_m37_metrics_aggregate_true_event_counts_and_exclusions():
                       revision="main", source_hash="", candidates=2)
 
 
+
+def test_m37_aggregate_reports_zero_rep_negative_control_without_false_recall():
+    no_reps = {
+        "annotated_rep_count": 0,
+        "website_observed_cycles": 1,
+        "absolute_count_error": 1,
+        "event_tp": 0, "event_fp": 1, "event_fn": 0,
+        "pose_sample_coverage": .9
+    }
+    report = m37.summarise(
+        [no_reps], {}, split="validation", revision="main",
+        source_hash="a"*64, candidates=1, source_mode="author_archive"
+    )
+    assert report["zero_rep_negative_control_videos"] == 1
+    assert report["zero_rep_negative_controls_with_false_cycles"] == 1
+    assert report["source_total_annotated_reps"] == 0
+    assert report["event_tp"] == 0
+    assert report["event_fp"] == 1
+    assert report["event_fn"] == 0
+    assert report["session_mean_absolute_count_error"] == 1
+    assert report["event_precision"] == 0
+    assert report["event_recall"] is None
+    assert report["event_f1"] is None
+
+    perfect = {**no_reps, "website_observed_cycles": 0,
+               "absolute_count_error": 0, "event_fp": 0}
+    accurate = m37.summarise(
+        [perfect], {}, split="validation", revision="main",
+        source_hash="a"*64, candidates=1
+    )
+    assert accurate["event_precision"] is None
+    assert accurate["event_recall"] is None
+    assert accurate["event_f1"] is None
+    assert accurate["session_exact_count_fraction"] == 1.
+
+
+
 def test_m37_full_orchestrator_with_fake_download_extraction_and_replay(tmp_path):
     requests = []
     def fake_download(*, repo_id, filename, repo_type, revision, local_dir):

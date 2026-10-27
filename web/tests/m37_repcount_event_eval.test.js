@@ -52,6 +52,36 @@ test('M37 detects missing real rep events instead of matching only total counts'
   assert.ok(result.event_f1 < 1);
 });
 
+
+test('M37 zero-ground-truth Squat clip is an explicit negative control, not a data error', () => {
+  const still = trace(Array(10).fill(170), []);
+  const clean = evaluateTrace(still);
+  assert.equal(clean.annotated_rep_count, 0);
+  assert.equal(clean.website_observed_cycles, 0);
+  assert.equal(clean.event_tp, 0);
+  assert.equal(clean.event_fp, 0);
+  assert.equal(clean.event_fn, 0);
+  assert.equal(clean.absolute_count_error, 0);
+  assert.equal(clean.zero_annotated_rep_negative_control, true);
+  assert.equal(clean.negative_control_spurious_cycles, 0);
+  assert.equal(clean.event_precision, null);
+  assert.equal(clean.event_recall, null);
+  assert.equal(clean.event_f1, null);
+
+  const falseCount = trace([170,170,100,100,170,170,170,170], []);
+  const result = evaluateTrace(falseCount);
+  assert.equal(result.website_observed_cycles, 1);
+  assert.equal(result.event_tp, 0);
+  assert.equal(result.event_fp, 1);
+  assert.equal(result.event_fn, 0);
+  assert.equal(result.absolute_count_error, 1);
+  assert.equal(result.negative_control_spurious_cycles, 1);
+  assert.equal(result.event_precision, 0);
+  assert.equal(result.event_recall, null);
+  assert.equal(result.event_f1, null);
+});
+
+
 test('M37 prevents one detected event from matching two ground truths', () => {
   const actual = matchEvents([2000], [
     {endMs: 1900, toleranceMs: 300},
