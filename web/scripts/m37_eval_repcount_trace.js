@@ -36,6 +36,7 @@ function gtEvents(metadata) {
     lastEnd = end;
     const durationMs = (end - start) / metadata.fps * 1000;
     events.push({
+      startMs: start / metadata.fps * 1000,
       endMs: end / metadata.fps * 1000,
       toleranceMs: Math.min(MAX_TOLERANCE_MS,
         Math.max(TOLERANCE_MS, durationMs * DURATION_FRACTION))
@@ -104,6 +105,32 @@ export function evaluateTrace(source) {
     tracked_side_changes: 0,
     tracking_gap_resets: 0
   };
+  // M37.2: compare accepted-angle observations with *publisher* cycle
+  // intervals (half-open windows). Never store per-video event series.
+  // Such windows may not include a high endpoint that precedes the
+  // publisher's start frame; these are descriptive, not cycle recall.
+  const windowEvidence = gt.map(event => ({
+    startMs: event.startMs, endMs: event.endMs,
+    accepted: 0, usable: 0, high: 0, low: 0,
+    sawLow: false, orderedLowThenHigh: false
+  }));
+  const phaseWindow = {
+    protocol: 'm37-squat-phase-window-v1',
+    accepted_await_high: 0, accepted_await_low: 0,
+    accepted_await_return: 0,
+    high_while_await_high: 0, low_while_await_low: 0,
+    high_while_await_return: 0,
+    high_confirmation_broken: 0, low_confirmation_broken: 0,
+    return_confirmation_broken: 0,
+    side_switch_while_pending: 0, phase_expiration_compatible_resets: 0,
+    annotated_cycles: gt.length,
+    gt_cycles_accepted_lt4: 0, gt_cycles_accepted_lt6: 0,
+    gt_cycles_usable_lt4: 0, gt_cycles_usable_lt6: 0,
+    gt_cycles_no_usable_angle: 0,
+    gt_cycles_with_high_and_low: 0,
+    gt_cycles_with_low_then_high: 0,
+    gt_cycles_with_two_high_and_two_low: 0
+  };
   let previousTime = -Infinity, validFrames = 0;
   let previousCount = 0;
   for (const sample of source.frames) {
@@ -124,6 +151,10 @@ export function evaluateTrace(source) {
     const previousSide = counter.side;
     const previousGood = counter.lastGood;
     const previousPhase = counter.phase;
+    const previousStartedAt = counter.startedAt;
+    const previousHighConfirm = counter.highConfirm;
+    const previousLowConfirm = counter.lowConfirm;
+    const previousReturnConfirm = counter.returnConfirm;
     const out = counter.observe('squat', sample.landmarks, sample.time_ms);
     if (previousGood !== null &&
         sample.time_ms - previousGood > counter.trackingGapMs) {
@@ -133,7 +164,57 @@ export function evaluateTrace(source) {
       observability.sampling_gate_skips++;
     } else {
       observability.counter_accepted_ticks++;
-      if (out.tracking === 'visible' && Number.isFinite(out.angle)) {
+      const phaseField = 'accepted_' + previousPhase;
+      phaseWindow[phaseField]++;
+      const angleUsable = out.tracking === 'visible' && Number.isFinite(out.angle);
+      const highNow = angleUsable && out.angle >= REP_POLICIES.squat.highDeg;
+      const lowNow = angleUsable && out.angle <= REP_POLICIES.squat.lowDeg;
+      const sideSwitched = angleUsable && previousSide !== null &&
+        out.side !== previousSide;
+      const elapsedGap = previousGood !== null &&
+        sample.time_ms - previousGood > counter.trackingGapMs;
+      if (angleUsable && !sideSwitched && !elapsedGap) {
+        if (previousPhase === 'await_high') {
+          if (highNow) phaseWindow.high_while_await_high++;
+          if (previousHighConfirm === 1 && !highNow) {
+            phaseWindow.high_confirmation_broken++;
+          }
+        } else if (previousPhase === 'await_low') {
+          if (lowNow) phaseWindow.low_while_await_low++;
+          if (previousLowConfirm === 1 && !lowNow) {
+            phaseWindow.low_confirmation_broken++;
+          }
+        } else if (previousPhase === 'await_return') {
+          if (highNow) phaseWindow.high_while_await_return++;
+          if (previousReturnConfirm === 1 && !highNow) {
+            phaseWindow.return_confirmation_broken++;
+          }
+        }
+      }
+      if (sideSwitched && previousPhase !== 'await_high') {
+        phaseWindow.side_switch_while_pending++;
+      }
+      if (angleUsable && !sideSwitched && !elapsedGap &&
+          previousStartedAt !== null && previousPhase !== 'await_high' &&
+          sample.time_ms - previousStartedAt > counter.maxCycleMs &&
+          out.phase === 'await_high') {
+        phaseWindow.phase_expiration_compatible_resets++;
+      }
+      for (const win of windowEvidence) {
+        if (sample.time_ms < win.startMs || sample.time_ms >= win.endMs) continue;
+        win.accepted++;
+        if (angleUsable) {
+          win.usable++;
+          if (highNow) {
+            win.high++;
+            if (win.sawLow) win.orderedLowThenHigh = true;
+          } else if (lowNow) {
+            win.low++;
+            win.sawLow = true;
+          }
+        }
+      }
+      if (angleUsable) {
         observability.knee_angle_usable_ticks++;
         if (out.angle >= REP_POLICIES.squat.highDeg) {
           observability.knee_angle_high_ticks++;
@@ -162,6 +243,18 @@ export function evaluateTrace(source) {
       previousCount = out.cycles;
     }
   }
+  for (const win of windowEvidence) {
+    if (win.accepted < 4) phaseWindow.gt_cycles_accepted_lt4++;
+    if (win.accepted < 6) phaseWindow.gt_cycles_accepted_lt6++;
+    if (win.usable < 4) phaseWindow.gt_cycles_usable_lt4++;
+    if (win.usable < 6) phaseWindow.gt_cycles_usable_lt6++;
+    if (win.usable === 0) phaseWindow.gt_cycles_no_usable_angle++;
+    if (win.high > 0 && win.low > 0) phaseWindow.gt_cycles_with_high_and_low++;
+    if (win.orderedLowThenHigh) phaseWindow.gt_cycles_with_low_then_high++;
+    if (win.high >= 2 && win.low >= 2) {
+      phaseWindow.gt_cycles_with_two_high_and_two_low++;
+    }
+  }
   const match = matchEvents(predictedMs, gt);
   // Per-clip event recall is mathematically undefined when this
   // publisher-annotated source has zero positive repetitions. Report null
@@ -183,6 +276,7 @@ export function evaluateTrace(source) {
     pose_visible_samples: validFrames,
     pose_sample_coverage: validFrames / source.frames.length,
     m37_observability: observability,
+    m37_phase_window_diagnostics: phaseWindow,
     event_tp: match.tp,
     event_fp: match.fp,
     event_fn: match.fn,

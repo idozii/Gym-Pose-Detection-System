@@ -117,6 +117,57 @@ test('M37.1 records original M34 sample-gate and knee-angle phase observability 
     summary.counter_accepted_ticks);
 });
 
+
+test('M37.2 audits consecutive-state requirements and publisher windows without tuning', () => {
+  const d = evaluateTrace(trace(
+    [170,170,100,100,170,170,170,170], [0,20]
+  )).m37_phase_window_diagnostics;
+  assert.equal(d.protocol, 'm37-squat-phase-window-v1');
+  assert.equal(d.annotated_cycles, 1);
+  assert.equal(d.accepted_await_high + d.accepted_await_low +
+    d.accepted_await_return, 8);
+  assert.equal(d.high_while_await_high, 2);
+  assert.equal(d.low_while_await_low, 2);
+  assert.equal(d.high_while_await_return, 2);
+  assert.equal(d.gt_cycles_accepted_lt6, 1);
+  assert.equal(d.gt_cycles_usable_lt6, 1);
+  assert.equal(d.gt_cycles_with_high_and_low, 1);
+  assert.equal(d.gt_cycles_with_two_high_and_two_low, 1);
+  assert.equal(d.gt_cycles_with_low_then_high, 1);
+  assert.equal('landmarks' in d, false);
+  assert.equal('cycle_bounds_frames' in d, false);
+  assert.equal('event_timestamps' in d, false);
+
+  const broken = evaluateTrace(trace(
+    [170,170,100,170,100,100,170,170], [0,20]
+  )).m37_phase_window_diagnostics;
+  assert.equal(broken.low_confirmation_broken, 1);
+  assert.equal(broken.annotated_cycles, 1);
+
+  const noEvents = evaluateTrace(trace(Array(8).fill(170), []))
+    .m37_phase_window_diagnostics;
+  assert.equal(noEvents.annotated_cycles, 0);
+  assert.equal(noEvents.gt_cycles_accepted_lt4, 0);
+  assert.equal(noEvents.gt_cycles_with_low_then_high, 0);
+});
+
+test('M37.2 detects phase expiration without touching original M34 cycle policy', () => {
+  const d = trace([170,170,100,100,170,170,170,170], [0,20],
+    {fps:10,totalFrames:400});
+  d.frames.forEach((frame, i) => { frame.time_ms = i * 400; });
+  d.frames[2].time_ms = 13200;
+  d.frames[3].time_ms = 13600;
+  d.frames[4].time_ms = 14000;
+  d.frames[5].time_ms = 14400;
+  d.frames[6].time_ms = 14800;
+  d.frames[7].time_ms = 15200;
+  const evaluated = evaluateTrace(d);
+  assert.equal(evaluated.m37_phase_window_diagnostics.phase_expiration_compatible_resets, 0);
+  // A long interval triggers M34's tracking-gap reset first; the diagnostic
+  // must not misattribute it to the max-cycle expiry.
+  assert.equal(evaluated.m37_observability.tracking_gap_resets, 1);
+});
+
 test('M37 prevents one detected event from matching two ground truths', () => {
   const actual = matchEvents([2000], [
     {endMs: 1900, toleranceMs: 300},

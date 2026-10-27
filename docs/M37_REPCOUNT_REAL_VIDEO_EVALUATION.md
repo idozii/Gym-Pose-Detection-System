@@ -213,6 +213,73 @@ held-out test split left untouched until final evaluation. Changing
 M34 thresholds or sample cadence based on these exact validation
 clips and reporting on them as independent performance is invalid.
 
+
+## M37.2 - Confirmed bottleneck: few complete M34 state transitions
+
+The owner's M37.1 replay on **the same 3 validation Squat videos** returned
+TP=1, FP=0, FN=44, F1=0.04348, with 210 input and 210 accepted
+samples (**0 gate skips**), 185 usable 2D knee-angle ticks
+(**88.10%** of accepted ticks), 80 high-angle ticks, 56 low-angle
+ticks, 49 middle ticks, but only 5 initial-high confirmations,
+2 low confirmations and 1 completed return transition.
+Three side changes and zero tracking-gap resets were observed.
+This rules out the M34 sampling *gate* and long tracking gaps as
+major contributors in this run. It does **not** rule out 400ms
+temporal undersampling, side-change interruptions, camera
+projection mismatch, nonconsecutive threshold measurements,
+or a mismatch between RepCount annotations and M34 cycle semantics.
+
+M37.2 adds a second, **aggregate-only, descriptive** diagnostic
+object `m37_phase_window_diagnostics` to the M37 JSON report:
+accepted ticks by M34 state, threshold observations in their
+relevant phases, incomplete one-sample confirmations, side changes
+while a cycle is pending and phase resets compatible with
+max-duration expiry. For each publisher-annotated cycle interval,
+it also counts how many accepted and usable samples fell inside,
+whether high/low bins occurred and whether low was followed
+by high. Only summed counts and fractions are saved, never
+per-video identifiers, per-cycle classifications, timestamps
+or landmark arrays.
+
+**Important:** A publisher cycle interval might begin after the
+high pose that the counter requires, or might not include a
+full return endpoint. Its windows are half-open `[start,end)`.
+A measurement within the window is only a descriptive proxy,
+not proof that M34 *should* have counted. Counts in different
+windows are not independent research subjects. These are
+post-hoc failure diagnostics, not a method-selection benchmark.
+
+To rerun **the original 3-video pilot** without overwriting it:
+
+```bash
+cd ~/Desktop/Gym-Pose-Detection-System
+git pull --ff-only
+source .venv-m20/bin/activate
+python -m pytest tests/test_m37_repcount_video_benchmark.py -q
+npm test --prefix web
+
+python -m scripts.m37_repcount_video_benchmark \
+  --source-archive ~/Downloads/RepCountA.tar.gz \
+  --split validation --max-videos 3 \
+  --root data/external/m37_repcount_cycle_audit \
+  --report data/processed/m37_repcount_cycle_audit.json
+
+python - <<'PY'
+import json
+with open('data/processed/m37_repcount_cycle_audit.json') as f:
+    report = json.load(f)
+print('TP, FP, FN:', report['event_tp'], report['event_fp'], report['event_fn'])
+print(json.dumps(report['m37_phase_window_diagnostics'], indent=2))
+PY
+```
+
+The 8.9 GB TAR.GZ is streamed again for the publisher's CSV
+and selected videos, and only three videos are extracted to an
+ignored, new local root. This audit leaves M34, event matching,
+source split, real-video benchmark scores and model inference
+unchanged. Improvements must be developed and evaluated with
+appropriately separated development and held-out data.
+
 ## Original RepCountA TAR.GZ support (owner's actual 8.9 GB download)
 
 The user confirmed the official author-hosted source was downloaded as:

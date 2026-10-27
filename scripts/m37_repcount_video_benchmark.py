@@ -412,6 +412,77 @@ def _aggregate_observability(results: list[dict]) -> dict | None:
     }
 
 
+
+# M37.2 aggregate-only post-hoc phase and ground-truth-window audit.
+# Per-video labels, frame times and joint coordinates remain local/ephemeral.
+_PHASE_WINDOW_FIELDS = (
+    "accepted_await_high", "accepted_await_low", "accepted_await_return",
+    "high_while_await_high", "low_while_await_low",
+    "high_while_await_return", "high_confirmation_broken",
+    "low_confirmation_broken", "return_confirmation_broken",
+    "side_switch_while_pending", "phase_expiration_compatible_resets",
+    "annotated_cycles", "gt_cycles_accepted_lt4", "gt_cycles_accepted_lt6",
+    "gt_cycles_usable_lt4", "gt_cycles_usable_lt6",
+    "gt_cycles_no_usable_angle", "gt_cycles_with_high_and_low",
+    "gt_cycles_with_low_then_high", "gt_cycles_with_two_high_and_two_low",
+)
+
+
+def _aggregate_phase_windows(results: list[dict]) -> dict | None:
+    values = [r.get("m37_phase_window_diagnostics") for r in results]
+    if not all(isinstance(v, dict) and
+               v.get("protocol") == "m37-squat-phase-window-v1"
+               for v in values):
+        # Old mock replay outputs have no diagnostics: absence != zero.
+        return None
+    totals = {}
+    for field in _PHASE_WINDOW_FIELDS:
+        raw = [v.get(field) for v in values]
+        if any(type(x) is not int or x < 0 for x in raw):
+            raise ValueError("Invalid M37.2 diagnostic: " + field)
+        totals[field] = sum(raw)
+    n = totals["annotated_cycles"]
+    accepted = sum(totals[f] for f in (
+        "accepted_await_high", "accepted_await_low", "accepted_await_return"
+    ))
+    if n != sum(r["annotated_rep_count"] for r in results):
+        raise ValueError("M37.2 annotated cycle total does not match labels")
+    if any(totals[f] > n for f in _PHASE_WINDOW_FIELDS
+           if f.startswith("gt_cycles_")):
+        raise ValueError("M37.2 cycle window count exceeds labeled cycles")
+    if (totals["gt_cycles_accepted_lt4"] > totals["gt_cycles_accepted_lt6"] or
+        totals["gt_cycles_usable_lt4"] > totals["gt_cycles_usable_lt6"] or
+        totals["gt_cycles_with_low_then_high"] >
+            totals["gt_cycles_with_high_and_low"] or
+        totals["gt_cycles_with_two_high_and_two_low"] >
+            totals["gt_cycles_with_high_and_low"]):
+        raise ValueError("M37.2 inconsistent cycle window counts")
+    if any(totals[field] > accepted for field in (
+        "high_while_await_high", "low_while_await_low",
+        "high_while_await_return"
+    )):
+        raise ValueError("M37.2 state observations exceed accepted ticks")
+    return {
+        "protocol": "m37-squat-phase-window-v1",
+        "scope": "Post-hoc observations, not a tuned detector, accuracy or causality claim",
+        "videos_included": len(results),
+        **totals,
+        "fraction_annotated_cycles_usable_lt4": (
+            totals["gt_cycles_usable_lt4"] / n if n else None
+        ),
+        "fraction_annotated_cycles_with_low_then_high": (
+            totals["gt_cycles_with_low_then_high"] / n if n else None
+        ),
+        "limitation": (
+            "Publisher frame-interval windows are half-open; their start "
+            "may exclude an initial high pose. Sample counts/threshold bins "
+            "are not guaranteed independent or sufficient for M34 to count. "
+            "Phase timeout labels are observationally compatible, not direct "
+            "proof of reset cause. Do not tune on this 3-video pilot."
+        )
+    }
+
+
 def summarise(results: list[dict], exclusions: Counter,
               *, split: str, revision: str, source_hash: str,
               candidates: int, source_mode: str = "huggingface_third_party_mirror") -> dict:
@@ -479,6 +550,7 @@ def summarise(results: list[dict], exclusions: Counter,
             r["pose_sample_coverage"] for r in results
         ) / n,
         "m37_observability": _aggregate_observability(results),
+        "m37_phase_window_diagnostics": _aggregate_phase_windows(results),
         "event_matching_tolerance": (
             "max(750ms, 35% ground-truth duration), cap 2500ms"
         ),
