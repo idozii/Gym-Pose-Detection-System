@@ -1,19 +1,15 @@
 FROM python:3.11-slim
 WORKDIR /app
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HF_HUB_DISABLE_TELEMETRY=1
 COPY pyproject.toml README.md /app/
 COPY src /app/src
-RUN python -m pip install --no-cache-dir '.[webapi]'
-# Trusted model bundles must be mounted outside the image at runtime.
-# DO NOT copy artifacts/, data/, publisher test clips or any pickles here.
-# Render shell/SCP needs a real non-root login home with a private .ssh dir.
-# The model mount lives OUTSIDE the home directory and never enters the image.
+RUN python -m pip install --no-cache-dir '.[webapi,hfmodels]'
+# DO NOT COPY owner model artifacts or publisher media into this public image.
+# Render Free has no SSH or persistent disk, only temporary verified downloads.
 RUN groupadd --gid 10001 pose && \
-    useradd --uid 10001 --gid pose --create-home --shell /bin/bash pose && \
-    mkdir -p /home/pose/.ssh /private-models && \
-    chmod 700 /home/pose/.ssh && \
-    chown -R pose:pose /home/pose /private-models
+    useradd --uid 10001 --gid pose --create-home --shell /usr/sbin/nologin pose && \
+    mkdir -p /tmp/gym-pose-models && chown -R pose:pose /tmp/gym-pose-models
 USER pose:pose
 EXPOSE 8000
-# Render supplies PORT; local Docker/Compose continue to default to 8000.
-CMD ["sh","-c","exec uvicorn gym_pose.web_api:app --host 0.0.0.0 --port ${PORT:-8000} --no-access-log --workers 1"]
+# No model downloads until explicit owner opt-in. A failed SHA256 pin aborts.
+CMD ["sh","-c","python -m gym_pose.private_model_bootstrap && exec uvicorn gym_pose.web_api:app --host 0.0.0.0 --port ${PORT:-8000} --no-access-log --workers 1"]
