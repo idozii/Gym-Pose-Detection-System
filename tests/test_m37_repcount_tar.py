@@ -251,3 +251,20 @@ def test_tar_path_benchmark_reuses_M34_pipeline_without_network(tmp_path):
     assert len(seen) == 1
     assert not list((tmp_path / "work").glob("m37-traces-*"))
     assert "test_squat.mp4" not in (tmp_path / "report.json").read_text()
+
+
+def test_m39_explicit_train_video_policy_ignores_splitless_ambiguous_members(tmp_path):
+    archive = tmp_path / "RepCountA.tar.gz"
+    train = (
+        "name,type,count,L1,L2\n"
+        "example.mp4,squat,1,0,20\n"
+    ).encode("utf-8")
+    with tarfile.open(archive, "w:gz") as tf:
+        _add_bytes(tf, "LLSP/annotation/train.csv", train)
+        _add_bytes(tf, "LLSP/video/example.mp4", b"n" * 12000)
+        _add_bytes(tf, "LLSP/video/valid/example.mp4", b"v" * 12000)
+    with pytest.raises(ValueError, match="No pre-annotated Squat"):
+        selected_from_tar_archive(
+            archive, tmp_path/"strict", split="train", limit=1,
+            require_explicit_split=True
+        )

@@ -187,7 +187,8 @@ def _copy_selected(tar: tarfile.TarFile, member: tarfile.TarInfo, destination: P
 
 def selected_from_tar_archive(
     archive: Path, root: Path, *, split: str = "validation",
-    limit: int = 3, annotations_csv: Path | None = None
+    limit: int = 3, annotations_csv: Path | None = None,
+    require_explicit_split: bool = False
 ) -> tuple[list[dict], str]:
     _require_tar(archive)
     if split not in MATCH_SPLITS or type(limit) is not int or not 1 <= limit <= 20:
@@ -215,6 +216,12 @@ def selected_from_tar_archive(
             continue
         key = path.name.lower()
         if key not in labels or not _member_matches_split(path, split):
+            continue
+        # Development-only M39 requires proof from the TAR member path
+        # itself that the video belongs to the requested publisher split.
+        if require_explicit_split and not any(
+            folder.lower() in MATCH_SPLITS[split] for folder in path.parts[:-1]
+        ):
             continue
         if key in copied:
             raise ValueError("Ambiguous duplicate selected Squat video name in TAR.GZ")

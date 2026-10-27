@@ -68,6 +68,21 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M39 - TRAIN-only temporal counting baseline (development, NOT held-out test)
+
+[M39 fixed temporal baseline protocol](docs/M39_TRAIN_ONLY_TEMPORAL_BASELINE.md)
+compares an always-zero count control, the **unchanged M34** browser
+counter, and a simple single-observation low-to-high knee-angle
+return detector on **identical publisher TRAIN pose traces**.
+The frozen exploratory M39 detector is separate from the
+deployed website; this is not a trained model and not a
+validated improvement. No validation/TEST clips, private webcam,
+manual rep labels or external dataset download are used.
+All outputs retain aggregate statistics only; any future TEST
+evaluation requires a pre-registered, frozen research design.
+
+---
+
 ### M38 - Reproducible 3-video real-pilot failure audit (no data reload)
 
 [M38 research protocol and aggregate baseline](docs/M38_PILOT_FAILURE_AUDIT.md)
