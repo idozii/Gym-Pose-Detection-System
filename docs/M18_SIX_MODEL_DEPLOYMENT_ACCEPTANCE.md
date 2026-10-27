@@ -70,8 +70,15 @@ M18 adds:
 
 ## B. Cloud backend (requires owner-provided six model artifacts)
 
+For the optional paid Render Blueprint, model transfer and verification
+instructions, see [Render private model hosting](M18_RENDER_PRIVATE_MODEL_HOST.md).
+
+Render's persistent disk is operator-private but is **not an OS-level
+read-only volume**; restrict ownership and file permissions after upload.
+
+
 Deploy `backend/Dockerfile` via an owner-controlled HTTPS Python/Docker host
-with a **private, persistent, read-only model volume**. Render/Railway or
+with a **private, persistent model volume**. Render/Railway or
 a secured VM can be used **only if the chosen plan actually supports this**;
 the public Vercel frontend is not itself a Python model host.
 
