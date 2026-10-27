@@ -16,6 +16,21 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M22 - Pairwise Push-up detector and upper-body gate ablation
+
+Real owner M21 TRAIN-only diagnostics recorded **262/513** frames rejected
+for complete-side limb visibility, **227/513** with no detectable pose,
+and **24/513** accepted. Ankles and knees were most often invisible.
+
+[M22 TRAIN-only ablation](docs/M22_PUSHUP_TRAIN_GATE_DETECTOR_ABLATION.md)
+compares three MediaPipe pose-detection configurations against the same
+original complete-side and experimental upper-body admission gates on
+identical sampled frames. It is diagnostic-only, includes synthetic
+holdout isolation tests and does not retrain or deploy models. Independent
+validation and TEST camera videos remain untouched.
+
+---
+
 ### M21 - Diagnose front-view Push-up coverage loss (local, TRAIN only)
 
 The owner extracted **266/294** Gym7 videos. All **28 rejected**
