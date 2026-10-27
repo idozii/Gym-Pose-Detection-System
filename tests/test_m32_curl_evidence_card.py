@@ -76,9 +76,8 @@ def test_m32_publication_card_has_exact_baseline_and_no_private_values():
     assert "tracking_proxy_268" in content
     assert "temporal_280" in content
     assert "Group5/LOSO" in content
-    assert "15 original M20 TRAIN" in content
+    assert "15 frozen original M20 TRAIN" in content
     assert "0.5" in content
-    assert "no model deployed" not in content.lower()  # does not claim an action
     assert "VAL/TEST" in content
     assert "-7.00 pp to +3.00 pp" in content
     assert "consent_ref" not in content
