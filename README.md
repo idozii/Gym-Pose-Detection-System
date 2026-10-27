@@ -68,6 +68,25 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M45 - Experimental relative-excursion rep comparator (TRAIN only)
+
+[M45 relative excursion experiment](docs/M45_TRAIN_RELATIVE_EXCURSION_STUDY.md)
+tests one standalone, non-deployed hypothesis inspired by owner-run
+M44 diagnostics: the original <=120-degree knee-angle rule missed
+132 GT repetitions with valid in-window pose samples on the
+20-video TRAIN cohort, including 80 minimum angles in
+(120,150] degrees. Instead of arbitrarily raising the absolute
+threshold, the M45 candidate counts a >=35-degree same-side
+descent from a >=155-degree peak, followed by >=35-degree
+recovery to >=155 degrees within the original timing
+constraints. Compare unchanged M39/M34/zero on identical
+publisher TRAIN 200ms poses and every-other 400ms subseries.
+M45 aggregates FP tradeoffs and paired GT/video error changes;
+its outputs are exploratory **in-sample** development results,
+not generalization, safety, or a deployed model.
+
+---
+
 ### M44 - TRAIN angular observability and publisher annotation boundary audit
 
 [M44 descriptive boundary-angle experiment](docs/M44_TRAIN_BOUNDARY_ANGLE_AUDIT.md)
