@@ -131,7 +131,8 @@ export function evaluateTrace(source) {
     event_f1: precision + recall ? 2 * precision * recall / (precision + recall) : 0,
     mean_absolute_matched_end_error_ms: match.mean_absolute_matched_end_error_ms,
     tolerance_policy: 'max(750ms, 35% labeled cycle duration), capped 2500ms',
-    source_frame_annotation_sync_verified: true,
+    source_frame_bounds_within_decoded_clip: true,
+    source_frame_annotation_sync_independently_verified: false,
     browser_python_estimator_parity_validated: false,
     m34_counter_parameters_modified: false,
     disclaimer: 'Measured on selected labeled third-party Squat videos. Counts depend on camera pose visibility, source clipping, fixed event tolerance and Python pose estimator. Not a technique safety or correctness classifier.'
