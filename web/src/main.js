@@ -115,8 +115,8 @@ document.querySelector('#app').innerHTML = `
           <section class="exercise-feedback" id="exerciseFeedback" aria-label="Local movement feedback" aria-live="polite">
             <div class="feedback-head"><span>LOCAL MOVEMENT FEEDBACK / NO FORM VERDICT</span><span class="feedback-state" id="feedbackState">CAMERA OFFLINE</span></div>
             <div class="feedback-metrics">
-              <div><span id="feedbackMetricName">JOINT ANGLE (2D)</span><strong id="feedbackAngle">—</strong></div>
-              <div><span>10-SECOND OBSERVED RANGE</span><strong id="feedbackRange">—</strong></div>
+              <div><span id="feedbackMetricName">JOINT ANGLE (2D)</span><strong id="feedbackAngle">-</strong></div>
+              <div><span>10-SECOND OBSERVED RANGE</span><strong id="feedbackRange">-</strong></div>
             </div>
             <p class="feedback-note" id="feedbackNote">Start your camera to observe measurable joint movement.</p>
             <p class="feedback-camera" id="feedbackCamera">Camera guidance will appear here.</p>
@@ -268,8 +268,8 @@ function updateInspector() {
     const policy = EXERCISE_FEEDBACK[state.exercise];
     const feedback = state.running ? state.lastExerciseFeedback : null;
     ui.feedbackMetricName.textContent = policy.measure.toUpperCase();
-    ui.feedbackAngle.textContent = feedback?.angle == null ? '—' : `${feedback.angle.toFixed(0)}°`;
-    ui.feedbackRange.textContent = feedback?.range == null ? '—' : `${feedback.range.toFixed(0)}°`;
+    ui.feedbackAngle.textContent = feedback?.angle == null ? '-' : `${feedback.angle.toFixed(0)}°`;
+    ui.feedbackRange.textContent = feedback?.range == null ? '-' : `${feedback.range.toFixed(0)}°`;
     ui.feedbackState.textContent = !state.running ? 'CAMERA OFFLINE'
       : feedback?.status === 'observing' ? 'MOVEMENT OBSERVED'
         : feedback?.status === 'collecting' ? 'COLLECTING SAMPLES' : 'NOT ENOUGH TRACKING';
