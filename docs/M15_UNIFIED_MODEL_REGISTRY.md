@@ -1,4 +1,4 @@
-# Milestone 15A — offline multi-exercise model registry / source-label inference contract
+# Milestone 15A - offline multi-exercise model registry / source-label inference contract
 
 ## Stage and evidence
 

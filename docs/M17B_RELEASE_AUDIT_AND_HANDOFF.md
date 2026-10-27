@@ -1,4 +1,4 @@
-# M17B — final source-integrity gate and research-demo handoff
+# M17B - final source-integrity gate and research-demo handoff
 
 ## Confirmed software milestone
 

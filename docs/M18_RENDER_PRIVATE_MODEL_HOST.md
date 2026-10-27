@@ -1,4 +1,4 @@
-# M18 — zero-cost experimental Render API + private Hugging Face weights
+# M18 - zero-cost experimental Render API + private Hugging Face weights
 
 **0 paid compute, 0 paid persistent disk, 0 paid storage by design** within
 providers' current free quotas. No resources are created by merging this PR.
@@ -35,7 +35,7 @@ storage has a free quota, subject to their limits. Make sure your Render
 workspace has **no payment method** if you require services to stop rather
 than bill after free usage limits. Do not enable paid hardware or disk.
 
-## Step 1 — publish only the owner's original six models to a PRIVATE repo
+## Step 1 - publish only the owner's original six models to a PRIVATE repo
 
 Perform on your own Linux computer in the existing repository (all ignored
 `artifacts/`, datasets and notebook remain untouched by Git):
@@ -66,7 +66,7 @@ only the owner's private model repository, if your account permits that scope.
 Do not share it with ChatGPT, GitHub issues, public README, Vercel
 `VITE_*` variables or other users.
 
-## Step 2 — import the free Render Blueprint
+## Step 2 - import the free Render Blueprint
 
 In the [Render Dashboard](https://dashboard.render.com), select
 **New → Blueprint**, choose
@@ -117,7 +117,7 @@ cross-MediaPipe camera source-label scores are scientifically valid.
 Render startup logs now record ONLY the loaded six-model count without
 printing Hugging Face tokens, artifact paths or landmark contents.
 
-## Step 3 — verify six-model readiness BEFORE connecting Vercel
+## Step 3 - verify six-model readiness BEFORE connecting Vercel
 
 On the local computer, run (replace with the real hostname Render gave you):
 

@@ -1,4 +1,4 @@
-# Milestone 16D — true scored-only inference latency and per-task acceptance
+# Milestone 16D - true scored-only inference latency and per-task acceptance
 
 ## Owner-observed M16C evidence
 
