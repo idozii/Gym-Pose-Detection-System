@@ -1,0 +1,86 @@
+{
+  "protocol_id": "m29-pushup-prospective-independent-cohort-v1",
+  "status": "pre_data_collection_protocol",
+  "publication_claim": "research_only_not_validated_coaching",
+  "data_and_subjects": {
+    "exercise": "pushup",
+    "source": "NEW consented adult participants not appearing in original Gym7",
+    "source_independence_requires_manual_verification": true,
+    "exclude_original_m20_val_and_test": true,
+    "views": ["front", "side", "diagonal"],
+    "labels": ["good", "bad"],
+    "label_unit": "whole_video",
+    "rater_count": 2,
+    "disagreement_requires_independent_adjudicator": true,
+    "annotator_agreement_must_be_reported": true,
+    "pilot_target": {"people": 5, "all_view_label_cells_present": true},
+    "study_planning_target": {"people": 20, "clips": 120, "minimum_per_view_label_cell": 10}
+  },
+  "model_training": {
+    "training_population": "frozen_original_m20_seed42_train_people_only",
+    "training_clip_admission": "m23_upper_body",
+    "source_features": [
+      "data/features/m23_pushup_train_upper_v1/train_upper_body.csv",
+      "data/features/m27_pushup_train_motion_v1.csv"
+    ],
+    "pose_detector": "mediapipe_solutions_pose_complexity1_confidence0.5",
+    "sample_fps": 2.0,
+    "max_frames_per_clip": 240,
+    "min_accepted_frames": 4,
+    "visibility_threshold": 0.35,
+    "model": "RandomForestClassifier",
+    "n_estimators": 200,
+    "min_samples_leaf": 2,
+    "class_weight": "balanced",
+    "random_state": 42,
+    "prediction_threshold_bad": 0.5
+  },
+  "frozen_comparisons": [
+    {
+      "name": "baseline_64",
+      "role": "primary_reference",
+      "columns": "original_64_m23"
+    },
+    {
+      "name": "kinematic_76",
+      "role": "primary_motion_hypothesis",
+      "columns": "64_m23_plus_first_12_m27_kinematic"
+    },
+    {
+      "name": "temporal_80",
+      "role": "secondary_exploratory",
+      "columns": "64_m23_plus_all_16_m27_temporal"
+    }
+  ],
+  "excluded_from_primary_decision": [
+    "quality_proxy_68",
+    "threshold_or_hyperparameter_search_using_external_cohort",
+    "repeated_posthoc_external_dataset_selection",
+    "original_m20_final_test_inspection"
+  ],
+  "evaluation": {
+    "unit": "independent_external_video",
+    "primary_metric": "balanced_accuracy_on_identically_admitted_video_ids",
+    "secondary_metrics": [
+      "bad_recall",
+      "bad_precision",
+      "bad_f1",
+      "average_precision_bad",
+      "view_specific_metrics",
+      "coverage_on_all_consented_videos",
+      "annotator_agreement_fraction"
+    ],
+    "rejects": "ABSTAIN_if_insufficient_usable_pose",
+    "uncertainty": "paired_participant_cluster_bootstrap_exploratory",
+    "pairing": "all_candidates_scored_on_identical_accepted_clips",
+    "no_refit_or_threshold_selection_on_external_results": true,
+    "small_sample_reporting": "descriptive_exploratory_only"
+  },
+  "notes": [
+    "M28 14-subject TRAIN confidence intervals all include zero",
+    "The model must not be presented as validated gym coaching or injury-risk assessment",
+    "A signed consent form or contact information must never enter the repository",
+    "Preexisting M20 VAL has been inspected earlier and is not a new independent cohort",
+    "Source data, video features, model joblib files, tokens and person-level results remain local"
+  ]
+}
