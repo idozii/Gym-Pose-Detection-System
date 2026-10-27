@@ -121,7 +121,7 @@ def test_m32_refuses_invalid_uncertainty_and_camera_slices():
     r = fake_m31()
     r["strategies"]["loso"]["subjects_with_better_or_worse_accuracy_vs_baseline"][
         "temporal_280"]["worse_subjects"] = 4
-    with pytest.raises(ValueError, match="sum to 15"):
+    with pytest.raises(ValueError, match="15 anonymized participant outcomes"):
         m32.build_card(r)
 
 
