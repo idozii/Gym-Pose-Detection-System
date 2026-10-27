@@ -16,6 +16,24 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M28 - TRAIN-only Push-up temporal robustness and feature-family ablation
+
+Owner M27 real-data TRAIN-only GroupKFold on 83 clips and 14 subjects:
+64-feature baseline BA **54.18%**, 80-feature temporal BA **58.91%**,
+a **+4.73 percentage point** exploratory gain; F1 bad and AP bad
+rose slightly, while **recall bad fell from 51.22% to 48.78%**.
+No original M20 VAL/TEST subject was evaluated by M27.
+
+[M28 temporal-family robustness](docs/M28_PUSHUP_TEMPORAL_ROBUSTNESS.md)
+compares the original 64, motion-kinematics-only 76, pose-quality-proxy
+68 and combined 80 feature sets on identical frozen TRAIN clips, both
+GroupKFold(5) and Leave-One-Subject-Out, plus descriptive paired
+subject-cluster bootstrap intervals. It uses the existing local CSVs,
+no new media download, no TEST inspection and no public model release.
+The previously consulted M20 VAL is NOT used for adaptive model selection.
+
+---
+
 ### M27 - TRAIN-only Push-up motion trajectory hypothesis
 
 Owner M26 original VAL observed: Full paired accepted **23/30**
