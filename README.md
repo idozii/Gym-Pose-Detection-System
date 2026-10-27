@@ -16,6 +16,22 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M21 - Diagnose front-view Push-up coverage loss (local, TRAIN only)
+
+The owner extracted **266/294** Gym7 videos. All **28 rejected**
+clips came from **front-view Push-up** (14 original good + 14 original
+bad), where coverage was **20/48 (41.7%)**; all Curl and other
+Push-up camera views had 100% pose clip extraction coverage.
+
+Use the new [M21 local front camera pose audit](docs/M21_PUSHUP_FRONT_COVERAGE_AUDIT.md)
+to measure whether the failures stem from no detected person, the
+original same-side limb visibility rule, degenerate torso scale or
+too few valid frames. The audit **decodes only original TRAIN-subject
+rejected clips**, not VAL/TEST subjects, and does not change the deployed
+six source-RF models or the M20 baseline.
+
+---
+
 ### M20 - additional gym exercises (local research pipeline, not yet deployed)
 
 The scientific aim is **exercise movement-quality research**, not merely
