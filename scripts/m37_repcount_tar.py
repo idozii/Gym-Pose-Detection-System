@@ -190,7 +190,7 @@ def selected_from_tar_archive(
     limit: int = 3, annotations_csv: Path | None = None,
     require_explicit_split: bool = False,
     selection_policy: str = "archive_order", selection_seed: int = 2026,
-    count_filter: str = "all"
+    count_filter: str = "all", selection_offset: int = 0
 ) -> tuple[list[dict], str]:
     _require_tar(archive)
     if split not in MATCH_SPLITS or type(limit) is not int or not 1 <= limit <= 20:
@@ -205,6 +205,12 @@ def selected_from_tar_archive(
         raise ValueError("Selection seed must be a nonnegative 32-bit integer")
     if selection_policy == "stable_hash" and not require_explicit_split:
         raise ValueError("Stable-hash selection requires an explicit source split")
+    if type(selection_offset) is not int or not 0 <= selection_offset <= 1_000_000:
+        raise ValueError("Selection offset must be a nonnegative integer <=1000000")
+    if selection_offset and (selection_policy != "stable_hash" or
+                             split != "train" or not require_explicit_split or
+                             count_filter != "all"):
+        raise ValueError("Nonzero cohort offset requires explicit publisher TRAIN stable_hash selection")
     if annotations_csv is not None:
         if not annotations_csv.is_file() or annotations_csv.suffix.lower() != ".csv":
             raise ValueError("Expected original authors' annotation CSV")
@@ -233,7 +239,16 @@ def selected_from_tar_archive(
         ranked = sorted(labels, key=lambda name: (
             hashlib.sha256(salt + name.encode("ascii")).digest(), name
         ))
-        eligible_names = set(ranked[:limit])
+        if selection_offset >= len(ranked):
+            raise ValueError(
+                "M46 unseen TRAIN cohort unavailable: no Squat filenames "
+                "beyond the frozen first-20 source-hash ranks"
+            )
+        eligible_names = set(ranked[selection_offset:selection_offset + limit])
+        # With a nonzero offset there must be no silent fallback to reused
+        # first-20 development source clips if source video members are absent.
+        if selection_offset:
+            assert eligible_names.isdisjoint(set(ranked[:selection_offset]))
     extracted = []
     copied = set()
     member_count = 0
@@ -274,6 +289,11 @@ def selected_from_tar_archive(
         copied.add(key)
         if len(extracted) == limit:
             break
+    if selection_offset and eligible_names is not None and len(copied) != len(eligible_names):
+        raise ValueError(
+            "M46 missing explicitly TRAIN-labeled video members for "
+            "the fixed unseen source hash cohort; refusing silent replacements"
+        )
     if not extracted:
         raise ValueError(
             "No pre-annotated Squat videos in TAR.GZ matched the "
