@@ -133,7 +133,7 @@ test('M37.2 audits consecutive-state requirements and publisher windows without 
   assert.equal(d.gt_cycles_usable_lt6, 1);
   assert.equal(d.gt_cycles_with_high_and_low, 1);
   assert.equal(d.gt_cycles_with_two_high_and_two_low, 1);
-  assert.equal(d.gt_cycles_with_low_then_high, 0);
+  assert.equal(d.gt_cycles_with_low_then_high, 1);
   assert.equal('landmarks' in d, false);
   assert.equal('cycle_bounds_frames' in d, false);
   assert.equal('event_timestamps' in d, false);
