@@ -79,7 +79,7 @@ the always-zero baseline. These are limited exploratory findings,
 not successful generalization, browser parity or evidence of
 safe exercise technique.
 
-Run with \`python -m scripts.m38_pilot_aggregate_audit\` and the
+Run with `python -m scripts.m38_pilot_aggregate_audit` and the
 three local reports (full command in the M38 document). No
 video/pose decode, manual labels, external downloads, M34 tuning,
 or touching TEST is required. A separate development cohort and
