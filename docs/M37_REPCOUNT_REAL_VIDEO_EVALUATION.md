@@ -112,8 +112,28 @@ headers, even though it does **not write** the 8.9 GB of
 videos to disk. This can be CPU/I/O heavy; do not mistake
 its streaming progress for a full extraction. The printed
 report identifies first CSV names and video member paths.
-The actual author's 8.9 GB archive layout has **not been
-inspected by the project maintainers**.
+Owner-provided inspection output (27 October 2026) now confirms the
+archive's **member layout**, not its source authenticity:
+
+```text
+archive_format: tar.gz
+archive_members: 1065
+video_members: 1041
+csv_members_visible_first_25:
+  LLSP/annotation/test.csv
+  LLSP/annotation/train.csv
+  LLSP/annotation/valid.csv
+example_video_member_path: LLSP/video/test/stu9_57.mp4
+```
+
+Use the **embedded `LLSP/annotation/valid.csv`** for the Squat
+validation pilot. The TAR reader recognizes `valid.csv` as the
+validation split and searches for matching basenames under the
+corresponding video split. Third-party reference copies of this
+LLSP validation CSV contain both `squat` and historical `squant`
+annotations, but the owner's actual CSV bytes and clip/frame
+alignment are **not** independently verified here. A successful
+archive listing is **not** a real-video benchmark result.
 
 If the TAR contains an original split CSV with headers
 `name,type,count,L1,L2,...`, you can immediately run:
@@ -130,36 +150,26 @@ with a **250 MiB cap per video**. Missing pose traces
 are temporary and discarded. The M34 Node.js rep counter
 and evaluation metric logic remain unchanged.
 
-**If the archive includes video but no source annotation
-CSV**, obtain the existing publisher CSV - for example
-the official repository's
-[`open_set/new_valid.csv`](https://github.com/SvipRepetitionCounting/TransRAC/blob/main/open_set/new_valid.csv)
-- without relabeling anything:
+**For this inspected archive, do not pass `--annotations-csv`:**
+the validation CSV already exists inside the TAR.GZ and is the
+appropriate starting point. The embedded-label mode scans the
+compressed archive twice (once for source labels, once for
+selective video extraction), but does not unpack the 8.9 GB
+archive or require new labels.
 
-```bash
-mkdir -p data/external/m37_repcount
-curl -fL --retry 2 \
-  'https://raw.githubusercontent.com/SvipRepetitionCounting/TransRAC/main/open_set/new_valid.csv' \
-  -o data/external/m37_repcount/publisher_new_valid.csv
+For a *different* publisher archive genuinely missing a split
+CSV, use `--annotations-csv /path/to/authorized/valid.csv` only
+when its publisher annotation schema, action labels, split and
+exact video basenames match the archive. An external CSV enables
+a one-pass selective extraction.
 
-python -m scripts.m37_repcount_video_benchmark \
-  --source-archive ~/Downloads/RepCountA.tar.gz \
-  --annotations-csv data/external/m37_repcount/publisher_new_valid.csv \
-  --split validation --max-videos 3
-```
-
-This explicit original CSV path allows the TAR reader
-to extract selected annotated clips **in one compressed
-streaming pass**, rather than scanning the 8.9 GB source
-twice. The implementation uses the first up to 3 matched
-Squat video members encountered **in fixed TAR archive
-order**, not a selection based on prediction quality.
-Only exact filename matches are accepted. If the official
-`new_valid.csv` is for a different split or archive naming
-layout, the benchmark must stop instead of inventing
-video-to-label associations. `new_valid.csv` includes
-some historical action names written `squant`, which the
-parser conservatively maps to Squat.
+**Important correction:** The examined upstream TransRAC
+`open_set/new_valid.csv` is not a suitable default for this
+Squat pilot: its visible action entries are `front_raise` and
+`frontraise`, with no `squat` or `squant` entries.
+Do not download it expecting Squat matches. M37 must fail
+rather than associate an unrelated action class with Squat
+or fabricate repetition accuracy.
 
 M37 cannot automatically load an archive nested inside
 TAR.GZ or decode a differently structured publisher
@@ -224,12 +234,11 @@ pipeline and generates the same aggregate-only report.
 
 If the video ZIP has **no source CSV inside**, use
 `--annotations-csv` pointing to an original RepCount
-split CSV obtained from the publisher. For example,
-the official [TransRAC](https://github.com/SvipRepetitionCounting/TransRAC)
-repository has
-[`open_set/new_valid.csv`](https://github.com/SvipRepetitionCounting/TransRAC/blob/main/open_set/new_valid.csv).
-Only use it if the CSV's **exact video filenames match**
-the actual ZIP contents. No labels need to be created by
+split CSV obtained from the publisher. Choose a publisher CSV with **Squat annotations** in the intended
+split and exact matching video basenames. The inspected
+TransRAC `open_set/new_valid.csv` contains front-raise entries,
+not Squat records, so it is **not** an appropriate default for
+this Squat-only benchmark. No labels need to be created by
 hand:
 
 ```bash
