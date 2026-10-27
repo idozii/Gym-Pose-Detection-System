@@ -316,3 +316,20 @@ def test_m40_stable_hash_requires_explicit_split_and_valid_seed(tmp_path):
             limit=2, require_explicit_split=True,
             selection_policy="stable_hash", selection_seed=-1
         )
+
+
+def test_m40_rejects_video_paths_with_conflicting_train_test_directories(tmp_path):
+    csv_data = b"name,type,count,L1,L2\nclip.mp4,squat,1,0,20\n"
+    archive = tmp_path / "conflicting.tar.gz"
+    with tarfile.open(archive, "w:gz") as tf:
+        _add_bytes(tf, "LLSP/annotation/train.csv", csv_data)
+        _add_bytes(tf, "LLSP/video/train/test/clip.mp4", b"a" * 12000)
+        _add_bytes(tf, "LLSP/video/train/valid/clip.mp4", b"b" * 12000)
+    with pytest.raises(ValueError, match="No pre-annotated Squat"):
+        selected_from_tar_archive(
+            archive, tmp_path / "private", split="train",
+            require_explicit_split=True,
+            selection_policy="stable_hash", selection_seed=2026,
+            limit=1
+        )
+    assert not list((tmp_path / "private").rglob("*.mp4"))
