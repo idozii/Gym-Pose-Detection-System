@@ -5,7 +5,7 @@
 This stage closes the *exploratory* M37 3-clip validation diagnostic
 loop and prepares clean experimental comparisons. The input reports were
 produced on the owner's Ubuntu machine from an author-hosted
-RepCount-A \`LLSP\` TAR.GZ, with actual source annotation hashes and
+RepCount-A `LLSP` TAR.GZ, with actual source annotation hashes and
 no online rehosting. **GitHub CI only tests synthetic report fixtures.**
 These are not independently replicated cross-person accuracy estimates.
 
@@ -27,7 +27,7 @@ videos and then claim unbiased validation on those same clips.
 | M34 MAE absolute advantage | 0.3333 reps/video |
 | Accepted counter observations | 210 / 210 |
 | Ticks with measurable 2D knee geometry | 185 / 210 |
-| State-phase samples \`await_return\` | 4 / 210 |
+| State-phase samples `await_return` | 4 / 210 |
 | Broken consecutive low confirmations | 18 |
 | Publisher windows with <6 valid angle observations | 44 / 45 |
 | Publisher windows containing >=2 high AND >=2 low ticks | 3 / 45 |
@@ -37,7 +37,7 @@ videos and then claim unbiased validation on those same clips.
 The ever-zero baseline predicts 0 counts for each of the 3 source
 videos. All counts in source annotations are nonnegative, so its
 per-video MAE is total annotated reps divided by number of videos:
-\`45 / 3 = 15\`. It never produces a positive event, meaning
+`45 / 3 = 15`. It never produces a positive event, meaning
 **event precision and event F1 are undefined (null)** with the
 current evaluation convention; event recall is 0 when source
 positives exist. This comparison establishes only an absolute
@@ -55,9 +55,9 @@ may contribute, but are not established per-rep causes.
 ## One-command consistency and baseline audit (no 8.9 GB reread)
 
 From repo root on Ubuntu, use the three reports already saved in
-\`data/processed/\`:
+`data/processed/`:
 
-\`\`\`bash
+```bash
 git pull --ff-only
 source .venv-m20/bin/activate
 
@@ -66,7 +66,7 @@ python -m scripts.m38_pilot_aggregate_audit \
   --observability data/processed/m37_repcount_squat_observability_pilot.json \
   --phase data/processed/m37_repcount_cycle_audit.json \
   --report data/processed/m38_pilot_aggregate_baseline_audit.json
-\`\`\`
+```
 
 The script verifies identical source annotation SHA256, split,
 sample size, event confusion counts and reported metrics across
@@ -103,7 +103,7 @@ clips with a matched pose extractor and time grid, compare
 untuned descriptive angle-extrema baseline, and (4) a
 new temporal model trained solely on development data (when
 available). Keep exact event end matching one-to-one, with
-the original \`min(2500 ms, max(750 ms, 0.35*GT rep duration))\`
+the original `min(2500 ms, max(750 ms, 0.35*GT rep duration))`
 tolerance fixed for headline M37-compatible results.
 Log alternate predeclared tolerance sensitivity analyses
 only *in addition*, never optimize tolerance after observing
