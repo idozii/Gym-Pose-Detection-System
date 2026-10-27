@@ -5,6 +5,7 @@ Synthetic archive tests only; no publisher data, validation or TEST inference.
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
 import tarfile
 
@@ -97,7 +98,12 @@ def test_m46_refuses_missing_unseen_train_source_and_silent_replacement(tmp_path
     # If publisher labels promise 20 ranked new clips but their source
     # video member is missing, the loader must refuse a smaller biased
     # selection rather than silently substituting previously used clips.
-    source = _archive(tmp_path/"missing", 41, missing="squat_035.mp4")
+    names = [f"squat_{i:03d}.mp4" for i in range(41)]
+    ranked = sorted(names, key=lambda name: (
+        hashlib.sha256(f"repcount-m40-train-v1:2026:{name}".encode()).digest(),
+        name
+    ))
+    source = _archive(tmp_path/"missing", 41, missing=ranked[20])
     with pytest.raises(ValueError, match="missing explicitly TRAIN-labeled"):
         _select(source, tmp_path/"missing_output", offset=20)
 
