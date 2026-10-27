@@ -59,6 +59,27 @@ def test_m24_paired_cv_has_same_video_cohort_and_no_model_artifact(monkeypatch):
     assert "video_1" not in dump
 
 
+def test_global_m20_train_can_have_curl_only_subject_without_cv_leak(monkeypatch):
+    full, upper, source = make_samples(n_people=10)
+    pushup_people = {r["subject_id"] for r in source}
+    # Actual owner M20 split has 15 global TRAIN people, only 14 Push-up.
+    overall_m20_train_people = pushup_people | {"curl_only_train_person"}
+    monkeypatch.setattr(
+        m24, "frozen_train_manifest",
+        lambda *_a, **_k: (source, overall_m20_train_people)
+    )
+    _, _, eligible, count = m24.verify_cohort(
+        full, upper, source, pd.DataFrame()
+    )
+    assert len(eligible) == 10
+    assert "curl_only_train_person" not in eligible
+    assert count == 60
+    report = m24.compare_cv(
+        full, upper, source, pd.DataFrame(), folds=5, trees=25
+    )
+    assert report["frozen_original_train_subjects"] == 10
+
+
 def test_m24_rejects_non_train_and_drifted_source_metadata(monkeypatch):
     full,upper,source=make_samples(n_people=10)
     subjects={r["subject_id"] for r in source}
