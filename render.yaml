@@ -1,0 +1,29 @@
+# Optional, paid Render backend for the six original-source research RFs.
+# Import this Blueprint only after approving Render compute + disk costs.
+# This file never contains model artifacts, personal video, or access tokens.
+services:
+  - type: web
+    name: gym-pose-research-api
+    runtime: docker
+    region: singapore
+    plan: 1c-2g
+    repo: https://github.com/idozii/Gym-Pose-Detection-System
+    branch: main
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    autoDeployTrigger: off
+    healthCheckPath: /health
+    numInstances: 1
+    disk:
+      name: private-source-models
+      mountPath: /private-models
+      sizeGB: 1
+    envVars:
+      - key: POSE_MODEL_ROOT
+        value: /private-models
+      - key: POSE_WEB_ORIGINS
+        value: https://gym-pose-detection-system.vercel.app
+      # Set 0 at creation; set 1 only AFTER manually uploading your own
+      # trusted six original-source RF artifacts. Never trust browser input.
+      - key: POSE_TRUST_LOCAL_ARTIFACTS
+        sync: false
