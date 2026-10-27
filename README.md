@@ -30,6 +30,26 @@ change the Vercel production site.
 
 ---
 
+### M34 - Heuristic observed movement cycles, not validated exercise reps
+
+[M34 local Rep & Motion Analyzer](docs/M34_REP_MOTION_ANALYZER.md)
+extends the Squat/OHP/Row camera preview with a conservative
+angle-event counter, recent-cycle duration and angular excursion.
+Squat uses a 2D knee flexion cycle; OHP uses a 2D elbow cycle;
+Barbell Row uses **elbow flexion**, not its potentially stable
+torso inclination. Requires stable high-low-high transitions,
+two observations per endpoint, tracking continuity and
+explicit Reset set; an incomplete movement does not count.
+
+Absolute angle thresholds are experimental detection heuristics,
+NOT correct form standards or fitness recommendations. False or
+missed cycles are expected for some people/camera views. This
+component runs entirely in the browser, retains no source video,
+never changes the six opt-in Fitness-AQA models, and has not
+been externally validated. Public deployment is separate from CI.
+
+---
+
 ### M33 - Local movement feedback for Squat, OHP and Barbell Row
 
 M33 adds camera-plane Squat knee angle, OHP elbow angle and Row apparent torso tilt, plus a local 10-second observed range and camera guidance. These are measurements only, not validated correct/wrong form, injury warnings or rep counting. It does not transmit extra data or change the six opt-in original-source models. See [M33 feedback runbook](docs/M33_LOCAL_EXERCISE_FEEDBACK_UI.md). Production hosting status should be checked independently of CI.
