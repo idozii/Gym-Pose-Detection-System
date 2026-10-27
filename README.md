@@ -16,6 +16,20 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### Free GitHub Pages mirror for local Push-up pose preview
+
+Vercel Hobby returned HTTP 402 because the production deployment
+quota was reached for the 24-hour period. The latest Push-up
+preview build exists but is protected by Vercel SSO. A separate
+[GitHub Pages static frontend workflow](docs/M30_FREE_GITHUB_PAGES_FALLBACK.md)
+can publish the local Push-up camera geometry explorer for free,
+after the repository owner enables GitHub Pages - GitHub Actions
+as the source in repo Settings. It does **not** expose Python
+model scoring or private API/model binaries, and it does not
+change the Vercel production site.
+
+---
+
 ### M30 - Bicep Curl temporal TRAIN research + Push-up local web preview
 
 **Push-up is now selectable on the website** as an on-device,
