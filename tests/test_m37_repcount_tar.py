@@ -268,3 +268,68 @@ def test_m39_explicit_train_video_policy_ignores_splitless_ambiguous_members(tmp
             archive, tmp_path/"strict", split="train", limit=1,
             require_explicit_split=True
         )
+
+
+def test_m40_stable_hash_selection_invariant_to_archive_order_and_split(tmp_path):
+    import hashlib
+    names = [f"train_clip_{i}.mp4" for i in range(8)]
+    publisher_csv = ("name,type,count,L1,L2\n" + "".join(
+        f"{name},squat,1,0,20\n" for name in names
+    )).encode("utf-8")
+    results = []
+    for i, order in enumerate((names, list(reversed(names)))):
+        archive = tmp_path / f"RepCount{i}.tar.gz"
+        with tarfile.open(archive, "w:gz") as tf:
+            _add_bytes(tf, "LLSP/annotation/train.csv", publisher_csv)
+            for name in order:
+                _add_bytes(tf, f"LLSP/video/train/{name}", (name * 750).encode())
+                _add_bytes(tf, f"LLSP/video/valid/{name}", b"v" * 12000)
+        selected, source_sha = selected_from_tar_archive(
+            archive, tmp_path / f"private_{i}", split="train",
+            limit=3, require_explicit_split=True,
+            selection_policy="stable_hash", selection_seed=2026
+        )
+        result_names = {row["video"] for row in selected}
+        results.append((result_names, source_sha))
+        assert len(result_names) == 3
+        assert all(row["video_path"].read_bytes().startswith(b"train_clip")
+                   for row in selected)
+        assert not list((tmp_path / f"private_{i}").rglob("valid/*.mp4"))
+    assert results[0] == results[1]
+    expected = set(sorted(names, key=lambda name: (
+        hashlib.sha256(f"repcount-m40-train-v1:2026:{name}".encode()).digest(),
+        name
+    ))[:3])
+    assert results[0][0] == expected
+
+
+def test_m40_stable_hash_requires_explicit_split_and_valid_seed(tmp_path):
+    archive = sample_tar(tmp_path)
+    with pytest.raises(ValueError, match="explicit source split"):
+        selected_from_tar_archive(
+            archive, tmp_path / "private", split="validation",
+            limit=2, selection_policy="stable_hash"
+        )
+    with pytest.raises(ValueError, match="Selection seed"):
+        selected_from_tar_archive(
+            archive, tmp_path / "private", split="train",
+            limit=2, require_explicit_split=True,
+            selection_policy="stable_hash", selection_seed=-1
+        )
+
+
+def test_m40_rejects_video_paths_with_conflicting_train_test_directories(tmp_path):
+    csv_data = b"name,type,count,L1,L2\nclip.mp4,squat,1,0,20\n"
+    archive = tmp_path / "conflicting.tar.gz"
+    with tarfile.open(archive, "w:gz") as tf:
+        _add_bytes(tf, "LLSP/annotation/train.csv", csv_data)
+        _add_bytes(tf, "LLSP/video/train/test/clip.mp4", b"a" * 12000)
+        _add_bytes(tf, "LLSP/video/train/valid/clip.mp4", b"b" * 12000)
+    with pytest.raises(ValueError, match="No pre-annotated Squat"):
+        selected_from_tar_archive(
+            archive, tmp_path / "private", split="train",
+            require_explicit_split=True,
+            selection_policy="stable_hash", selection_seed=2026,
+            limit=1
+        )
+    assert not list((tmp_path / "private").rglob("*.mp4"))
