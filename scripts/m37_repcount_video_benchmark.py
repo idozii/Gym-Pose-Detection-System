@@ -24,6 +24,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import tempfile
 
 REPO = "momo321654/RepCountA-videos"
 REPO_TYPE = "dataset"
@@ -320,28 +321,26 @@ def run(*, split: str, limit: int, root: Path,
     replay = replay_fn or _node_replay
     exclusions = Counter()
     results = []
-    trace_root = root / "private_pose_traces"
-    trace_root.mkdir(parents=True, exist_ok=True)
-    for entry in selected:
-        name = Path(entry["video"]).stem
-        trace_file = trace_root / f"{name}.json"
-        result_file = trace_root / f"{name}.m34_eval.json"
-        try:
-            if trace_file.exists() or result_file.exists():
-                raise FileExistsError("Prior per-video local trace exists")
-            trace = extractor(entry["video_path"], entry)
-            # Fail-closed: local raw pose traces contain human movement
-            # measurements and must remain git-ignored and private.
-            with trace_file.open("x", encoding="utf-8") as handle:
-                json.dump(trace, handle, allow_nan=False)
-            output = replay(trace_file, result_file)
-            if output["annotated_rep_count"] != entry["annotated_count"]:
-                raise ValueError("Ground-truth repeat count mismatch")
-            results.append(output)
-        except (OSError, ValueError, RuntimeError, KeyError, TypeError) as error:
-            # A failed clip cannot silently be counted as a model win.
-            code = type(error).__name__
-            exclusions[code] += 1
+    # Pose traces can contain sensitive motion data. Keep them in
+    # per-run ephemeral private files; retain only aggregate results.
+    with tempfile.TemporaryDirectory(prefix="m37-traces-", dir=root) as temp:
+        trace_root = Path(temp)
+        for entry in selected:
+            name = Path(entry["video"]).stem
+            trace_file = trace_root / f"{name}.json"
+            result_file = trace_root / f"{name}.m34_eval.json"
+            try:
+                trace = extractor(entry["video_path"], entry)
+                with trace_file.open("x", encoding="utf-8") as handle:
+                    json.dump(trace, handle, allow_nan=False)
+                output = replay(trace_file, result_file)
+                if output["annotated_rep_count"] != entry["annotated_count"]:
+                    raise ValueError("Ground-truth repeat count mismatch")
+                results.append(output)
+            except (OSError, ValueError, RuntimeError, KeyError, TypeError) as error:
+                # A failed clip cannot silently be counted as a model win.
+                code = type(error).__name__
+                exclusions[code] += 1
     report = summarise(
         results, exclusions, split=split, revision=revision,
         source_hash=source_hash, candidates=len(selected)
