@@ -7,11 +7,11 @@ exclusively to M20 TRAIN subjects:
 
 | M21 frame category | Count | Of 513 sampled frames |
 | --- | ---: | ---: |
-| \`low_one_side_visibility\` | 262 | 51.1% |
-| \`no_pose\` | 227 | 44.2% |
-| \`accepted\` | 24 | 4.7% |
-| \`low_torso_scale\` | 0 | 0% |
-| \`invalid_landmarks\` | 0 | 0% |
+| `low_one_side_visibility` | 262 | 51.1% |
+| `no_pose` | 227 | 44.2% |
+| `accepted` | 24 | 4.7% |
+| `low_torso_scale` | 0 | 0% |
+| `invalid_landmarks` | 0 | 0% |
 
 The rejected subjects include eight original publisher "bad" clips
 (279 frames; 13 valid), and seven "good" clips (234 frames; 11 valid).
@@ -60,12 +60,12 @@ visibility. The upper-body gate cannot recover an entirely missing pose.
 
 ## How to run on the owner's Ubuntu computer
 
-\`\`\`bash
+```bash
 cd ~/Desktop/Gym-Pose-Detection-System
 git pull --ff-only
 source .venv-m20/bin/activate
 python -m scripts.m22_train_only_pose_ablation
-\`\`\`
+```
 
 The script reuses the **unchanged M20 subject split seed=42** and
 requires the local Mendeley Exercise-wise ZIP, M20 reviewed manifest,
@@ -75,14 +75,14 @@ or TEST participant videos and does not import any model bundle.
 
 Output:
 
-\`\`\`text
+```text
 data/processed/m22_front_gate_detector_ablation.json
-\`\`\`
+```
 
 The new 3-detector comparison may consume more CPU and memory than
 M21 and initializes MediaPipe Pose three times. You can pilot the
-first six TRAIN-rejected clips with \`--limit 6\` and then run the full
-audit under a DIFFERENT \`--output\` path (never overwrite prior data).
+first six TRAIN-rejected clips with `--limit 6` and then run the full
+audit under a DIFFERENT `--output` path (never overwrite prior data).
 Video files are streamed from the ZIP one by one, and only anonymized
 aggregated counts are saved.
 
@@ -96,7 +96,7 @@ aggregated counts are saved.
    the accepted raw XYZ values and temporal coverage are suitable for
    a new versioned feature schema. Do not train existing 264-feature
    M20 models on those newly admitted clips without full retraining.
-3. If many samples remain \`no_pose\`, compare heavy vs baseline
+3. If many samples remain `no_pose`, compare heavy vs baseline
    at the **same gate** to isolate detector effects. The lower-detection-
    threshold mode is a separate exploratory variable.
 4. Only after selecting one approach on TRAIN data, plan a new
@@ -113,8 +113,8 @@ aggregated counts are saved.
 
 - No video files, frame images, numeric landmark arrays, subject IDs,
   clip paths, or token values are persisted in the report.
-- All inputs and results remain in Git-ignored \`data/external/\` and
-  \`data/processed/\` paths.
+- All inputs and results remain in Git-ignored `data/external/` and
+  `data/processed/` paths.
 - The new tool never modifies the existing M20 feature CSV or RFs.
 - It never changes the six deployed original Fitness-AQA research
   detectors or the website.
