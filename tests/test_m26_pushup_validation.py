@@ -171,7 +171,7 @@ def test_m26_matched_scoring_and_unpaired_extra_never_leak_test(monkeypatch, tmp
     assert all(x["all_common"]["n"] == 2 for x in
                report["paired_model_scores"].values())
     assert report["unpaired_recovered_val_clips"]["all_views"]["n"] == 1
-    assert [names for names, trees in fit_calls] == [
+    assert fit_calls == [
         ({"train_good", "train_bad"}, 200),
         ({"train_good", "train_bad", "train_recovered"}, 200),
     ]
