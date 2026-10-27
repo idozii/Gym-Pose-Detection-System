@@ -310,7 +310,12 @@ def extract_pose_trace(video: Path, annotation: dict, *,
                 total += 1
         if not (8 <= len(frames) <= 3000):
             raise ValueError("Insufficient valid chronological source frame samples")
-        if max(annotation["cycle_bounds_frames"]) > total:
+        # A valid publisher zero-repetition Squat clip has no L* frame
+        # bounds. It is a useful false-positive negative control rather
+        # than an invalid annotation or an empty max() crash.
+        if annotation["cycle_bounds_frames"] and (
+            max(annotation["cycle_bounds_frames"]) > total
+        ):
             raise ValueError(
                 "RepCount annotated cycle frame index exceeds actual "
                 "decoded source video: annotation/clip alignment mismatch"
@@ -376,6 +381,13 @@ def summarise(results: list[dict], exclusions: Counter,
         "annotation_sha256": source_hash,
         "squat_candidate_videos": candidates,
         "squat_evaluated_videos": n,
+        "zero_rep_negative_control_videos": sum(
+            r["annotated_rep_count"] == 0 for r in results
+        ),
+        "zero_rep_negative_controls_with_false_cycles": sum(
+            r["annotated_rep_count"] == 0 and r["website_observed_cycles"] > 0
+            for r in results
+        ),
         "excluded_videos": candidates - n,
         "exclusion_reasons": dict(exclusions),
         "source_total_annotated_reps": sum(r["annotated_rep_count"] for r in results),
@@ -398,6 +410,12 @@ def summarise(results: list[dict], exclusions: Counter,
         ) / n,
         "event_matching_tolerance": (
             "max(750ms, 35% ground-truth duration), cap 2500ms"
+        ),
+        "zero_rep_handling": (
+            "Publisher count=0 plus blank L* boundaries is a negative "
+            "control. False counted cycles contribute event FP and count MAE. "
+            "Per-video recall is undefined when there are no annotated "
+            "events; global recall uses all annotated positive events."
         ),
         "real_video_measured": True,
         "media_pipe_python_solutions_used": True,
