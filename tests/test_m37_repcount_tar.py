@@ -115,14 +115,16 @@ def test_tar_archive_security_rejects_traversal_symlinks_and_oversize(tmp_path):
         big_video.size = 251 * 1024 * 1024
         # Cannot synthesize 251MB in a small fixture; test the actual size
         # gate directly without materializing the archive.
-    from scripts.m37_repcount_tar import MAX_SINGLE_VIDEO_BYTES
+    from scripts.m37_repcount_tar import MAX_SINGLE_VIDEO_BYTES, _copy_selected
     assert big_video.size > MAX_SINGLE_VIDEO_BYTES
+    with pytest.raises(ValueError, match="size cap"):
+        _copy_selected(None, big_video, tmp_path / "no_output" / "clip.mp4")
 
 
 def test_duplicate_annotated_video_members_reject_ambiguity(tmp_path):
     archive = sample_tar(tmp_path, duplicate=True)
     with pytest.raises(ValueError, match="duplicate selected"):
-        selected_from_tar_archive(archive, tmp_path / "private", limit=2)
+        selected_from_tar_archive(archive, tmp_path / "private", limit=3)
 
 
 def test_cli_can_inspect_tar_gz_under_original_command_name(tmp_path, capsys):
