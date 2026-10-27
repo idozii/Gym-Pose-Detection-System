@@ -3,6 +3,7 @@ import { TASKS, requiredJointIndices, readiness, taskReadiness } from './pose.js
 import { API_URL, ResearchInferenceClient, scoreState, sixModelReady } from './inference.js';
 import { CAMERA_FACING, cameraConstraints, mirrorPreview, cameraFallbackMessage } from './camera.js';
 import { PushupMotionWindow } from './pushup.js';
+import { ExerciseFeedbackWindow, EXERCISE_FEEDBACK } from './exercise_feedback.js';
 import './style.css';
 
 const ASSET_VERSION = '1.1.1';
@@ -19,7 +20,8 @@ const state = {
   inferenceStatus: 'NOT CONNECTED', inferred: null,
   inferenceSession: 0, inferenceAbort: null,
   inferenceInFlight: false, lastInferenceAt: 0,
-  pushupMotion: new PushupMotionWindow(), lastPushupPreview: null
+  pushupMotion: new PushupMotionWindow(), lastPushupPreview: null,
+  exerciseFeedback: new ExerciseFeedbackWindow(), lastExerciseFeedback: null
 };
 
 document.querySelector('#app').innerHTML = `
@@ -31,7 +33,7 @@ document.querySelector('#app').innerHTML = `
       </a>
       <div class="top-right">
         <span class="top-separator"></span>
-        <span class="version"><span class="version-dot"></span> RESEARCH MODE / V0.2</span>
+        <span class="version"><span class="version-dot"></span> RESEARCH MODE / V0.3</span>
         <a class="github-link" href="https://github.com/idozii/Gym-Pose-Detection-System" target="_blank" rel="noopener noreferrer">View source ↗</a>
       </div>
     </header>
@@ -40,7 +42,7 @@ document.querySelector('#app').innerHTML = `
       <section class="intro">
         <div class="eyebrow"><span class="eyebrow-line"></span> MOVEMENT INTELLIGENCE / LAB 01</div>
         <h1>Every rep.<br><em>Another perspective.</em></h1>
-        <p>Turn your phone into a private movement lab. Observe joint tracking, explore three original source-model exercises plus Push-up local geometry preview, and switch between selfie and rear camera in seconds.</p>
+        <p>Turn your phone into a private movement lab. Observe camera-plane joint motion with local feedback for Squat, OHP and Barbell Row, or explore Push-up geometry. Six source-label research models remain optional and separate.</p>
         <div class="hero-pills"><span><i></i> ON-DEVICE POSE TRACKING</span><span>04 EXERCISES</span><span>06 SOURCE MODELS / PUSH-UP LOCAL ONLY</span></div>
       </section>
 
@@ -110,6 +112,17 @@ document.querySelector('#app').innerHTML = `
             <p id="pushupPreviewHelp">Show shoulder, elbow, wrist and hip on one side. Angle is a camera-plane estimate, not a rep count or technique assessment. No Push-up quality classifier is deployed.</p>
           </section>
 
+          <section class="exercise-feedback" id="exerciseFeedback" aria-label="Local movement feedback" aria-live="polite">
+            <div class="feedback-head"><span>LOCAL MOVEMENT FEEDBACK / NO FORM VERDICT</span><span class="feedback-state" id="feedbackState">CAMERA OFFLINE</span></div>
+            <div class="feedback-metrics">
+              <div><span id="feedbackMetricName">JOINT ANGLE (2D)</span><strong id="feedbackAngle">—</strong></div>
+              <div><span>10-SECOND OBSERVED RANGE</span><strong id="feedbackRange">—</strong></div>
+            </div>
+            <p class="feedback-note" id="feedbackNote">Start your camera to observe measurable joint movement.</p>
+            <p class="feedback-camera" id="feedbackCamera">Camera guidance will appear here.</p>
+            <p class="feedback-limit" id="feedbackLimit">Camera-plane geometry is not correct/wrong exercise classification.</p>
+          </section>
+
           <div class="section-divider"></div>
           <div class="section-heading"><div>02 / JOINT VISIBILITY</div><span id="jointCount">0/8</span></div>
           <div class="progress-track"><div class="progress-fill" id="jointProgress"></div></div>
@@ -172,7 +185,15 @@ const ui = {
   pushupPreview: document.querySelector('#pushupPreview'),
   pushupAngle: document.querySelector('#pushupAngle'),
   pushupRange: document.querySelector('#pushupRange'),
-  pushupPreviewHelp: document.querySelector('#pushupPreviewHelp')
+  pushupPreviewHelp: document.querySelector('#pushupPreviewHelp'),
+  exerciseFeedback: document.querySelector('#exerciseFeedback'),
+  feedbackMetricName: document.querySelector('#feedbackMetricName'),
+  feedbackAngle: document.querySelector('#feedbackAngle'),
+  feedbackRange: document.querySelector('#feedbackRange'),
+  feedbackState: document.querySelector('#feedbackState'),
+  feedbackNote: document.querySelector('#feedbackNote'),
+  feedbackCamera: document.querySelector('#feedbackCamera'),
+  feedbackLimit: document.querySelector('#feedbackLimit')
 };
 
 function updateCameraControls() {
@@ -242,6 +263,22 @@ function updateInspector() {
   }).join('');
   const isPushup = state.exercise === 'pushup';
   ui.pushupPreview.hidden = !isPushup;
+  ui.exerciseFeedback.hidden = isPushup;
+  if (!isPushup) {
+    const policy = EXERCISE_FEEDBACK[state.exercise];
+    const feedback = state.running ? state.lastExerciseFeedback : null;
+    ui.feedbackMetricName.textContent = policy.measure.toUpperCase();
+    ui.feedbackAngle.textContent = feedback?.angle == null ? '—' : `${feedback.angle.toFixed(0)}°`;
+    ui.feedbackRange.textContent = feedback?.range == null ? '—' : `${feedback.range.toFixed(0)}°`;
+    ui.feedbackState.textContent = !state.running ? 'CAMERA OFFLINE'
+      : feedback?.status === 'observing' ? 'MOVEMENT OBSERVED'
+        : feedback?.status === 'collecting' ? 'COLLECTING SAMPLES' : 'NOT ENOUGH TRACKING';
+    ui.feedbackNote.textContent = !state.running
+      ? 'Start the camera for locally measured angles. No technique score is produced.'
+      : feedback?.note ?? 'Waiting for visible pose landmarks.';
+    ui.feedbackCamera.textContent = policy.camera;
+    ui.feedbackLimit.textContent = policy.limitation;
+  }
   if (isPushup) {
     const summary = state.lastPushupPreview;
     ui.pushupAngle.textContent = summary?.angle == null ? '-' : `${summary.angle.toFixed(0)}°`;
@@ -396,6 +433,10 @@ function loop(token, timestamp) {
       state.landmarks = result.landmarks?.[0] ?? null;
       if (state.exercise === 'pushup') {
         state.lastPushupPreview = state.pushupMotion.observe(state.landmarks, timestamp);
+      } else {
+        state.lastExerciseFeedback = state.exerciseFeedback.observe(
+          state.exercise, state.landmarks, timestamp
+        );
       }
       state.frames++;
       if (state.landmarks) state.poseFrames++;
@@ -423,6 +464,8 @@ function stopCamera() {
   disableResearchInference();
   state.pushupMotion.reset();
   state.lastPushupPreview = null;
+  state.exerciseFeedback.reset();
+  state.lastExerciseFeedback = null;
   state.token++;
   state.running = false;
   state.starting = false;
@@ -535,6 +578,8 @@ ui.exercise.addEventListener('change', () => {
   disableResearchInference();
   state.pushupMotion.reset();
   state.lastPushupPreview = null;
+  state.exerciseFeedback.reset();
+  state.lastExerciseFeedback = null;
   state.exercise = ui.exercise.value;
   ui.help.textContent = TASKS[state.exercise].subtitle;
   renderModels();
