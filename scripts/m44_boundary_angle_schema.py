@@ -71,7 +71,7 @@ def validate_against_m43(record: dict, m43: dict) -> None:
             "unmatched_gt_window_observations"
         ]["usable_but_no_low_in_gt_window"]:
             raise ValueError("M44 no-low count disagrees with frozen M43")
-        if sum(row["unmatched_prediction_location"].values()) != prior["event_fp"]:
+        if sum(row["unmatched_prediction_location"].values()) != prior["fp"]:
             raise ValueError("M44 FP timing count disagrees with frozen M43")
 
 
