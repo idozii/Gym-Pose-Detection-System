@@ -68,6 +68,26 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M44 - TRAIN angular observability and publisher annotation boundary audit
+
+[M44 descriptive boundary-angle experiment](docs/M44_TRAIN_BOUNDARY_ANGLE_AUDIT.md)
+uses the unchanged M41/M43 original TRAIN cohort and M39
+low-to-high detector, without changing any counting thresholds.
+Owner-run M43 found 132/163 dense 200ms false negatives had
+usable knee-angle samples but no angle <=120 degrees **inside**
+their publisher [start,end) annotation window; 11 unmatched
+detections were outside all event-end match tolerances.
+M44 distinguishes whether minimum within-GT knee angles
+lie just above the fixed threshold or far above it and
+whether a low angle occurs within a fixed 750ms on either
+side of the publisher interval. False positives are also
+classified as inside or outside any source GT interval.
+This is post-hoc TRAIN diagnostic evidence, not detector
+optimization, held-out results, biomechanical quality
+judgment, or proof of label misalignment.
+
+---
+
 ### M43 - Frozen TRAIN temporal error audit (descriptive, not a new model)
 
 [M43 temporal error analysis](docs/M43_TRAIN_TEMPORAL_ERROR_AUDIT.md)
