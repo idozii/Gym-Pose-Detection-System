@@ -68,65 +68,29 @@ M18 adds:
    source-label probabilities or explicit `ABSTAIN`. Do not treat a synthetic
    CI test as equivalent to this real webcam acceptance.
 
-## B. Cloud backend (requires owner-provided six model artifacts)
+## B. Zero-cost Render backend (requires owner-owned private models)
 
-For the optional paid Render Blueprint, model transfer and verification
-instructions, see [Render private model hosting](M18_RENDER_PRIVATE_MODEL_HOST.md).
+The user requested **no paid services**. Use the optional **free** Render
+Blueprint, no persistent disk and no SSH. Instead, the owner publishes
+**exactly six self-trained trusted files** to their **private Hugging Face
+model repository**, with an owner-generated SHA256 manifest and pinned
+40-character commit ID. Render Free retrieves and verifies them on startup
+only after explicit owner trust.
 
-Render's persistent disk is operator-private but is **not an OS-level
-read-only volume**; restrict ownership and file permissions after upload.
-
-
-Deploy `backend/Dockerfile` via an owner-controlled HTTPS Python/Docker host
-with a **private, persistent model volume**. Render/Railway or
-a secured VM can be used **only if the chosen plan actually supports this**;
-the public Vercel frontend is not itself a Python model host.
-
-The volume root must contain `artifacts/fitness_aqa_squat_source_rf/`,
-`artifacts/fitness_aqa_ohp_task_rf/`, and
-`artifacts/fitness_aqa_barbell_row_torso4_rf/` with exactly the six
-owner-trained model paths in `docs/WEB_REAL_INFERENCE_DEPLOYMENT.md`.
-
-Configure on the backend, not in the frontend:
-
-```dotenv
-POSE_MODEL_ROOT=/private-models
-POSE_TRUST_LOCAL_ARTIFACTS=1
-POSE_WEB_ORIGINS=https://gym-pose-detection-system.vercel.app
-```
-
-Provision only **owner-approved/trusted** pickle artifacts through the
-hosting provider's private file mechanism. Do not put artifacts in GitHub,
-a public web root, Vercel `VITE_*` variables, browser localStorage, a public
-artifact URL, or a container image committed to this repository. Verify the
-server has sufficient RAM and writable temporary storage for the chosen
-Python/scikit-learn runtime. Treat artifacts from other machines/unknown
-sources as untrusted code, since pickle deserialization executes code.
-
-**Before exposing `/score` on the Internet**, configure provider-side
-per-IP/request rate limiting, resource caps, abuse protection and minimal
-privacy-safe access diagnostics. CORS/Origin checking is not authentication;
-outside-browser clients can send requests directly. A failed `/ready` must
-not be routed as an available inference backend.
-
-After HTTPS is live:
+See the complete [zero-cost Render + private model hosting guide](M18_RENDER_PRIVATE_MODEL_HOST.md).
+The real API must pass:
 
 ```bash
 python -m scripts.check_web_inference_deployment \
-  --api-url https://YOUR-API-DOMAIN
+  --api-url https://YOUR-ACTUAL-SERVICE.onrender.com
 ```
 
-Only after it exits 0, set build-time environment variable on the existing
-Vercel frontend project:
-
-```dotenv
-VITE_INFERENCE_API_URL=https://YOUR-API-DOMAIN
-```
-
-Redeploy Vercel and test the live consent flow on Squat, OHP, and Row. The
-Vite variable is **public** at build time, so never put any token/secret
-in it. Verify 33 landmarks leave only on explicit consent; raw camera
-pixels and videos never leave the browser.
+No backend URL is assumed or invented; **do not** configure Vercel until
+6/6 models are loaded, `/ready` passes, and abuse protection is appropriate.
+Render Free has only 512 MB RAM, no stable disk and idle sleeping; real
+model-memory feasibility is still unverified. The exact owner model files
+cannot be fetched from the public GitHub repository and must never be
+published to the browser.
 
 ## C. Research acceptance, after deployment
 

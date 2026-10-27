@@ -1,172 +1,154 @@
-# M18 — Render private six-model backend handoff
+# M18 — zero-cost experimental Render API + private Hugging Face weights
 
-The Vercel website remains the **browser-only pose viewer** until an actual
-private Python backend has loaded the six owner-trained RF artifacts.
-No original Fitness-AQA images/videos, source TEST media, feature CSVs or
-model pickle files are committed or uploaded to a public Git repository.
+**0 paid compute, 0 paid persistent disk, 0 paid storage by design** within
+providers' current free quotas. No resources are created by merging this PR.
+Public research API remains **NOT DEPLOYED** until the owner provisions their
+six self-trained RF bundles and verifies end-to-end inference.
 
-This repository includes an **opt-in** `render.yaml`. Merely merging it does
-not create a Render service or charge the owner. **Importing** the Blueprint
-creates a **paid** web service and persistent disk. Review
-[Render's plans](https://render.com/pricing) and confirm billing first.
+The publisher-source annotation scores are **not** verified correct exercise
+form, medical spine diagnosis, or injury-prevention advice.
 
-## 1. Review and import the Render Blueprint
+## Architecture
 
-From Render Dashboard > **New > Blueprint**, link the existing GitHub
-repository `idozii/Gym-Pose-Detection-System` and select
-`render.yaml` on `main`. Do this only if the paid plan is acceptable.
+```text
+Vercel Free (existing browser pose viewer)
+      user manually opts into landmarks (not camera images)
+      HTTPS POST /score
+Render Free (FastAPI + sklearn; 512 MB RAM / 0.1 CPU)
+      boot: download exactly six joblib models + SHA256 manifest
+      from owner's PRIVATE Hugging Face model repo at pinned commit
+      only if POSE_TRUST_LOCAL_ARTIFACTS=1
+      local /tmp file cache disappears when container sleeps/restarts
+```
 
-The configuration is intentionally conservative:
+No private `.joblib` binary, publisher videos, archives, raw features,
+images, local notebook or token is committed to the public GitHub repo.
+Do not upload those files to this chat.
 
-- Service: `gym-pose-research-api`, Dockerfile `backend/Dockerfile`.
-- Region: `singapore` (closest Render region to Sydney).
-- Compute: `1c-2g` (paid 1 CPU, 2 GB RAM).
-- Disk: 1 GB initially, mounted at `/private-models`. Confirm the six
-  actual model files fit; disks can grow but **cannot shrink**.
-- Port: platform `PORT` or local Docker fallback 8000.
-- `autoDeployTrigger: off`: deployments only when intentionally triggered.
-- Render health: `/health` (process healthy even before provisioning).
-  `/ready` is the **distinct six-model readiness probe**, returning 503
-  until all six correct models load.
-- CORS origin: `https://gym-pose-detection-system.vercel.app`.
-- `POSE_MODEL_ROOT=/private-models`.
-- **Set `POSE_TRUST_LOCAL_ARTIFACTS=0` when the Blueprint prompts.**
-  This is a deliberately user-provided setting (`sync: false`).
-- One service instance (Render disks cannot support horizontal scaling).
+**Free-tier limitations**: Render may sleep after 15 minutes idle, wakeup
+may take approximately one minute *plus* model retrieval and import. Free
+compute is 0.1 CPU with 512 MB RAM, so six RF models might not fit: **actual
+model size and RAM usage have not yet been verified**. This is a hobby
+research demo, not guaranteed always-on hosting. No free Render SSH,
+persistent disk or shell is needed for this route. Hugging Face private
+storage has a free quota, subject to their limits. Make sure your Render
+workspace has **no payment method** if you require services to stop rather
+than bill after free usage limits. Do not enable paid hardware or disk.
 
-The empty backend is expected to return
-`status=model_artifacts_not_provisioned` from `/health` and HTTP 503
-from `/ready`. The Vercel site **must not** be connected yet.
+## Step 1 — publish only the owner's original six models to a PRIVATE repo
 
-## 2. Safely upload ONLY the six locally owned model artifacts
-
-On your **own Linux desktop**, in the project repository, first confirm
-these are your self-trained trusted original-source models:
+Perform on your own Linux computer in the existing repository (all ignored
+`artifacts/`, datasets and notebook remain untouched by Git):
 
 ```bash
+git pull --ff-only
+python -m pip install -e '.[webapi,dev,hfmodels]'
+python -m pytest -q
 python -m scripts.check_fitness_aqa_model_registry --trust-local-artifacts
+hf auth login
+python -m scripts.publish_private_model_bundle \
+  --repo-id YOUR_HF_USERNAME/gym-pose-private-models \
+  --trust-local-artifacts
 ```
 
-This command deserializes joblib/pickle, so NEVER use it on untrusted model
-files. It must report all six `loaded_experimental_only` before proceeding.
-Do **not** put the weights, original videos or training datasets into GitHub,
-Vercel assets, Render environment variables, public uploads, or this chat.
+The upload script uses your **locally authenticated Hugging Face account**,
+creates/reuses a PRIVATE model repo, checks it is truly private before any
+upload, and uploads **only six known files + one SHA256 manifest**. The owner
+must explicitly pass `--trust-local-artifacts`: pickle code execution is
+possible when loading the owner's models. Never run on untrusted joblib.
 
-Create a strictly enumerated bundle locally. It contains only the **six**
-trusted `.joblib` models, not a whole directory or dataset:
+Copy the three **non-secret** values printed by the command, such as:
+`POSE_HF_REPO_ID`, `POSE_HF_REVISION` (full 40-char commit SHA), and
+`POSE_HF_MANIFEST_SHA256` (64-character hexadecimal digest).
 
-```bash
-tar -czf /tmp/gym_pose_six_source_rf.tar.gz -C . \
-  artifacts/fitness_aqa_squat_source_rf/rf_error_knees_forward_static_source.joblib \
-  artifacts/fitness_aqa_squat_source_rf/rf_error_knees_inward_static_source.joblib \
-  artifacts/fitness_aqa_ohp_task_rf/error_elbows_static.joblib \
-  artifacts/fitness_aqa_ohp_task_rf/error_knees_static.joblib \
-  artifacts/fitness_aqa_barbell_row_torso4_rf/barbell_row_torso_angle_torso4_static_rf.joblib \
-  artifacts/fitness_aqa_barbell_row_torso4_rf/barbell_row_lumbar_torso4_static_rf.joblib
+Create a **read-only, fine-grained Hugging Face access token** that can read
+only the owner's private model repository, if your account permits that scope.
+Do not share it with ChatGPT, GitHub issues, public README, Vercel
+`VITE_*` variables or other users.
 
-tar -tzf /tmp/gym_pose_six_source_rf.tar.gz
-ls -lh /tmp/gym_pose_six_source_rf.tar.gz
+## Step 2 — import the free Render Blueprint
+
+In the [Render Dashboard](https://dashboard.render.com), select
+**New → Blueprint**, choose
+`idozii/Gym-Pose-Detection-System` on `main`, and use `render.yaml`.
+Review the configuration before creating it:
+
+| Property | Value |
+|---|---|
+| Plan | **free** |
+| Region | singapore |
+| Runtime | backend/Dockerfile |
+| Persistent disk | **NONE** |
+| Model path | /tmp/gym-pose-models |
+| Explicit model trust | 0 (disabled initially) |
+| Allowed browser origin | https://gym-pose-detection-system.vercel.app |
+| Auto deploy | disabled |
+
+In the Render environment, configure:
+
+```dotenv
+POSE_HF_REPO_ID=YOUR_HF_USERNAME/gym-pose-private-models
+POSE_HF_REVISION=FULL_40_CHARACTER_OWNER_COMMIT_SHA
+POSE_HF_MANIFEST_SHA256=SHA256_PRINTED_BY_UPLOAD_SCRIPT
+HF_TOKEN=THE_READ_ONLY_TOKEN_STORED_AS_A_RENDER_SECRET
+POSE_TRUST_LOCAL_ARTIFACTS=1
 ```
 
-In the **Render Dashboard**, open your new service and use the **Connect >
-SSH** instructions to add your public SSH key to Render and copy the exact
-Render SSH target. Never expose the private SSH key. Note that
-`backend/Dockerfile` provisions a non-root user with a proper shell and
-private `~/.ssh` directory for Render SSH.
+If not ready, keep `POSE_TRUST_LOCAL_ARTIFACTS=0`; the empty FastAPI may
+boot but `/ready` must respond 503, and browser inference stays off.
+You must **manually deploy/restart** after updating these variables,
+since `autoDeployTrigger` is disabled.
 
-Open the service **Shell** and check:
+The container first downloads and verifies exactly six model digests.
+If any manifest is invalid, token is missing or downloaded bytes differ,
+startup aborts. No model is ever loaded if verification fails. Model
+deserialization happens only after the owner opted into these trusted files.
 
-```bash
-whoami
-ls -ld /private-models
-mkdir -p /private-models/artifacts
-```
+## Step 3 — verify six-model readiness BEFORE connecting Vercel
 
-If disk write permissions fail, stop and inspect ownership with
-`ls -ld /private-models`. Do **not** broadly `chmod 777` or disable
-container security. Render mount ownership must be repaired through an
-authorized service configuration before uploading.
-
-Use the **exact SSH target returned by your dashboard**, not a guessed
-service username. For example, from your local computer:
-
-```bash
-scp -s /tmp/gym_pose_six_source_rf.tar.gz \
-  YOUR_SERVICE@ssh.singapore.render.com:/private-models/gym_pose_six_source_rf.tar.gz
-```
-
-Run on the Render **Shell**, once the file has been transferred:
-
-```bash
-tar -tzf /private-models/gym_pose_six_source_rf.tar.gz
-tar -xzf /private-models/gym_pose_six_source_rf.tar.gz \
-  -C /private-models
-rm /private-models/gym_pose_six_source_rf.tar.gz
-find /private-models/artifacts -type f -name '*.joblib' -print
-```
-
-Confirm that each directory and artifact has the exact paths specified
-above. Ensure the backend process can **read** the models, and avoid
-loosening unrelated disk permissions.
-
-After extraction, delete your temporary local tarball if no longer needed:
-
-```bash
-rm /tmp/gym_pose_six_source_rf.tar.gz
-```
-
-## 3. Turn on trusted inference and verify readiness
-
-In Render Dashboard > service **Environment**, change
-`POSE_TRUST_LOCAL_ARTIFACTS` from `0` to `1` and deploy/restart so the
-FastAPI lifespan loads models **once at startup**. Do this only after
-explicitly reviewing the six owner-generated files. If incompatible or
-corrupted, the server may fail to start; inspect logs without exposing
-model file contents.
-
-Run the preflight on your local machine with the **real HTTPS endpoint**:
+On the local computer, run (replace with the real hostname Render gave you):
 
 ```bash
 python -m scripts.check_web_inference_deployment \
-  --api-url https://YOUR-REAL-RENDER-SERVICE.onrender.com
+  --api-url https://YOUR-ACTUAL-SERVICE.onrender.com
 ```
 
-Exit 0 and `"ready": true` require `/health` and `/ready` to report all
-six correctly versioned RF bundles. An untrusted public backend **must not**
-be advertised as exercise-form or medical safety advice.
+Must exit 0 and report `"ready": true`, `"loaded": 6`. A 503 or
+startup error means **do not advertise or connect the AI**. If a 512MB OOM
+occurs, there is no honest six-model free cloud deployment on this Render
+plan without further quantization, reducing memory/feature runtime, or
+choosing an alternative free resource with sufficient RAM.
 
-## 4. Protect public inference before wiring Vercel
+**Before enabling public traffic** protect CPU and abuse: the existing
+browser paces to 2 requests/sec and the API has CORS/body caps, but these
+**do not** stop direct nonbrowser spam. Implement/enable appropriate
+per-source request throttling and concurrency protections and keep logs
+free of landmark payloads. Consider a private/demo-only testing scope.
 
-`/score` serves CPU-consuming RF inference. Browser 2req/s pacing and CORS
-are **not adequate public Internet abuse protection** (Origin can be absent
-outside browsers). Before enabling for public traffic, put the backend
-behind appropriate trusted platform/gateway per-IP rate limits, bot/abuse
-protection and concurrency/resource caps. Do not log landmark payloads.
-Paid disk single-instance deploys have brief expected downtime.
-
-Once all six models pass AND external abuse protection is in place, configure
-the **existing Vercel project** `gym-pose-detection-system` with the public,
-non-secret **build-time** variable:
+Only when all six are loaded and reasonable access protections are in place,
+set on the **existing Vercel frontend** (build-time public URL only):
 
 ```dotenv
-VITE_INFERENCE_API_URL=https://YOUR-REAL-RENDER-SERVICE.onrender.com
+VITE_INFERENCE_API_URL=https://YOUR-ACTUAL-SERVICE.onrender.com
 ```
 
-Redeploy Vercel. In production, open the browser, start the camera and
-**separately opt into research inference**. Test Squat, OHP, and Barbell Row
-(two named source-label probabilities or visible `ABSTAIN` each). No raw
-frames should be uploaded. Check real camera results and quantitative
-MediaPipe Tasks Vision / Python MediaPipe Solutions parity. Synthetic CI
-tests and a 6/6 availability probe alone **do not** establish scientific
-fitness-form validity.
+Redeploy Vercel. Start camera; separately opt into source-label inference.
+Check two scores or `ABSTAIN` per exercise (Squat, OHP, Barbell Row).
+Avoid safety or exercise correctness claims. Validate real webcam landmark
+parity vs Python MediaPipe Solutions training source before using scores
+as research findings.
 
-## Current status of handoff
+## Fallback without another cloud account
 
-This documentation and Blueprint are repository-side deployment preparation.
-They do **not** demonstrate an actual Render service, a paid resource being
-created, any transferred private weights, or an inference-connected Vercel
-production build. Maintain these distinctions when reporting progress.
+A user-controlled, always-running local Linux machine can serve the same
+FastAPI with the existing local six models; a free
+[Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel)
+can expose that one HTTPS backend to testers **if the user explicitly chooses
+to make the local server public**. This avoids uploading weights, but the
+computer must remain on and protected against abuse. It is not a hosted
+always-on product. Don't open your home router or port-forward it casually.
 
-Sources: [Render Blueprint reference](https://render.com/docs/blueprint-spec),
-[Render persistent disks and SCP](https://render.com/docs/disks),
-[Render SSH requirements](https://render.com/docs/ssh).
+**Sources:** [Render Free](https://render.com/docs/free),
+[Render plans](https://render.com/docs/compute-plans),
+[Hugging Face private storage](https://huggingface.co/docs/hub/storage-limits),
+[private versioned file downloads](https://huggingface.co/docs/huggingface_hub/en/guides/download).

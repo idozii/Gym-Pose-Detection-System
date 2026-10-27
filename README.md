@@ -16,16 +16,22 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
-### M18 Render deployment preparation (private weights, opt-in paid hosting)
+### M18 zero-cost deployment preparation (no paid Render plan)
 
-A Render Blueprint (`render.yaml`) now defines an **optional paid**
-Singapore FastAPI service with a private persistent model disk and
-non-root SSH/SCP support. It **does not** create paid resources, upload
-weights, or activate public inference until the owner imports the Blueprint,
-uploads all six trusted local models, reviews Internet abuse protection,
-and explicitly opts into inference.
+The optional **free-tier** Render Blueprint (`render.yaml`) creates NO
+persistent disk and uses Render's free 0.1 CPU / 512 MB instance. Owner-trained
+six private `.joblib` artifacts are **never** included in public Git. The
+owner can upload only those six files to a separate **private** Hugging Face
+model repository; the backend fetches exactly six SHA256-verified files at
+one pinned commit before trusting any model. No secrets are committed.
 
-[Render private-model hosting, exact six-file SCP and verification steps](docs/M18_RENDER_PRIVATE_MODEL_HOST.md).
+**No paid resource or cloud inference has been activated.** Render free
+services sleep when idle and can run out of RAM; only a successful
+real-owner 6/6 `/health` + `/ready` check verifies deployment.
+Browser/simulation research accuracy still has not been established.
+
+[Free Render setup, local private upload script, six-model bootstrap and
+Vercel acceptance](docs/M18_RENDER_PRIVATE_MODEL_HOST.md).
 
 ---
 

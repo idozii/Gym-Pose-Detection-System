@@ -1,12 +1,13 @@
-# Optional, paid Render backend for the six original-source research RFs.
-# Import this Blueprint only after approving Render compute + disk costs.
-# This file never contains model artifacts, personal video, or access tokens.
+# Optional zero-cost experimental backend. No billing, no disk, no SSH.
+# Render Free 512MB / 0.1 CPU sleeps after idle and has ephemeral filesystem.
+# Six trusted RF files are downloaded from the owner's PRIVATE HF model repo
+# only after all pinned identifiers/token are configured and opt-in enabled.
 services:
   - type: web
     name: gym-pose-research-api
     runtime: docker
     region: singapore
-    plan: 1c-2g
+    plan: free
     repo: https://github.com/idozii/Gym-Pose-Detection-System
     branch: main
     dockerfilePath: ./backend/Dockerfile
@@ -14,16 +15,20 @@ services:
     autoDeployTrigger: "off"
     healthCheckPath: /health
     numInstances: 1
-    disk:
-      name: private-source-models
-      mountPath: /private-models
-      sizeGB: 1
     envVars:
       - key: POSE_MODEL_ROOT
-        value: /private-models
+        value: /tmp/gym-pose-models
       - key: POSE_WEB_ORIGINS
         value: https://gym-pose-detection-system.vercel.app
-      # Set 0 at creation; set 1 only AFTER manually uploading your own
-      # trusted six original-source RF artifacts. Never trust browser input.
       - key: POSE_TRUST_LOCAL_ARTIFACTS
+        value: "0"
+      # Fill only from your owner-uploaded PRIVATE model repo, not public data.
+      - key: POSE_HF_REPO_ID
+        sync: false
+      - key: POSE_HF_REVISION
+        sync: false
+      - key: POSE_HF_MANIFEST_SHA256
+        sync: false
+      # Store as a Render Secret, read-only scoped token; never add to Git.
+      - key: HF_TOKEN
         sync: false

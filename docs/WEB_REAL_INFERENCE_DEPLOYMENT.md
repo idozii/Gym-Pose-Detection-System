@@ -1,5 +1,15 @@
 # Web v2 — six real Fitness-AQA source-error RFs (opt-in research API)
 
+## Zero-cost hosting update (M18)
+
+The current `render.yaml` now uses **Render Free** without persistent
+storage or SSH. The older local/persistent-storage examples below remain
+valid for hosts that provide a private volume, but **they are NOT the chosen
+zero-payment deployment route**. For Render Free, use the owner-triggered
+upload of six trusted models to a PRIVATE Hugging Face model repository,
+SHA256 verification at a pinned commit and no paid resources. Follow
+[M18 free Render deployment instructions](M18_RENDER_PRIVATE_MODEL_HOST.md).
+
 ## What has been implemented
 
 Existing live site: **https://gym-pose-detection-system.vercel.app**
