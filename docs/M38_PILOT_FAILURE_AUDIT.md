@@ -1,4 +1,4 @@
-# M38 — Aggregate-only failure-analysis baseline and research protocol
+# M38 - Aggregate-only failure-analysis baseline and research protocol
 
 ## Scope (post-hoc, NOT a detector improvement)
 
