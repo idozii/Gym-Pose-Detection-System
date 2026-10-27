@@ -27,4 +27,5 @@ jobs:
           node-version: "22"
       - run: npm install --prefix web --no-audit --no-fund
       - run: npm test --prefix web
+      - run: npm run validate:m36 --prefix web
       - run: npm run build --prefix web
