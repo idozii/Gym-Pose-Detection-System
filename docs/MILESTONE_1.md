@@ -1,4 +1,4 @@
-# Milestone 1 — Modular squat baseline
+# Milestone 1 - Modular squat baseline
 
 ## Scope
 This is a **refactor and reliability milestone**, not an accuracy improvement.

@@ -34,7 +34,7 @@ def _parse_seeds(raw: str) -> tuple[int, ...]:
     except ValueError as exc:
         raise ValueError("seeds must be comma-separated nonnegative integers") from exc
     if not 2 <= len(parts) <= 20 or len(set(parts)) != len(parts):
-        raise ValueError("use 2–20 unique seeds to assess stability")
+        raise ValueError("use 2-20 unique seeds to assess stability")
     if any(s < 0 or s >= (2**32 - 1) for s in parts):
         raise ValueError("each seed must be in range [0, 2**32 - 2]")
     return parts
@@ -56,7 +56,7 @@ def run(features_dir: str | Path, output: str | Path, *,
         trees: int = 150, max_gap_seconds: float = .75,
         require_full: bool = True) -> dict:
     if not 2 <= len(seeds) <= 20 or len(set(seeds)) != len(seeds):
-        raise ValueError("Require 2–20 distinct model/calibration seeds")
+        raise ValueError("Require 2-20 distinct model/calibration seeds")
     if any(not isinstance(s, int) or s < 0 or s >= 2**32-1 for s in seeds):
         raise ValueError("Invalid seed value")
     if trees < 1 or not np.isfinite(max_gap_seconds) or max_gap_seconds <= 0:
