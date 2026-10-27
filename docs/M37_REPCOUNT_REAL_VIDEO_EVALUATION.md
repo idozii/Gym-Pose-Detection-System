@@ -32,7 +32,7 @@ unvalidated and require a compatible independently annotated dataset.
 
 The command downloads `validation_annotations.json` and only
 **three deterministic Squat videos** from RepCount-A validation
-by default. You can adjust the clip limit to 1–20; it never
+by default. You can adjust the clip limit to 1-20; it never
 downloads entire splits automatically. Clips are taken in sorted
 source filename order, without choosing them based on outcomes.
 
@@ -181,7 +181,7 @@ Hu, H., Dong, S., Zhao, Y., Lian, D., Li, Z., & Gao, S.
 (2022). *TransRAC: Encoding Multi-scale Temporal Correlation
 with Transformers for Repetitive Action Counting*.
 Proceedings of the IEEE/CVF Conference on Computer Vision
-and Pattern Recognition (CVPR), 19013–19022.
+and Pattern Recognition (CVPR), 19013-19022.
 
 ## What next?
 
