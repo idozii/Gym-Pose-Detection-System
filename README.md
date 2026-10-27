@@ -16,6 +16,25 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M27 - TRAIN-only Push-up motion trajectory hypothesis
+
+Owner M26 original VAL observed: Full paired accepted **23/30**
+Push-up clips and achieved **61.36%** BA on 23 paired clips;
+Upper expanded accepted **30/30** but achieved **51.89%**
+BA on the same clips. On seven upper-only recovered VAL
+videos it missed **all three publisher bad labels**.
+Full model abstains on those seven videos.
+**No current Push-up model is fit for public form-quality advice.**
+
+[M27 frozen TRAIN-only temporal feature study](docs/M27_PUSHUP_TEMPORAL_TRAIN_EXPERIMENT.md)
+adds 16 motion trajectory descriptors to the original M23
+64-feature upper-body clip schema, and compares identical video
+and person-heldout `GroupKFold` subsets on the ORIGINAL M20
+TRAIN subjects only. Original VAL/TEST video is untouched by M27.
+This is post-VAL exploratory research, not a production model.
+
+---
+
 ### M26 - Frozen original M20 validation comparison (no TEST)
 
 Real owner M25 LOSO on original TRAIN: Full paired 54.96%
