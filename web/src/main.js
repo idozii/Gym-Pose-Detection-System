@@ -5,6 +5,7 @@ import { CAMERA_FACING, cameraConstraints, mirrorPreview, cameraFallbackMessage 
 import { PushupMotionWindow } from './pushup.js';
 import { ExerciseFeedbackWindow, EXERCISE_FEEDBACK } from './exercise_feedback.js';
 import { RepCycleCounter, REP_POLICIES } from './rep_counter.js';
+import { explainMovement, sourceEvidenceNotice } from './feedback_explainer.js';
 import './style.css';
 
 const ASSET_VERSION = '1.1.1';
@@ -35,7 +36,7 @@ document.querySelector('#app').innerHTML = `
       </a>
       <div class="top-right">
         <span class="top-separator"></span>
-        <span class="version"><span class="version-dot"></span> RESEARCH MODE / V0.4</span>
+        <span class="version"><span class="version-dot"></span> RESEARCH MODE / V0.5</span>
         <a class="github-link" href="https://github.com/idozii/Gym-Pose-Detection-System" target="_blank" rel="noopener noreferrer">View source ↗</a>
       </div>
     </header>
@@ -139,6 +140,15 @@ document.querySelector('#app').innerHTML = `
             <p class="rep-guidance" id="repGuidance">Only on-device camera-plane heuristics are used; this is not a verified rep count or exercise-form score.</p>
           </section>
 
+          <section class="feedback-explainer" id="feedbackExplainer" aria-label="Explanations of measured movement, not form grading">
+            <div class="feedback-explainer-heading">M35 / EXPLAINABLE OBSERVATIONS</div>
+            <strong class="feedback-explainer-title" id="explainTitle">Awaiting camera measurements</strong>
+            <p class="feedback-explainer-message" id="explainMessage">Feedback uses only observed camera-plane geometry and the local cycle history.</p>
+            <p class="feedback-explainer-detail" id="explainDetail">No correct/wrong technique evaluation is made.</p>
+            <div class="feedback-research-divider">SOURCE MODEL CONTEXT / OPTIONAL RESEARCH ONLY</div>
+            <p class="feedback-explainer-source" id="explainSource">Research RF model signals are separate from movement feedback.</p>
+          </section>
+
           <div class="section-divider"></div>
           <div class="section-heading"><div>02 / JOINT VISIBILITY</div><span id="jointCount">0/8</span></div>
           <div class="progress-track"><div class="progress-fill" id="jointProgress"></div></div>
@@ -216,7 +226,12 @@ const ui = {
   repAmplitude: document.querySelector('#repAmplitude'),
   repStatus: document.querySelector('#repStatus'),
   repGuidance: document.querySelector('#repGuidance'),
-  resetSet: document.querySelector('#resetSet')
+  resetSet: document.querySelector('#resetSet'),
+  feedbackExplainer: document.querySelector('#feedbackExplainer'),
+  explainTitle: document.querySelector('#explainTitle'),
+  explainMessage: document.querySelector('#explainMessage'),
+  explainDetail: document.querySelector('#explainDetail'),
+  explainSource: document.querySelector('#explainSource')
 };
 
 function updateCameraControls() {
@@ -288,6 +303,22 @@ function updateInspector() {
   ui.pushupPreview.hidden = !isPushup;
   ui.exerciseFeedback.hidden = isPushup;
   ui.repAnalysis.hidden = isPushup;
+  ui.feedbackExplainer.hidden = isPushup;
+  if (!isPushup) {
+    const observation = explainMovement(
+      state.exercise,
+      state.running ? state.lastRepAnalysis : null,
+      state.running ? state.lastExerciseFeedback : null,
+      { cameraRunning: state.running, recent: state.repCounter.recent }
+    );
+    ui.explainTitle.textContent = observation.title;
+    ui.explainMessage.textContent = observation.message;
+    ui.explainDetail.textContent = observation.detail;
+    ui.explainSource.textContent = sourceEvidenceNotice(state.exercise, {
+      consent: state.inferenceEnabled,
+      report: state.inferenceEnabled ? state.inferred : null
+    });
+  }
   if (!isPushup) {
     const rep = state.running ? state.lastRepAnalysis : null;
     ui.repCount.textContent = String(rep?.cycles ?? 0);

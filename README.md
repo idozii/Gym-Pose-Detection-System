@@ -30,6 +30,28 @@ change the Vercel production site.
 
 ---
 
+### M35 - Explainable movement feedback, not a form/safety verdict
+
+The owner tested M34 observed cycle counts on their Ubuntu
+webcam and reported they work reasonably well (informal
+feedback, not annotated rep-count accuracy). M35 adds an
+[explainable local observations panel](docs/M35_EXPLAINABLE_MOVEMENT_FEEDBACK.md):
+tracking/abstention guidance, movement-cycle summaries and
+relative timing variation for the last up to five observed
+cycles. The three exercises retain separate camera
+instructions; projected angle/time variation are **descriptive
+only**, not signs of good/bad form.
+
+The optional six original Fitness-AQA research RF outputs
+remain separate and are explicitly identified as
+publisher-annotation associations. Low model scores
+cannot establish correct technique; Push-up stays
+local-only. No new model, threshold tune, dataset, video
+upload, feature schema, original M20 VAL/TEST access or
+deployment claim is introduced.
+
+---
+
 ### M34 - Heuristic observed movement cycles, not validated exercise reps
 
 [M34 local Rep & Motion Analyzer](docs/M34_REP_MOTION_ANALYZER.md)

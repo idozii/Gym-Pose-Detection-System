@@ -232,6 +232,15 @@ h1, h2, h3, p { margin: 0; }
 .field-help { color: #9eb59a; margin-top: 10px; font-size: 11px; }
 
 
+
+.feedback-explainer { margin-top:15px; padding:18px; border:1px solid #5b7053; border-radius:14px; background:linear-gradient(135deg,#202c21,#18221a); }
+.feedback-explainer[hidden] { display:none; }
+.feedback-explainer-heading { font-size:10px; font-weight:800; letter-spacing:.12em; color:#caff6e; margin-bottom:12px; }
+.feedback-explainer-title { display:block; color:#f1f7ed; font-size:15px; line-height:1.35; }
+.feedback-explainer-message { margin-top:8px; color:#d8e8d1; font-size:12px; line-height:1.6; }
+.feedback-explainer-detail { margin-top:9px; color:#aabca6; font-size:11px; line-height:1.6; }
+.feedback-research-divider { margin-top:15px; padding-top:12px; border-top:1px solid #43573f; color:#cbdbbe; font-size:9px; letter-spacing:.08em; font-weight:800; }
+.feedback-explainer-source { margin-top:7px; color:#bbc8b2; font-size:11px; line-height:1.6; }
 .rep-analysis { margin-top:15px; padding:16px; background:#202b20; border:1px solid #5d8051; border-radius:14px; }
 .rep-analysis[hidden] { display:none; }
 .rep-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
