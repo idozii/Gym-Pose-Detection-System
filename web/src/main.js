@@ -25,7 +25,7 @@ const state = {
 document.querySelector('#app').innerHTML = `
   <div class="shell">
     <header class="topbar">
-      <a class="brand" href="/" aria-label="Gym Pose Lab home">
+      <a class="brand" href="${import.meta.env.BASE_URL}" aria-label="Gym Pose Lab home">
         <span class="brand-logo"><span class="brand-mark">G</span><span class="brand-spark">✳</span></span>
         <span>GYM POSE <strong>LAB</strong></span>
       </a>
