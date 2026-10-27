@@ -11,7 +11,7 @@ services:
     branch: main
     dockerfilePath: ./backend/Dockerfile
     dockerContext: .
-    autoDeployTrigger: off
+    autoDeployTrigger: "off"
     healthCheckPath: /health
     numInstances: 1
     disk:
