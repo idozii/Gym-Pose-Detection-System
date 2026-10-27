@@ -20,8 +20,8 @@ function trace(angles, bounds = [0, 15]) {
 
 test('M45 nondeployed relative excursion recovers synthetic GT without low <=120deg', () => {
   const seq = Array(20).fill(170);
-  seq[1] = 135;
-  seq[2] = 132;
+  seq[1] = 132; // only an odd-index sample shows the trough
+  seq[2] = 170; // 400ms subseries sees a high pose here
   seq[3] = 140;
   seq[4] = 169;
   const result = compareTrainRelativeExcursion(trace(seq));
