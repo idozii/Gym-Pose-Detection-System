@@ -30,6 +30,12 @@ change the Vercel production site.
 
 ---
 
+### M33 - Local movement feedback for Squat, OHP and Barbell Row
+
+M33 adds camera-plane Squat knee angle, OHP elbow angle and Row apparent torso tilt, plus a local 10-second observed range and camera guidance. These are measurements only, not validated correct/wrong form, injury warnings or rep counting. It does not transmit extra data or change the six opt-in original-source models. See [M33 feedback runbook](docs/M33_LOCAL_EXERCISE_FEEDBACK_UI.md). Production hosting status should be checked independently of CI.
+
+---
+
 ### M32 - Frozen Bicep Curl negative-result research card
 
 Actual owner M31 on 90 video-level clips from 15 original TRAIN
