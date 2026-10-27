@@ -16,6 +16,28 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M29 - Freeze independent Push-up video study before collecting new subjects
+
+Real owner M28 TRAIN-only GroupKFold and LOSO both found directional
+gains in motion-aware Push-up classifier balanced accuracy, but **every
+paired 95% subject-bootstrap difference interval includes zero**.
+The camera/pose-quality-only 68-feature model reversed ranking
+across validation strategies and all LOSO candidates had the
+same bad-label recall as the 64-feature baseline.
+
+[M29 independent cohort preparation](docs/M29_INDEPENDENT_PUSHUP_COHORT_PROTOCOL.md)
+predeclares the 64-feature reference, interpretable 76-feature motion
+hypothesis and exploratory 80-feature model for future genuinely
+new consented adult participants. The new
+[`m29_external_pushup_cohort`](scripts/m29_external_pushup_cohort.py)
+CLI creates a blank *private* manifest and validates video
+deduplication, dual-independent-rater annotations, pseudonymous
+consent references and source cohort balance. **No new real videos
+have been collected or scored**; no original VAL/TEST video is
+accessed and no production inference/model changed.
+
+---
+
 ### M28 - TRAIN-only Push-up temporal robustness and feature-family ablation
 
 Owner M27 real-data TRAIN-only GroupKFold on 83 clips and 14 subjects:
