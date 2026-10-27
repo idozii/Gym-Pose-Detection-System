@@ -98,8 +98,8 @@ def _parse_count(text: str) -> int:
         value = float(text)
     except (TypeError, ValueError) as error:
         raise ValueError("RepCount source annotation has an invalid count") from error
-    if not value.is_integer() or not 0 < value <= 200:
-        raise ValueError("RepCount count must be integer between 1 and 200")
+    if not value.is_integer() or not 0 <= value <= 200:
+        raise ValueError("RepCount count must be integer between 0 and 200")
     return int(value)
 
 
@@ -144,6 +144,10 @@ def parse_official_csv(source: bytes) -> list[dict]:
         count = _parse_count(row["count"])
         nonempty = [str(row[key]).strip() for key in labels
                     if row[key] is not None and str(row[key]).strip()]
+        # RepCount-A includes valid Squat examples with count=0 and
+        # all L* frame boundaries blank. Keep these negative controls:
+        # counting false cycles on a zero-rep source matters.
+        # Conversely, zero count WITH frame boundaries is malformed.
         if len(nonempty) != 2 * count:
             raise ValueError("Publisher count and ordered L1..L2n cycle endpoints differ")
         bounds = [_parse_bound(value) for value in nonempty]
