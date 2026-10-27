@@ -68,6 +68,22 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M42 - Publisher-annotated zero-rep TRAIN negative controls
+
+[M42 negative-control evaluation protocol](docs/M42_TRAIN_ZERO_REP_NEGATIVE_CONTROLS.md)
+addresses a key blind spot: the owner's 20-video M41 TRAIN cohort
+had **zero** publisher-annotated zero-rep clips, so its observed
+false-positive events do not measure false alarms on negative
+clips. An opt-in `--cohort-filter zero` on the M41 runner
+uses publisher TRAIN labels with zero count and no rep bounds,
+before fixed-seed clip selection. Original M34, M39 low-to-high
+and 200ms/400ms comparison stay unchanged; event F1 is undefined
+on an entirely zero-GT cohort, while false-event counts and
+false-alarm-video rates are meaningful. Never substitute
+validation or TEST clips if no such TRAIN labels exist.
+
+---
+
 ### M41 - Paired TRAIN pose observation cadence sensitivity
 
 [M41 paired 200ms and 400ms observation study](docs/M41_TRAIN_PAIRED_CADENCE_STUDY.md)
