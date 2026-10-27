@@ -350,6 +350,68 @@ def _node_replay(trace_path: Path, output_path: Path,
     return report
 
 
+
+# M37.1 post-hoc failure-mode observability for already selected clips.
+# Inputs are temporary individual replay reports; persist aggregate counts only.
+_OBSERVABILITY_FIELDS = (
+    "input_frame_samples", "counter_accepted_ticks", "sampling_gate_skips",
+    "knee_angle_usable_ticks", "knee_angle_unavailable_ticks",
+    "knee_angle_high_ticks", "knee_angle_low_ticks", "knee_angle_middle_ticks",
+    "confirmed_initial_high_transitions", "confirmed_low_transitions",
+    "completed_return_transitions", "tracked_side_changes",
+    "tracking_gap_resets",
+)
+
+
+def _aggregate_observability(results: list[dict]) -> dict | None:
+    source = [record.get("m37_observability") for record in results]
+    # Earlier synthetic/replay adapters may not expose the M37.1 schema.
+    # Unknown coverage must be null, never silently equated with zero failures.
+    if not all(isinstance(diag, dict) and
+               diag.get("protocol") == "m37-squat-counter-observability-v1"
+               for diag in source):
+        return None
+    totals = {}
+    for key in _OBSERVABILITY_FIELDS:
+        values = [diag.get(key) for diag in source]
+        if any(type(value) is not int or value < 0 for value in values):
+            raise ValueError("Invalid M37.1 observability counter: " + key)
+        totals[key] = sum(values)
+    if (totals["counter_accepted_ticks"] + totals["sampling_gate_skips"] !=
+            totals["input_frame_samples"] or
+        totals["knee_angle_usable_ticks"] +
+            totals["knee_angle_unavailable_ticks"] != totals["counter_accepted_ticks"] or
+        totals["knee_angle_high_ticks"] + totals["knee_angle_low_ticks"] +
+            totals["knee_angle_middle_ticks"] != totals["knee_angle_usable_ticks"]):
+        raise ValueError("Inconsistent M37.1 observability totals")
+    accepted = totals["counter_accepted_ticks"]
+    raw = totals["input_frame_samples"]
+    usable = totals["knee_angle_usable_ticks"]
+    return {
+        "protocol": "m37-squat-counter-observability-v1",
+        "scope": "Descriptive post-hoc diagnostic; M34 policy untouched; no identities/trace stored",
+        "videos_included": len(results),
+        **totals,
+        "fraction_ticks_sampling_gate_skipped": (
+            totals["sampling_gate_skips"] / raw if raw else None
+        ),
+        "fraction_accepted_ticks_with_usable_knee_angle": (
+            usable / accepted if accepted else None
+        ),
+        "fraction_usable_knee_angles_high": (
+            totals["knee_angle_high_ticks"] / usable if usable else None
+        ),
+        "fraction_usable_knee_angles_low": (
+            totals["knee_angle_low_ticks"] / usable if usable else None
+        ),
+        "limitation": (
+            "These counts distinguish sampling, pose geometry, endpoints and "
+            "phase progression; no isolated causal effect, camera-view "
+            "validation or alternative thresholds are established."
+        )
+    }
+
+
 def summarise(results: list[dict], exclusions: Counter,
               *, split: str, revision: str, source_hash: str,
               candidates: int, source_mode: str = "huggingface_third_party_mirror") -> dict:
@@ -416,6 +478,7 @@ def summarise(results: list[dict], exclusions: Counter,
         "per_video_pose_sample_coverage_mean": sum(
             r["pose_sample_coverage"] for r in results
         ) / n,
+        "m37_observability": _aggregate_observability(results),
         "event_matching_tolerance": (
             "max(750ms, 35% ground-truth duration), cap 2500ms"
         ),
