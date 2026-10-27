@@ -2,6 +2,7 @@ import { FilesetResolver, PoseLandmarker } from '@mediapipe/tasks-vision';
 import { TASKS, requiredJointIndices, readiness, taskReadiness } from './pose.js';
 import { API_URL, ResearchInferenceClient, scoreState, sixModelReady } from './inference.js';
 import { CAMERA_FACING, cameraConstraints, mirrorPreview, cameraFallbackMessage } from './camera.js';
+import { PushupMotionWindow } from './pushup.js';
 import './style.css';
 
 const ASSET_VERSION = '1.1.1';
@@ -17,7 +18,8 @@ const state = {
   inferenceEnabled: false, inferenceClient: null,
   inferenceStatus: 'NOT CONNECTED', inferred: null,
   inferenceSession: 0, inferenceAbort: null,
-  inferenceInFlight: false, lastInferenceAt: 0
+  inferenceInFlight: false, lastInferenceAt: 0,
+  pushupMotion: new PushupMotionWindow(), lastPushupPreview: null
 };
 
 document.querySelector('#app').innerHTML = `
@@ -38,8 +40,8 @@ document.querySelector('#app').innerHTML = `
       <section class="intro">
         <div class="eyebrow"><span class="eyebrow-line"></span> MOVEMENT INTELLIGENCE / LAB 01</div>
         <h1>Every rep.<br><em>Another perspective.</em></h1>
-        <p>Turn your phone into a private movement lab. Observe joint tracking, explore three research exercises, and switch between selfie and rear camera in seconds.</p>
-        <div class="hero-pills"><span><i></i> ON-DEVICE POSE TRACKING</span><span>03 EXERCISES</span><span>06 EXPERIMENTAL MODELS</span></div>
+        <p>Turn your phone into a private movement lab. Observe joint tracking, explore three original source-model exercises plus Push-up local geometry preview, and switch between selfie and rear camera in seconds.</p>
+        <div class="hero-pills"><span><i></i> ON-DEVICE POSE TRACKING</span><span>04 EXERCISES</span><span>06 SOURCE MODELS / PUSH-UP LOCAL ONLY</span></div>
       </section>
 
       <section class="workbench" aria-label="Pose detection workbench">
@@ -89,6 +91,7 @@ document.querySelector('#app').innerHTML = `
               <option value="squat">Squat</option>
               <option value="ohp">Overhead Press</option>
               <option value="barbell_row">Barbell Row</option>
+              <option value="pushup">Push-up - Local Preview</option>
             </select>
             <p class="field-help" id="exerciseHelp"></p>
           </div>
@@ -98,6 +101,15 @@ document.querySelector('#app').innerHTML = `
             <div class="metric"><span>FPS</span><strong id="fpsMetric">-</strong></div>
           </div>
 
+          <section class="pushup-preview" id="pushupPreview" aria-label="Push-up local movement geometry" hidden>
+            <div class="preview-overline">PUSH-UP / LOCAL GEOMETRY ONLY</div>
+            <div class="pushup-preview-metrics">
+              <div><span>ELBOW ANGLE (2D)</span><strong id="pushupAngle">-</strong></div>
+              <div><span>10S OBSERVED RANGE</span><strong id="pushupRange">-</strong></div>
+            </div>
+            <p id="pushupPreviewHelp">Show shoulder, elbow, wrist and hip on one side. Angle is a camera-plane estimate, not a rep count or technique assessment. No Push-up quality classifier is deployed.</p>
+          </section>
+
           <div class="section-divider"></div>
           <div class="section-heading"><div>02 / JOINT VISIBILITY</div><span id="jointCount">0/8</span></div>
           <div class="progress-track"><div class="progress-fill" id="jointProgress"></div></div>
@@ -105,13 +117,14 @@ document.querySelector('#app').innerHTML = `
           <p class="hint-note" id="framingHint">Keep shoulders, hips, knees and ankles visible. Visibility is not technique quality.</p>
 
           <div class="section-divider"></div>
-          <div class="section-heading"><div>03 / SOURCE-LABEL MODELS</div></div>
+          <div class="section-heading"><div id="sourceHeading">03 / SOURCE-LABEL MODELS</div></div>
           <div class="inference-consent">
             <label class="consent-label" for="enableInference">
               <input type="checkbox" id="enableInference" />
               <span><strong>Enable research inference</strong><small>Send only 33 pose landmarks to the configured Python API (max 2 requests/sec). Webcam images never leave this page.</small></span>
             </label>
             <p class="inference-state" id="inferenceState">MODEL SERVER NOT CONFIGURED</p>
+            <p class="preview-inference-help" id="inferenceInfo"></p>
           </div>
           <div id="models" class="models"></div>
           <div class="notice">
@@ -153,7 +166,13 @@ const ui = {
   poseMetric: document.querySelector('#poseMetric'),
   fpsMetric: document.querySelector('#fpsMetric'),
   inferenceToggle: document.querySelector('#enableInference'),
-  inferenceState: document.querySelector('#inferenceState')
+  inferenceState: document.querySelector('#inferenceState'),
+  inferenceInfo: document.querySelector('#inferenceInfo'),
+  sourceHeading: document.querySelector('#sourceHeading'),
+  pushupPreview: document.querySelector('#pushupPreview'),
+  pushupAngle: document.querySelector('#pushupAngle'),
+  pushupRange: document.querySelector('#pushupRange'),
+  pushupPreviewHelp: document.querySelector('#pushupPreviewHelp')
 };
 
 function updateCameraControls() {
@@ -176,6 +195,19 @@ function setStatus(text, hint) {
 }
 
 function renderModels() {
+  const isPushup = state.exercise === 'pushup';
+  ui.inferenceToggle.disabled = isPushup || !API_URL;
+  ui.inferenceState.textContent = isPushup
+    ? 'PUSH-UP LOCAL ONLY / NO MODEL SCORE'
+    : !API_URL ? 'MODEL SERVER NOT CONFIGURED' : state.inferenceStatus;
+  ui.inferenceInfo.textContent = isPushup
+    ? 'Push-up camera geometry is on-device only. The experimental Gym7 good/bad classifiers are not deployed because external validation did not establish reliability.'
+    : 'Only source-label research scoring is eligible for the remote API after consent.';
+  ui.sourceHeading.textContent = isPushup ? '03 / PUSH-UP MODEL STATUS' : '03 / SOURCE-LABEL MODELS';
+  if (isPushup) {
+    ui.models.innerHTML = '<div class="model-row"><div><strong>Push-up quality model</strong><span>Gym7 whole-video good/bad research - not externally validated, no live temporal model</span></div><span class="offline-tag">NOT DEPLOYED</span></div>';
+    return;
+  }
   const targets = TASKS[state.exercise].targets;
   ui.inferenceState.textContent = !API_URL ? 'MODEL SERVER NOT CONFIGURED'
     : state.inferenceStatus;
@@ -208,6 +240,16 @@ function updateInspector() {
     const klass = joint.state === 'VISIBLE' ? 'joint-ok' : 'joint-low';
     return `<div class="joint-item"><span class="joint-name">${joint.name}</span><span class="${klass}">${label}</span></div>`;
   }).join('');
+  const isPushup = state.exercise === 'pushup';
+  ui.pushupPreview.hidden = !isPushup;
+  if (isPushup) {
+    const summary = state.lastPushupPreview;
+    ui.pushupAngle.textContent = summary?.angle == null ? '-' : `${summary.angle.toFixed(0)}°`;
+    ui.pushupRange.textContent = summary?.range == null ? '-' : `${summary.range.toFixed(0)}°`;
+    ui.pushupPreviewHelp.textContent = summary?.angle == null
+      ? 'Insufficient visible elbow landmarks. Move into frame; no estimate is shown.'
+      : `Visible ${summary.side?.toLowerCase() ?? 'one'} arm - ${summary.count} local samples in 10 seconds. No rep count, correct/wrong verdict or injury advice.`;
+  }
   ui.framingHint.textContent = !rawPoseSeen
     ? 'Show yourself from head to feet for Squat or OHP. This is a visibility guide only.'
     : data.basicVisibilityReady
@@ -215,14 +257,16 @@ function updateInspector() {
       : `Framing hint: ${data.missing.slice(0, 3).join(', ')}${data.missing.length > 3 ? '…' : ''}. Move so these joints are visible.`;
   const perTask = taskReadiness(state.exercise, state.landmarks);
   const n = perTask.filter((t) => t.basicVisibilityReady).length;
-  ui.videoStatus.textContent = rawPoseSeen
+  ui.videoStatus.textContent = isPushup
+    ? (rawPoseSeen ? 'LOCAL PUSH-UP GEOMETRY / NO QUALITY SCORE' : 'No pose detected')
+    : rawPoseSeen
     ? `${n}/${perTask.length} visibility gates · ${state.inferenceEnabled ? 'research inference opt-in' : 'no remote inference'}`
     : 'No pose detected';
   renderModels();
 }
 
 async function requestResearchInference(timestamp) {
-  if (!state.inferenceEnabled || !state.inferenceClient ||
+  if (state.exercise === 'pushup' || !state.inferenceEnabled || !state.inferenceClient ||
       !state.running || !Array.isArray(state.landmarks) ||
       state.inferenceInFlight || timestamp - state.lastInferenceAt < 500) return;
   state.lastInferenceAt = timestamp;
@@ -268,6 +312,10 @@ function disableResearchInference() {
 }
 
 async function enableResearchInference() {
+  if (state.exercise === 'pushup') {
+    disableResearchInference();
+    return;
+  }
   if (!ui.inferenceToggle.checked) {
     disableResearchInference();
     return;
@@ -346,6 +394,9 @@ function loop(token, timestamp) {
       state.lastVideoTime = v.currentTime;
       const result = state.landmarker.detectForVideo(v, timestamp);
       state.landmarks = result.landmarks?.[0] ?? null;
+      if (state.exercise === 'pushup') {
+        state.lastPushupPreview = state.pushupMotion.observe(state.landmarks, timestamp);
+      }
       state.frames++;
       if (state.landmarks) state.poseFrames++;
       if (state.lastFrameClock) {
@@ -370,6 +421,8 @@ function loop(token, timestamp) {
 
 function stopCamera() {
   disableResearchInference();
+  state.pushupMotion.reset();
+  state.lastPushupPreview = null;
   state.token++;
   state.running = false;
   state.starting = false;
@@ -479,12 +532,9 @@ ui.inferenceToggle.disabled = !API_URL;
 ui.inferenceToggle.addEventListener('change', () => { void enableResearchInference(); });
 ui.exercise.addEventListener('change', () => {
   if (!TASKS[ui.exercise.value]) return;
-  state.inferenceSession += 1;
-  state.inferenceAbort?.abort();
-  state.inferenceAbort = null;
-  state.inferenceInFlight = false;
-  state.lastInferenceAt = 0;
-  state.inferred = null;
+  disableResearchInference();
+  state.pushupMotion.reset();
+  state.lastPushupPreview = null;
   state.exercise = ui.exercise.value;
   ui.help.textContent = TASKS[state.exercise].subtitle;
   renderModels();

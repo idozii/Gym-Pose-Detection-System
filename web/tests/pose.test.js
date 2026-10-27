@@ -9,9 +9,9 @@ function landmarks(low = []) {
   }));
 }
 
-test('exactly three exercises and six honest source-label slots', () => {
-  assert.deepEqual(Object.keys(TASKS), ['squat', 'ohp', 'barbell_row']);
-  assert.deepEqual(Object.values(TASKS).map((x) => x.targets.length), [2, 2, 2]);
+test('four exercises, only three source-label categories, exactly six honest source slots', () => {
+  assert.deepEqual(Object.keys(TASKS), ['squat', 'ohp', 'pushup', 'barbell_row']);
+  assert.deepEqual(Object.values(TASKS).map((x) => x.targets.length), [2, 2, 0, 2]);
   assert.deepEqual(TASKS.squat.targets.map((t) => t.source),
     ['error_knees_forward', 'error_knees_inward']);
   assert.deepEqual(TASKS.ohp.targets.map((t) => t.source),
@@ -43,6 +43,13 @@ test('Row torso4 ignores knee and ankle visibility without claiming lumbar measu
   assert.deepEqual(requiredJointIndices('barbell_row'), [11, 12, 23, 24]);
   assert.deepEqual(taskReadiness('barbell_row', landmarks([25, 26, 27, 28]))
     .map((t) => t.basicVisibilityReady), [true, true]);
+});
+
+test('Push-up is geometry-only and exposes no backend source target', () => {
+  assert.deepEqual(TASKS.pushup.targets, []);
+  assert.deepEqual(requiredJointIndices('pushup'), [11, 12, 13, 14, 15, 16, 23, 24]);
+  assert.deepEqual(taskReadiness('pushup', landmarks()), []);
+  assert.equal(readiness('pushup', landmarks()).total, 8);
 });
 
 test('Missing, malformed and nonfinite landmarks never look visible', () => {

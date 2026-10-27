@@ -16,6 +16,26 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M30 - Bicep Curl temporal TRAIN research + Push-up local web preview
+
+**Push-up is now selectable on the website** as an on-device,
+camera-only research preview showing live 2D elbow angle and
+10-second elbow angle range. It **does not** run a Push-up
+good/bad model, count reps, send landmark data to the research
+API, or claim safe/correct form. The six original Squat,
+OHP, Row source-label detector endpoints are unchanged.
+
+[M30 Curl and Push-up technical/Ubuntu guide](docs/M30_BICEP_CURL_AND_PUSHUP_WEB_PREVIEW.md)
+also includes a new local-only Bicep Curl temporal feature
+experiment using the already downloaded Gym7 archive and
+**only frozen M20 TRAIN people**, comparing 264, 268,
+276 and 280 feature variants with grouped 5-fold and LOSO
+cross-validation. Neither existing M20 VAL/TEST clips nor
+private model bundles are accessed. New model metrics
+will only be available after the owner runs the commands.
+
+---
+
 ### M29 - Freeze independent Push-up video study before collecting new subjects
 
 Real owner M28 TRAIN-only GroupKFold and LOSO both found directional
