@@ -16,6 +16,19 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M18 Render deployment preparation (private weights, opt-in paid hosting)
+
+A Render Blueprint (`render.yaml`) now defines an **optional paid**
+Singapore FastAPI service with a private persistent model disk and
+non-root SSH/SCP support. It **does not** create paid resources, upload
+weights, or activate public inference until the owner imports the Blueprint,
+uploads all six trusted local models, reviews Internet abuse protection,
+and explicitly opts into inference.
+
+[Render private-model hosting, exact six-file SCP and verification steps](docs/M18_RENDER_PRIVATE_MODEL_HOST.md).
+
+---
+
 ### M18: six-model deployment readiness gate (pending owner cloud artifacts)
 
 The Web v2 frontend and optional Python scoring API are integrated, but the
