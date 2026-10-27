@@ -362,8 +362,17 @@ def summarise(results: list[dict], exclusions: Counter,
     tp = sum(r["event_tp"] for r in results)
     fp = sum(r["event_fp"] for r in results)
     fn = sum(r["event_fn"] for r in results)
-    precision = tp / (tp + fp) if tp + fp else 0.
-    recall = tp / (tp + fn) if tp + fn else 0.
+    # A cohort made entirely of publisher zero-rep examples has no
+    # positive ground truth and cannot have event recall/F1. Report
+    # undefined as JSON null, not an invented 0% or 100% statistic.
+    precision = tp / (tp + fp) if tp + fp else None
+    recall = tp / (tp + fn) if tp + fn else None
+    f1 = (
+        2 * precision * recall / (precision + recall)
+        if precision is not None and recall is not None and precision + recall
+        else 0. if precision is not None and recall is not None
+        else None
+    )
     return {
         "study": "M37 pre-registered heuristic M34 Squat real video evaluation",
         "evaluation": PROTOCOL,
@@ -403,8 +412,7 @@ def summarise(results: list[dict], exclusions: Counter,
         ) / n,
         "event_tp": tp, "event_fp": fp, "event_fn": fn,
         "event_precision": precision, "event_recall": recall,
-        "event_f1": 2 * precision * recall / (precision + recall)
-                    if precision + recall else 0.,
+        "event_f1": f1,
         "per_video_pose_sample_coverage_mean": sum(
             r["pose_sample_coverage"] for r in results
         ) / n,
@@ -414,8 +422,8 @@ def summarise(results: list[dict], exclusions: Counter,
         "zero_rep_handling": (
             "Publisher count=0 plus blank L* boundaries is a negative "
             "control. False counted cycles contribute event FP and count MAE. "
-            "Per-video recall is undefined when there are no annotated "
-            "events; global recall uses all annotated positive events."
+            "Per-video recall is undefined with no annotated events; global "
+            "precision/recall/F1 are null if their denominator is zero."
         ),
         "real_video_measured": True,
         "media_pipe_python_solutions_used": True,
