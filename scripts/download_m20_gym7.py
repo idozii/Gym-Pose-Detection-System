@@ -89,7 +89,7 @@ def download_archive(destination: Path, *, confirm_license: bool = False,
             raise ValueError("Unexpectedly small dataset archive")
         # Verify ZIP header without unpacking untrusted archives into the working tree.
         with part.open("rb") as f:
-            if f.read(4) != b"PK\\x03\\x04":
+            if f.read(4) != b"PK\x03\x04":
                 raise ValueError("Publisher download is not a ZIP")
         os.replace(part, destination)
     except Exception:
