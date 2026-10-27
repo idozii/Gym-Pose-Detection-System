@@ -1,4 +1,4 @@
-# Milestone 13C — two task-specific OHP pose feature pipelines
+# Milestone 13C - two task-specific OHP pose feature pipelines
 
 ## Motivation from the owner's real-data OHP coverage audit (PR #17)
 

@@ -1,4 +1,4 @@
-# Milestone 13A — Fitness-AQA OHP pose extraction (publisher train/val only)
+# Milestone 13A - Fitness-AQA OHP pose extraction (publisher train/val only)
 
 Milestone 12 **source integrity already passed on the owner's computer**:
 
@@ -18,7 +18,7 @@ benchmark models or evaluate the test split.
   **plus eight** OHP-specific joint geometry features: left/right elbow
   angles, individual knee angles, vertical wrist-to-shoulder differences,
   horizontal elbow width and wrist width normalized to shoulder distance.
-- Upper limb visibility gate for elbows and wrists (indices 13–16)
+- Upper limb visibility gate for elbows and wrists (indices 13-16)
   **in addition to** the original critical joints (shoulders, hips,
   knees and ankles); 0.50 by default. Coverage is explicitly reported
   rather than assumed sufficient.

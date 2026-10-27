@@ -1,4 +1,4 @@
-# M13E — OHP RF multi-seed stability (TRAIN video groups only)
+# M13E - OHP RF multi-seed stability (TRAIN video groups only)
 
 This study is a follow-up to M13D's **owner-run** OHP static vs causal
 temporal RF benchmark (PR #19). It probes whether the observed advantage

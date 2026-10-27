@@ -1,6 +1,6 @@
 # Milestone 13A follow-up: diagnose OHP pose coverage before 1,921-clip extraction
 
-## Confirmed user pilot — 8 publisher train + 8 publisher validation clips
+## Confirmed user pilot - 8 publisher train + 8 publisher validation clips
 
 ```text
 python -m scripts.extract_fitness_aqa_ohp --split train-val --max-videos-per-split 8

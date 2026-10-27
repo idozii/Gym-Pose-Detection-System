@@ -1,4 +1,4 @@
-# Milestone 12 — Fitness-AQA Multi-Exercise Dataset Foundation
+# Milestone 12 - Fitness-AQA Multi-Exercise Dataset Foundation
 
 Scope: **dataset integrity and reusable metadata adapters**, not model training.
 The same research repo will cover Squat, Overhead Press (OHP), and Barbell Row
