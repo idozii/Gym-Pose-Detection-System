@@ -79,6 +79,96 @@ third-party videos and replaying M34 outputs**. All Python/Node
 GitHub CI tests use *synthetic local fixture files*, and CI
 does not contact or download the dataset.
 
+## Original RepCountA TAR.GZ support (owner's actual 8.9 GB download)
+
+The user confirmed the official author-hosted source was downloaded as:
+
+```text
+~/Downloads/RepCountA.tar.gz
+```
+
+**The extension is `.tar.gz`, not `.zip`.** Do not rename
+the file, download another 8.9 GB copy or extract the full
+archive just to run a 3-video pilot. The previous M37
+implementation only accepted ZIP; this is now fixed.
+
+The same inspection command accepts TAR.GZ (or use the
+new `--inspect-source-archive` alias):
+
+```bash
+cd ~/Desktop/Gym-Pose-Detection-System
+git pull --ff-only
+source .venv-m20/bin/activate
+
+file ~/Downloads/RepCountA.tar.gz
+python -m scripts.m37_repcount_video_benchmark \
+  --inspect-source-archive ~/Downloads/RepCountA.tar.gz
+```
+
+The TAR reader iterates member metadata using Python
+`tarfile.open(..., mode="r|gz")`. Inspection **decompresses
+the compressed stream sequentially** to see all member
+headers, even though it does **not write** the 8.9 GB of
+videos to disk. This can be CPU/I/O heavy; do not mistake
+its streaming progress for a full extraction. The printed
+report identifies first CSV names and video member paths.
+The actual author's 8.9 GB archive layout has **not been
+inspected by the project maintainers**.
+
+If the TAR contains an original split CSV with headers
+`name,type,count,L1,L2,...`, you can immediately run:
+
+```bash
+python -m scripts.m37_repcount_video_benchmark \
+  --source-archive ~/Downloads/RepCountA.tar.gz \
+  --split validation --max-videos 3
+```
+
+Only selected source clips are copied to Git-ignored
+`data/external/m37_repcount/official_tar_selected/`,
+with a **250 MiB cap per video**. Missing pose traces
+are temporary and discarded. The M34 Node.js rep counter
+and evaluation metric logic remain unchanged.
+
+**If the archive includes video but no source annotation
+CSV**, obtain the existing publisher CSV - for example
+the official repository's
+[`open_set/new_valid.csv`](https://github.com/SvipRepetitionCounting/TransRAC/blob/main/open_set/new_valid.csv)
+- without relabeling anything:
+
+```bash
+mkdir -p data/external/m37_repcount
+curl -fL --retry 2 \
+  'https://raw.githubusercontent.com/SvipRepetitionCounting/TransRAC/main/open_set/new_valid.csv' \
+  -o data/external/m37_repcount/publisher_new_valid.csv
+
+python -m scripts.m37_repcount_video_benchmark \
+  --source-archive ~/Downloads/RepCountA.tar.gz \
+  --annotations-csv data/external/m37_repcount/publisher_new_valid.csv \
+  --split validation --max-videos 3
+```
+
+This explicit original CSV path allows the TAR reader
+to extract selected annotated clips **in one compressed
+streaming pass**, rather than scanning the 8.9 GB source
+twice. The implementation uses the first up to 3 matched
+Squat video members encountered **in fixed TAR archive
+order**, not a selection based on prediction quality.
+Only exact filename matches are accepted. If the official
+`new_valid.csv` is for a different split or archive naming
+layout, the benchmark must stop instead of inventing
+video-to-label associations. `new_valid.csv` includes
+some historical action names written `squant`, which the
+parser conservatively maps to Squat.
+
+M37 cannot automatically load an archive nested inside
+TAR.GZ or decode a differently structured publisher
+release without a separately reviewed adapter. It
+also cannot independently verify whether the original
+cycle frame indices align exactly with every decoded
+video. If the archive inspection shows unusual paths,
+inspect those before attempting numerical evaluation.
+
 ## Official RepCountA OneDrive ZIP (preferred if available)
 
 The owner located the dataset authors' original OneDrive folder:

@@ -41,6 +41,19 @@ mirror layout without new annotations or network access.
 If neither source is available, real-video accuracy remains **unknown**
 rather than synthesized.
 
+**M37 owner's actual author archive is TAR.GZ:** The downloaded
+`~/Downloads/RepCountA.tar.gz` is about 8.9 GB, **not**
+a ZIP file. The [M37 TAR.GZ runbook](docs/M37_REPCOUNT_REAL_VIDEO_EVALUATION.md)
+now accepts `--inspect-source-archive ~/Downloads/RepCountA.tar.gz`
+and `--source-archive ~/Downloads/RepCountA.tar.gz --max-videos 3`.
+It streams compressed members and extracts only selected
+already-annotated Squat clips, with external publisher CSV
+option when the TAR has no embedded labels. Full archive
+extraction and new human annotation are unnecessary;
+the 8.9GB compressed stream may still require sequential
+decompression to find source members. Real accuracy
+remains unmeasured until actual videos are evaluated.
+
 **M37 author's OneDrive ZIP support:** The official RepCount
 site links to an original OneDrive folder (extraction code
 `repcount`); the user provided that source after the
