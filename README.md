@@ -68,6 +68,20 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M40 - Larger fixed-sampling TRAIN-only development cohort
+
+[M40 TRAIN hash cohort protocol](docs/M40_TRAIN_HASH_COHORT.md)
+adds deterministic, fixed-seed filename-hash selection of up to 20
+publisher TRAIN Squat clips, reducing dependence on archive member
+order. In the owner-run **five-video development pilot**, M39's
+low-to-high rule achieved event F1 65.26%, count MAE 3.8,
+versus original M34 F1 6.90%, MAE 10.8 (56 source reps).
+These numbers are **TRAIN-only exploratory observations**, not
+held-out performance or a trained model. M40 retains the original
+M34, temporal detector, event matching and TEST embargo.
+
+---
+
 ### M39 - TRAIN-only temporal counting baseline (development, NOT held-out test)
 
 [M39 fixed temporal baseline protocol](docs/M39_TRAIN_ONLY_TEMPORAL_BASELINE.md)
