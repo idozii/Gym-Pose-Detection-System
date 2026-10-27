@@ -12,6 +12,9 @@ from __future__ import annotations
 import os
 import json
 import logging
+import asyncio
+import time
+from collections import deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 from types import SimpleNamespace
@@ -113,6 +116,14 @@ def create_app(registry: ModelRegistry | None = None, *,
         lifespan=lifespan,
     )
     origins = _allowed_origins()
+    # Render Free: one-process, bounded CPU admission gate. Never store
+    # client identity, pose vectors, images, IP addresses or session IDs.
+    # This is a basic shared budget, NOT robust distributed abuse protection.
+    score_window_limit = int(os.environ.get("POSE_SCORE_GLOBAL_10S_LIMIT", "0"))
+    if score_window_limit < 0 or score_window_limit > 100:
+        raise ValueError("POSE_SCORE_GLOBAL_10S_LIMIT must be 0..100")
+    score_admissions = deque()
+    score_slots = asyncio.Semaphore(2)
     @app.exception_handler(RequestValidationError)
     async def redact_validation_errors(_request: Request, _exc: RequestValidationError):
         # FastAPI normally includes original invalid input in 422 responses.
@@ -156,7 +167,26 @@ def create_app(registry: ModelRegistry | None = None, *,
                 return JSONResponse(
                     status_code=422, content={"detail": "Invalid or nonfinite JSON"}
                 )
-        response = await call_next(request)
+        acquired_slot = False
+        if request.url.path == "/score" and score_window_limit:
+            # Admission is atomic per asyncio loop until the first await.
+            now = time.monotonic()
+            while score_admissions and now - score_admissions[0] >= 10.0:
+                score_admissions.popleft()
+            if len(score_admissions) >= score_window_limit or score_slots.locked():
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Experimental inference temporarily rate limited"},
+                    headers={"Cache-Control": "no-store", "Retry-After": "2"},
+                )
+            score_admissions.append(now)
+            await score_slots.acquire()
+            acquired_slot = True
+        try:
+            response = await call_next(request)
+        finally:
+            if acquired_slot:
+                score_slots.release()
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
