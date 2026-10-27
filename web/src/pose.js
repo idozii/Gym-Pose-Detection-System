@@ -27,6 +27,12 @@ export const TASKS = Object.freeze({
         joints: Object.freeze([11, 12, 23, 24, 25, 26, 27, 28]) })
     ])
   }),
+  pushup: Object.freeze({
+    label: 'Push-up',
+    subtitle: 'LOCAL RESEARCH PREVIEW - elbow angle only, NOT form scoring',
+    visualJoints: Object.freeze([11, 12, 13, 14, 15, 16, 23, 24]),
+    targets: Object.freeze([])
+  }),
   barbell_row: Object.freeze({
     label: 'Barbell Row', subtitle: 'Torso4 · shoulders and hips',
     targets: Object.freeze([
@@ -43,7 +49,7 @@ export const VISIBILITY_THRESHOLD = 0.5;
 export function requiredJointIndices(exercise) {
   const task = TASKS[exercise];
   if (!task) throw new Error('Unknown exercise');
-  return [...new Set(task.targets.flatMap((target) => target.joints))].sort((a, b) => a - b);
+  return [...new Set(task.visualJoints ?? task.targets.flatMap((target) => target.joints))].sort((a, b) => a - b);
 }
 
 export function jointVisibility(landmarks, index, cutoff = VISIBILITY_THRESHOLD) {
