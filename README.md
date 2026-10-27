@@ -16,6 +16,22 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M23 - Frozen Push-up participant split and new upper-body clip schema
+
+Owner M22 TRAIN ablation: baseline original full-body accepted
+**24/513 frames, 0/15 rejected clips**; baseline upper-body accepted
+**258/513, 14/15**, with heavy/lower-threshold detection providing only
+modest additional frame coverage.
+
+[M23 frozen TRAIN-only Push-up features](docs/M23_TRAIN_ONLY_PUSHUP_SCHEMA_PILOT.md)
+builds paired full/upper admission data using a NEW
+`gym7-pushup-upper32-clip64-v1` schema with masked invisible joints
+and the original M20 seed-42 frozen TRAIN participant membership.
+Validation and TEST participant media are not decoded.
+**No M23 Push-up model is trained or deployed yet**.
+
+---
+
 ### M22 - Pairwise Push-up detector and upper-body gate ablation
 
 Real owner M21 TRAIN-only diagnostics recorded **262/513** frames rejected
