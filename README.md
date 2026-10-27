@@ -30,6 +30,17 @@ change the Vercel production site.
 
 ---
 
+**M37 source availability / 404 note:** A publicly indexed third-party
+RepCount-A Hugging Face page did not guarantee live download access;
+the owner encountered HTTP 404 at the annotation-file URL.
+The revised [M37 source diagnostic](docs/M37_REPCOUNT_REAL_VIDEO_EVALUATION.md)
+adds a metadata-only `--check-source` command before any video fetch,
+clear repo-vs-missing-file errors, and optional `--local-source` to
+evaluate an already authorized, publisher-compatible RepCount-A
+mirror layout without new annotations or network access.
+If neither source is available, real-video accuracy remains **unknown**
+rather than synthesized.
+
 ### M37 - Automatic RepCount real-video Squat evaluation (no user labeling)
 
 [M37 automated RepCount benchmark](docs/M37_REPCOUNT_REAL_VIDEO_EVALUATION.md)

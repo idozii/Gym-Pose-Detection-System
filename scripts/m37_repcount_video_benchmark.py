@@ -110,6 +110,109 @@ def _lazy_hub():
     return hf_hub_download
 
 
+
+
+def probe_huggingface_source(*, split: str = "validation",
+                            revision: str = "main", api=None) -> dict:
+    """Metadata-only check: does the repo AND required exact file exist now?
+
+    Old search engine snippets are not evidence a Hugging Face mirror is
+    still public. Never download a video until this check succeeds.
+    """
+    if split not in VALID_SPLITS:
+        raise ValueError("M37 source probe split is not valid")
+    if api is None:
+        try:
+            from huggingface_hub import HfApi
+        except ImportError as error:
+            raise RuntimeError(
+                "Source verification requires huggingface_hub; install "
+                "'huggingface_hub>=0.27,<2'"
+            ) from error
+        api = HfApi()
+    try:
+        # Both repo metadata and exact filenames must be available.
+        info = api.dataset_info(REPO, revision=revision)
+        files = set(api.list_repo_files(
+            REPO, repo_type=REPO_TYPE, revision=revision
+        ))
+    except Exception as error:
+        response = getattr(error, "response", None)
+        status = getattr(response, "status_code", None)
+        if status in (401, 403, 404) or type(error).__name__ in (
+            "RepositoryNotFoundError", "GatedRepoError",
+            "RevisionNotFoundError", "EntryNotFoundError"
+        ):
+            raise RuntimeError(
+                "The configured third-party RepCount-A Hugging Face "
+                "mirror cannot be accessed now (repo, revision, or "
+                "permissions unavailable; HTTP status "
+                f"{status if status is not None else 'unknown'}). "
+                "A previously indexed dataset card does not guarantee "
+                "live access. Inspect the official RepCount dataset "
+                "distribution; authenticate ONLY if you have legitimate "
+                "access to a private/gated repo. Do not substitute "
+                "unverified annotations or invent accuracy results."
+            ) from error
+        raise RuntimeError(
+            "Unable to verify the RepCount-A mirror metadata. "
+            "Check network/API access; no videos were downloaded."
+        ) from error
+    annotation = f"{split}_annotations.json"
+    videos = [p for p in files if p.startswith(split + "/")
+              and p.lower().endswith((".mp4", ".mov", ".avi", ".mkv"))]
+    if annotation not in files or not videos:
+        raise RuntimeError(
+            f"RepCount-A mirror is visible but does not expose the "
+            f"expected {annotation} and {split}/*.mp4 source files. "
+            "Its layout may have changed; do not treat count-only "
+            "metadata as event-time annotations. No video was downloaded."
+        )
+    return {
+        "repo_id": REPO,
+        "revision": getattr(info, "sha", revision),
+        "annotation_file": annotation,
+        "split_video_files_visible": len(videos),
+        "annotation_and_video_files_visible": True,
+        "no_video_download_performed": True
+    }
+
+
+def fetch_local_squat_cohort(root: Path, source_dir: Path, *,
+                             split: str = "validation",
+                             limit: int = DEFAULT_LIMIT) -> tuple[list[dict], str]:
+    """Use a previously *authorized* RepCount-A mirrored-layout source.
+
+    No labels are entered by hand. The caller supplies an existing directory
+    with publisher-compatible JSON and split MP4s. No network calls.
+    """
+    if split not in VALID_SPLITS or not 1 <= limit <= 20:
+        raise ValueError("M37 split must be train/validation/test and limit 1..20")
+    root_dir = source_dir.resolve(strict=True)
+    if not root_dir.is_dir():
+        raise ValueError("M37 local source must be a directory")
+    annotation = root_dir / f"{split}_annotations.json"
+    if not annotation.is_file():
+        raise FileNotFoundError(
+            f"RepCount-A local annotation file absent: {annotation}. "
+            "Use the officially obtained source's original event labels."
+        )
+    selected = read_mirror_annotations(annotation)[:limit]
+    matched = []
+    for item in selected:
+        path = root_dir / split / item["video"]
+        try:
+            path.resolve(strict=True).relative_to(root_dir)
+        except (ValueError, OSError) as error:
+            raise ValueError("Source video escapes local dataset root") from error
+        if not path.is_file() or not 10000 <= path.stat().st_size <= MAX_VIDEO_BYTES:
+            raise ValueError(
+                "Local RepCount-A video absent, empty or exceeds 250 MiB per clip"
+            )
+        matched.append({**item, "video_path": path})
+    return matched, _sha256(annotation)
+
+
 def fetch_small_squat_cohort(root: Path, *, split: str = "validation",
                              limit: int = DEFAULT_LIMIT,
                              revision: str = "main",
@@ -308,15 +411,26 @@ def summarise(results: list[dict], exclusions: Counter,
 
 def run(*, split: str, limit: int, root: Path,
         report_path: Path, revision: str = "main",
-        download_fn=None, trace_fn=None, replay_fn=None) -> dict:
+        download_fn=None, trace_fn=None, replay_fn=None,
+        local_source: Path | None = None) -> dict:
     if report_path.exists():
         raise FileExistsError("M37 output report exists; refusing overwrite")
+    # The Hugging Face downloader creates root for remote mode, but
+    # authorized local-source mode must create the private temp parent itself.
+    root.mkdir(parents=True, exist_ok=True)
     if not 1 <= limit <= 20:
         raise ValueError("Only 1..20 clips allowed for first M37 pilot")
-    selected, source_hash = fetch_small_squat_cohort(
-        root, split=split, limit=limit, revision=revision,
-        download_fn=download_fn
-    )
+    if local_source is not None:
+        selected, source_hash = fetch_local_squat_cohort(
+            root, local_source, split=split, limit=limit
+        )
+    else:
+        if download_fn is None:
+            probe_huggingface_source(split=split, revision=revision)
+        selected, source_hash = fetch_small_squat_cohort(
+            root, split=split, limit=limit, revision=revision,
+            download_fn=download_fn
+        )
     extractor = trace_fn or extract_pose_trace
     replay = replay_fn or _node_replay
     exclusions = Counter()
@@ -357,15 +471,26 @@ def main(argv=None):
     parser.add_argument("--split", choices=VALID_SPLITS, default="validation")
     parser.add_argument("--max-videos", type=int, default=DEFAULT_LIMIT)
     parser.add_argument("--revision", default="main")
+    parser.add_argument("--check-source", action="store_true",
+                        help="Verify the HF repository and exact annotation/video paths; download nothing")
+    parser.add_argument("--local-source", type=Path,
+                        help="Existing legally obtained RepCount-A mirrored-layout files, no Hugging Face API")
     parser.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     args = parser.parse_args(argv)
     try:
-        result = run(
-            split=args.split, limit=args.max_videos,
-            root=args.root, report_path=args.report,
-            revision=args.revision
-        )
+        if args.check_source:
+            if args.local_source is not None:
+                raise ValueError("Choose only one of --check-source or --local-source")
+            result = probe_huggingface_source(
+                split=args.split, revision=args.revision
+            )
+        else:
+            result = run(
+                split=args.split, limit=args.max_videos,
+                root=args.root, report_path=args.report,
+                revision=args.revision, local_source=args.local_source
+            )
     except (OSError, RuntimeError, ValueError, TypeError, json.JSONDecodeError) as error:
         print(f"M37 stopped: {error}", file=sys.stderr)
         return 1

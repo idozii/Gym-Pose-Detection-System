@@ -79,6 +79,71 @@ third-party videos and replaying M34 outputs**. All Python/Node
 GitHub CI tests use *synthetic local fixture files*, and CI
 does not contact or download the dataset.
 
+## M37 source access diagnostic (HTTP 404)
+
+In October 2026 the owner encountered a **real 404** when the
+Hugging Face client requested
+`momo321654/RepCountA-videos/validation_annotations.json`.
+A previously indexed Hugging Face dataset card described
+that file, but old search results do not establish that the
+repository and individual video/annotation files are still
+accessible. A 404 might mean removed/moved, private, or
+a renamed file; the error alone cannot distinguish these
+causes. **Do not assume logging in will resolve it.**
+
+The updated M37 checks **live repository metadata and exact
+file paths before downloading any video**:
+
+```bash
+cd ~/Desktop/Gym-Pose-Detection-System
+git pull --ff-only
+source .venv-m20/bin/activate
+python -m scripts.m37_repcount_video_benchmark --check-source
+```
+
+If the check reports inaccessible repository, no clip is
+downloaded and no accuracy report is produced. Do not
+try random URLs or unverified replacements; retrieve
+the dataset via the official authors' permission-controlled
+distribution if eligible:
+<https://svip-lab.github.io/dataset/RepCount_dataset.html>.
+
+If you already have the legally obtained RepCount-A files in
+**the exact mirrored layout** with source frame annotations,
+a one-command local fallback avoids Hugging Face entirely:
+
+```text
+/path/to/authorized-repcount-a/
+    validation_annotations.json
+    validation/
+        stuX_Y.mp4
+        ...
+```
+
+```bash
+python -m scripts.m37_repcount_video_benchmark \
+  --local-source /path/to/authorized-repcount-a \
+  --max-videos 3
+```
+
+The paths above are schematic, **not an assertion the
+dataset already exists on your machine**. The command
+requires publisher-compatible original JSON annotation
+fields (video, action_type, count, cycle_bounds frame
+pairs) and paired files with exactly matching names.
+It does not generate labels, request your own webcam
+data, or automatically download large archives.
+If the author's original dataset has a different layout,
+a separately reviewed parser and source provenance checks
+are required rather than guessing the alignment.
+
+`--check-source` queries metadata only and never downloads
+video. The normal default M37 command now runs the
+same check automatically before initiating any download.
+If the repo is restricted and you have **legitimate
+authorized access**, follow its official terms; otherwise
+leave the independent real-video evaluation pending.
+
 ## Run on the user's Ubuntu computer
 
 Ensure Node 22 is installed (`node --version`). Use the
