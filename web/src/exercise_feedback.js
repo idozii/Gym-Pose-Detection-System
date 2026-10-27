@@ -120,7 +120,10 @@ export class ExerciseFeedbackWindow {
     }
     if (!Number.isFinite(timeMs)) return this.summary(timeMs);
     // Do not carry motion across a backwards clock or inactive page.
-    if (this.samples.length && timeMs < this.samples.at(-1).time) this.samples = [];
+    if (this.samples.length && timeMs < this.samples.at(-1).time) {
+      this.samples = [];
+      this.lastTick = -Infinity;
+    }
     this.samples = this.samples.filter((sample) =>
       sample.time <= timeMs && timeMs - sample.time <= this.windowMs);
     if (timeMs - this.lastTick >= this.sampleMs) {
