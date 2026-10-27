@@ -57,6 +57,12 @@ def verify_cohort(full: pd.DataFrame, upper: pd.DataFrame, original_manifest: li
                   original_m20: pd.DataFrame):
     """No new participant, changed metadata, or CV fold contamination."""
     chosen, subjects = frozen_train_manifest(original_manifest, original_m20, seed=SEED)
+    # M20 split contains 15 TRAIN people overall, but only 14 provided
+    # Push-up clips in the owner's extracted data. Use only participants
+    # with actual original TRAIN Push-up clips for Push-up CV folds.
+    eligible_people = {r["subject_id"] for r in chosen}
+    if not eligible_people.issubset(subjects):
+        raise ValueError("Source participant not in original M20 TRAIN")
     source = {r["video_id"]: r for r in chosen}
     if len(source) != len(chosen):
         raise ValueError("Duplicated original video identity")
@@ -74,9 +80,11 @@ def verify_cohort(full: pd.DataFrame, upper: pd.DataFrame, original_manifest: li
             if r.subject_id not in subjects:
                 raise ValueError("Crossing subject-disjoint TRAIN boundary")
     common_ids = sorted(full.index)
+    if set(full.subject_id) != eligible_people:
+        raise ValueError("Full gate must cover every available Push-up TRAIN participant")
     if len(set(full.subject_id)) < 5:
         raise ValueError("Require at least five original TRAIN subjects")
-    return common_ids, sorted(upper.index), sorted(subjects), len(chosen)
+    return common_ids, sorted(upper.index), sorted(eligible_people), len(chosen)
 
 
 def _fit(train: pd.DataFrame, *, n_trees=200):
