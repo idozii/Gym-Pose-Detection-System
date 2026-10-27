@@ -16,6 +16,25 @@ feature+RF inference**. This is an engineering runtime demonstration,
 not a test of correctness or robust generalization. Evaluation is
 exploratory on repeatedly consulted publisher validation samples.
 
+### M19 mobile cameras, premium studio UI and new dataset research
+
+The mobile site now offers Front / Selfie and Rear / Observer camera
+selection; mirror on/off flips **only the front preview**, not the numeric
+MediaPipe landmarks supplied to the experimental source-label models.
+Switching physical cameras stops the prior stream and resets research
+inference consent. A full responsive movement-studio redesign highlights
+camera controls, joint visibility and model status on mobile.
+
+Tracked human-readable docs and source use simple ASCII hyphen instead of
+Unicode en or em dashes. Valid CLI `--flags` and CSS `--properties` are
+preserved. CI enforces this convention.
+
+[M19 mobile camera and UX acceptance](docs/M19_MOBILE_CAMERA_WEB_REFRESH.md)
+and [additional exercise dataset research](docs/M19_EXERCISE_DATASET_EXPANSION.md).
+**No fourth exercise or newly trained model has been deployed.**
+
+---
+
 ### M18 zero-cost deployment preparation (no paid Render plan)
 
 The optional **free-tier** Render Blueprint (`render.yaml`) creates NO
