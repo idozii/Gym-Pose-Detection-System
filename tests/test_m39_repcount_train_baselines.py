@@ -130,3 +130,37 @@ def test_m39_cannot_turn_bad_fake_baseline_results_into_real_accuracy():
     broken["source_split"] = "validation"
     with pytest.raises(ValueError, match="TRAIN"):
         _validate_paired(broken, 1)
+
+
+def test_m40_train_hash_selection_runs_and_records_metadata(tmp_path):
+    archive = _archive(tmp_path)
+    seen = []
+    def extractor(path, annotation):
+        seen.append(path.read_bytes()[:5])
+        return {"annotated_count": annotation["annotated_count"], "frames": []}
+    result = run(
+        archive=archive, root=tmp_path / "hash_private",
+        report_path=tmp_path / "hash_report.json", limit=1,
+        selection_policy="stable_hash", selection_seed=2026,
+        extract_fn=extractor, compare_fn=_fake_compare
+    )
+    assert seen == [b"train"]
+    assert result["source_split"] == "train"
+    assert result["selection_policy"] == "stable_hash"
+    assert result["selection_seed"] == 2026
+    assert result["requested_max_videos"] == 1
+    assert result["results"]["low_to_high"]["event_tp"] == 1
+    assert result["validation_or_test_accessed"] is False
+    assert "train_squat" not in (tmp_path / "hash_report.json").read_text()
+    assert not list((tmp_path / "hash_private").rglob("valid/*.mp4"))
+
+
+def test_m40_rejects_invalid_sampling_policies_and_seed(tmp_path):
+    archive = _archive(tmp_path)
+    with pytest.raises(ValueError, match="selection policy"):
+        run(archive=archive, root=tmp_path / "bad_root",
+            report_path=tmp_path / "bad.json", selection_policy="random")
+    with pytest.raises(ValueError, match="selection seed"):
+        run(archive=archive, root=tmp_path / "bad_seed",
+            report_path=tmp_path / "bad_seed.json",
+            selection_policy="stable_hash", selection_seed=-1)
