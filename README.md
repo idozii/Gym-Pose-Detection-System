@@ -30,6 +30,26 @@ change the Vercel production site.
 
 ---
 
+### M32 - Frozen Bicep Curl negative-result research card
+
+Actual owner M31 on 90 video-level clips from 15 original TRAIN
+people verified exact M30 reproducibility. LOSO balanced
+accuracy was **60.00% baseline 264**, versus 56.67%
+kinematic 276, 58.89% tracking-proxy 268 and 57.78%
+temporal 280. All three descriptive paired subject-bootstrap
+LOSO BA intervals overlap zero; none improved bad-label recall.
+Every alternative improved video-level accuracy for only **1
+of 15 people** in the individual-subject comparison.
+
+[M32 frozen research card](docs/M32_CURL_NEGATIVE_RESULT_CARD.md)
+generates an aggregate-only Markdown evidence card from the
+local M31 JSON, covering full original CV results, anonymous
+per-subject direction counts, paired uncertainty and original
+camera-view slices. No original VAL/TEST, source video,
+training or web inference changes.
+
+---
+
 ### M31 - Bicep Curl participant-paired stability of temporal features
 
 Real owner M30 (15 original TRAIN subjects, 90 Bicep Curl clips):
