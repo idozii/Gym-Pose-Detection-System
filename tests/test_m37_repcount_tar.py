@@ -60,6 +60,57 @@ def sample_tar(tmp_path, with_csv=True, duplicate=False):
     return tar_path
 
 
+
+def test_inspected_llsp_layout_uses_embedded_valid_csv_and_correct_video_split(tmp_path):
+    """Small synthetic fixture matching the owner's observed LLSP member layout.
+
+    Historical publisher CSVs include an unnamed index column and integer-valued
+    decimal frame bounds. Same-named test clips must not leak into validation.
+    """
+    archive = tmp_path / "RepCountA.tar.gz"
+    valid_csv = (
+        ",type,name,count,L1,L2,L3,L4\n"
+        "0,squat,stu4_70.mp4,2,5,25,25.0,50.0\n"
+        "1,squant,train3946.mp4,1,0,30,,\n"
+        "2,front_raise,other.mp4,1,1,20,,\n"
+    ).encode("utf-8")
+    with tarfile.open(archive, "w:gz") as tf:
+        _add_bytes(tf, "LLSP/annotation/test.csv", annotation())
+        _add_bytes(tf, "LLSP/annotation/train.csv", annotation())
+        _add_bytes(tf, "LLSP/annotation/valid.csv", valid_csv)
+        _add_bytes(tf, "LLSP/video/test/stu4_70.mp4", b"t" * 11000)
+        _add_bytes(tf, "LLSP/video/valid/stu4_70.mp4", b"v" * 11000)
+        _add_bytes(tf, "LLSP/video/valid/train3946.mp4", b"w" * 11000)
+        _add_bytes(tf, "LLSP/video/valid/other.mp4", b"x" * 11000)
+    preview = inspect_tar_archive(archive, split="validation")
+    assert preview["video_members"] == 4
+    assert "LLSP/annotation/valid.csv" in preview["csv_members_visible_first_25"]
+    selected, digest = selected_from_tar_archive(
+        archive, tmp_path / "private", split="validation", limit=2
+    )
+    assert len(digest) == 64
+    assert {clip["video"] for clip in selected} == {
+        "stu4_70.mp4", "train3946.mp4"
+    }
+    assert next(c for c in selected if c["video"] == "stu4_70.mp4")[
+        "video_path"
+    ].read_bytes() == b"v" * 11000
+    assert not list((tmp_path / "private").rglob("other.mp4"))
+
+
+def test_wrong_external_action_csv_is_rejected_not_relabelled(tmp_path):
+    archive = sample_tar(tmp_path, with_csv=False)
+    external_csv = tmp_path / "not_squat.csv"
+    external_csv.write_text(
+        "type,name,count,L1,L2\n"
+        "front_raise,test_squat.mp4,1,0,20\n",
+        encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="no labeled Squat"):
+        selected_from_tar_archive(
+            archive, tmp_path / "private", annotations_csv=external_csv
+        )
+
 def test_inspection_handles_real_tar_gz_extension_and_no_extraction(tmp_path):
     archive = sample_tar(tmp_path)
     summary = inspect_tar_archive(archive)
