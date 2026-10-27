@@ -41,6 +41,20 @@ mirror layout without new annotations or network access.
 If neither source is available, real-video accuracy remains **unknown**
 rather than synthesized.
 
+**M37 author's OneDrive ZIP support:** The official RepCount
+site links to an original OneDrive folder (extraction code
+`repcount`); the user provided that source after the
+third-party Hugging Face mirror returned HTTP 404.
+[M37 official archive guide](docs/M37_REPCOUNT_REAL_VIDEO_EVALUATION.md)
+adds `--inspect-source-zip /path/to/RepCountA.zip` (metadata
+only) and `--source-zip /path/to/RepCountA.zip --max-videos 3`.
+It parses publisher CSV `name/type/count/L*` cycle bounds
+from ZIP, or accepts `--annotations-csv` for separately
+obtained official labels; extracts only matching Squat
+MP4s, never the full archive. Actual archive layout is
+unverified until inspected on the owner's Ubuntu machine.
+No fabricated labels, rep scores or production claims.
+
 ### M37 - Automatic RepCount real-video Squat evaluation (no user labeling)
 
 [M37 automated RepCount benchmark](docs/M37_REPCOUNT_REAL_VIDEO_EVALUATION.md)

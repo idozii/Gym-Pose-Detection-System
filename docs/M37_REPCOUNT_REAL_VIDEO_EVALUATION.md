@@ -79,6 +79,97 @@ third-party videos and replaying M34 outputs**. All Python/Node
 GitHub CI tests use *synthetic local fixture files*, and CI
 does not contact or download the dataset.
 
+## Official RepCountA OneDrive ZIP (preferred if available)
+
+The owner located the dataset authors' original OneDrive folder:
+
+<https://shanghaitecheducn-my.sharepoint.com/personal/dongsx_shanghaitech_edu_cn/_layouts/15/onedrive.aspx?id=%2Fpersonal%2Fdongsx%5Fshanghaitech%5Fedu%5Fcn%2FDocuments%2FRepCount%5Bcvpr2022%5D&ga=1>
+
+This is a **OneDrive folder-view URL**, not an automatically
+downloadable ZIP endpoint. The official dataset website
+links to the author's OneDrive distribution and specifies
+extraction code `repcount`. The M37 runner cannot browse
+or download that folder on behalf of the owner.
+
+If you have permission to use the authors' dataset, open
+the official OneDrive page in your browser, obtain the
+**RepCountA ZIP** (not RepCount-B) and save it, e.g.,
+`~/Downloads/RepCountA.zip`. Do not upload the archive
+to GitHub or chat; keep it local and follow usage terms.
+
+Before any decoding, inspect the ZIP central directory
+*without extracting videos*:
+
+```bash
+cd ~/Desktop/Gym-Pose-Detection-System
+git pull --ff-only
+source .venv-m20/bin/activate
+
+python -m scripts.m37_repcount_video_benchmark \
+  --inspect-source-zip ~/Downloads/RepCountA.zip
+```
+
+The inspection prints how many video members, CSVs and
+nested archives exist, and a small sample of member paths.
+**It does not establish data provenance or count accuracy.**
+Actual archive layout has NOT been verified in this environment.
+
+If `video_members` is positive and your archive includes
+the author's original annotation CSV (header:
+`type,name,count,L1,L2,...`), you can run M37
+**without Hugging Face**:
+
+```bash
+python -m scripts.m37_repcount_video_benchmark \
+  --source-zip ~/Downloads/RepCountA.zip \
+  --split validation --max-videos 3
+```
+
+The program reads original split annotations, finds
+pre-annotated Squat clips (including the source label
+spelling `squant` found in TransRAC's released CSV),
+extracts only up to three matches, runs the existing
+MediaPipe Python -> M34 JavaScript event matching
+pipeline and generates the same aggregate-only report.
+
+If the video ZIP has **no source CSV inside**, use
+`--annotations-csv` pointing to an original RepCount
+split CSV obtained from the publisher. For example,
+the official [TransRAC](https://github.com/SvipRepetitionCounting/TransRAC)
+repository has
+[`open_set/new_valid.csv`](https://github.com/SvipRepetitionCounting/TransRAC/blob/main/open_set/new_valid.csv).
+Only use it if the CSV's **exact video filenames match**
+the actual ZIP contents. No labels need to be created by
+hand:
+
+```bash
+python -m scripts.m37_repcount_video_benchmark \
+  --source-zip ~/Downloads/RepCountA.zip \
+  --annotations-csv /path/to/original/new_valid.csv \
+  --split validation --max-videos 3
+```
+
+The CSV may cover a different subset or naming scheme:
+M37 **refuses** to score if no Squat video filename
+matches; it will not infer labels or automatically
+pair different recordings. Nested ZIPs are not
+recursively opened, and ambiguous duplicate filenames
+fail closed. If `nested_archives` is nonzero or there
+are no video members, inspect the ZIP members and
+use a directly containing-video archive rather than
+assuming this layout. No full archive extraction
+is required if direct video members are present.
+
+This archive path is distinct from `--local-source`,
+which expects the earlier third-party mirror's JSON
+plus already extracted MP4 directory format.
+The M37 report explicitly indicates `source_mode:
+author_archive` but **cannot independently prove
+ZIP authenticity, correspondence to original annotated
+frame indices, camera/Python estimator parity or
+technique quality**. Verification still requires
+actual decoded video results and careful alignment.
+
 ## M37 source access diagnostic (HTTP 404)
 
 In October 2026 the owner encountered a **real 404** when the
