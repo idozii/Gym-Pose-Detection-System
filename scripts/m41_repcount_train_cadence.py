@@ -101,22 +101,32 @@ def _paired_error_counts(rows: list[dict], name: str) -> dict:
 
 
 def run(*, archive: Path, root: Path, report_path: Path, limit: int = 20,
-        select_fn=None, extract_fn=None, compare_fn=None) -> dict:
+        select_fn=None, extract_fn=None, compare_fn=None,
+        cohort_filter: str = "all") -> dict:
     if type(limit) is not int or not 1 <= limit <= 20:
         raise ValueError("M41 expects 1..20 fixed hash TRAIN videos")
     if report_path.exists():
         raise FileExistsError("M41 report exists; refusing overwrite")
+    if cohort_filter not in ("all", "zero"):
+        raise ValueError("M42 requires cohort filter all or zero")
     if not archive.is_file() or not archive.name.lower().endswith((".tar.gz", ".tgz")):
         raise ValueError("M41 requires original local author TAR.GZ archive")
     selector = select_fn or selected_from_tar_archive
     extractor = extract_fn or extract_pose_trace
     comparator = compare_fn or compare_node
     root.mkdir(parents=True, exist_ok=True)
-    cohort, train_sha = selector(
-        archive, root, split="train", limit=limit,
-        selection_policy="stable_hash", selection_seed=SEED,
-        require_explicit_split=True
-    )
+    selector_options = {
+        "split": "train", "limit": limit, "selection_policy": "stable_hash",
+        "selection_seed": SEED, "require_explicit_split": True
+    }
+    if cohort_filter == "zero":
+        selector_options["count_filter"] = "zero"
+    cohort, train_sha = selector(archive, root, **selector_options)
+    if cohort_filter == "zero" and any(
+        row.get("annotated_count") != 0 or row.get("cycle_bounds_frames") != []
+        for row in cohort
+    ):
+        raise ValueError("M42 publisher negative cohort contains positive events")
     if (not isinstance(train_sha, str) or len(train_sha) != 64 or
         any(ch not in "0123456789abcdef" for ch in train_sha)):
         raise ValueError("M41 requires a SHA256 of the publisher TRAIN CSV")
@@ -133,6 +143,8 @@ def run(*, archive: Path, root: Path, report_path: Path, limit: int = 20,
                     json.dump(dense_trace, fd, allow_nan=False)
                 row = comparator(inp, out)
                 _validate(row, clip["annotated_count"])
+                if cohort_filter == "zero" and row["annotated_rep_count"] != 0:
+                    raise ValueError("M42 negative replay unexpectedly has GT reps")
                 observed.append(row)
             except (OSError, RuntimeError, ValueError, TypeError, KeyError) as error:
                 # Privacy: aggregated failure type only, no video paths.
@@ -157,13 +169,18 @@ def run(*, archive: Path, root: Path, report_path: Path, limit: int = 20,
         )
     result = {
         "protocol": PROTOCOL,
-        "study_type": "exploratory_train_only_observation_cadence_sensitivity",
+        "study_type": (
+            "exploratory_train_zero_rep_negative_controls"
+            if cohort_filter == "zero" else
+            "exploratory_train_only_observation_cadence_sensitivity"
+        ),
         "source_mode": "owner_local_author_archive_provenance_unverified",
         "source_split": "train",
         "publisher_train_annotation_sha256": train_sha,
         "source_selection": {
             "policy": "stable_hash", "seed": SEED,
-            "requested_limit": limit, "exact_original_train_csv_only": True
+            "requested_limit": limit, "exact_original_train_csv_only": True,
+            "cohort_filter": cohort_filter
         },
         "videos_selected": len(cohort),
         "videos_evaluated": n,
@@ -178,7 +195,8 @@ def run(*, archive: Path, root: Path, report_path: Path, limit: int = 20,
             "Finer pose sampling may change tracking and computation; no camera/browser parity established.",
             "Same fixed M39 low-to-high rule, M34 and one-to-one event matching in both conditions.",
             "Clips are fixed hash-selected, not demonstrably participant- or view-independent.",
-            "No claim of physical squat form correctness, injury safety or held-out model performance."
+            "No claim of physical squat form correctness, injury safety or held-out model performance.",
+            "Event recall and F1 are undefined on an all-zero-GT negative-only cohort; report false event counts and false-positive videos instead."
         ],
         "original_m34_unchanged": True,
         "no_valid_or_test_access": True,
@@ -195,12 +213,14 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--source-archive", type=Path, required=True)
     p.add_argument("--max-videos", type=int, default=20)
+    p.add_argument("--cohort-filter", choices=("all", "zero"), default="all")
     p.add_argument("--root", type=Path, default=ROOT)
     p.add_argument("--report", type=Path, default=REPORT)
     args = p.parse_args(argv)
     try:
         result = run(archive=args.source_archive, root=args.root,
-                     report_path=args.report, limit=args.max_videos)
+                     report_path=args.report, limit=args.max_videos,
+                     cohort_filter=args.cohort_filter)
     except (ValueError, RuntimeError, OSError, TypeError, KeyError,
             json.JSONDecodeError) as error:
         print("M41 stopped: " + str(error), file=sys.stderr)
