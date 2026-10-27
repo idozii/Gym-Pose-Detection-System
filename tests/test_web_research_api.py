@@ -209,3 +209,27 @@ def test_invalid_landmark_validation_does_not_echo_coordinates(monkeypatch):
         assert private_marker not in response.text
         assert "landmarks" not in response.text
         assert response.json() == {"detail": "Invalid request payload"}
+
+
+def test_render_free_score_admission_limits_without_user_tracking(monkeypatch):
+    monkeypatch.setenv("POSE_WEB_ORIGINS", "https://demo.example.com")
+    monkeypatch.setenv("POSE_SCORE_GLOBAL_10S_LIMIT", "2")
+    registry = FakeRegistry()
+    with TestClient(create_app(registry, trust_local_artifacts=True)) as client:
+        for _ in range(2):
+            assert client.post("/score", json=body()).status_code == 200
+        response = client.post("/score", json=body())
+        assert response.status_code == 429
+        assert response.headers["Retry-After"] == "2"
+        assert response.headers["Cache-Control"] == "no-store"
+        assert "landmarks" not in response.text
+        assert len(registry.calls) == 4  # exactly 2 targets x 2 requests
+        # Readiness and health are never rate limited.
+        assert client.get("/ready").status_code == 200
+        assert client.get("/health").json()["loaded_model_count"] == 6
+
+
+def test_invalid_free_score_budget_is_rejected(monkeypatch):
+    monkeypatch.setenv("POSE_SCORE_GLOBAL_10S_LIMIT", "101")
+    with pytest.raises(ValueError, match="0..100"):
+        create_app(FakeRegistry(), trust_local_artifacts=False)

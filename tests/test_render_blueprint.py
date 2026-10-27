@@ -28,6 +28,7 @@ def test_render_blueprint_has_zero_paid_resources_and_trust_is_disabled():
         "https://gym-pose-detection-system.vercel.app"
     )
     assert variables["POSE_TRUST_LOCAL_ARTIFACTS"]["value"] == "0"
+    assert variables["POSE_SCORE_GLOBAL_10S_LIMIT"]["value"] == "30"
     for key in (
         "POSE_HF_REPO_ID", "POSE_HF_REVISION",
         "POSE_HF_MANIFEST_SHA256", "HF_TOKEN",
