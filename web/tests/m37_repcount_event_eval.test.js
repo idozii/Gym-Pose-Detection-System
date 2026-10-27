@@ -82,6 +82,41 @@ test('M37 zero-ground-truth Squat clip is an explicit negative control, not a da
 });
 
 
+test('M37.1 records original M34 sample-gate and knee-angle phase observability only', () => {
+  const input = trace([170,170,100,100,170,170,170,170], [0,20]);
+  const full = evaluateTrace(input);
+  const d = full.m37_observability;
+  assert.equal(d.protocol, 'm37-squat-counter-observability-v1');
+  assert.equal(d.input_frame_samples, 8);
+  assert.equal(d.counter_accepted_ticks, 8);
+  assert.equal(d.sampling_gate_skips, 0);
+  assert.equal(d.knee_angle_usable_ticks, 8);
+  assert.equal(d.knee_angle_high_ticks, 6);
+  assert.equal(d.knee_angle_low_ticks, 2);
+  assert.equal(d.confirmed_initial_high_transitions, 1);
+  assert.equal(d.confirmed_low_transitions, 1);
+  assert.equal(d.completed_return_transitions, 1);
+  assert.equal(full.website_observed_cycles, 1);
+  assert.equal(full.m34_counter_parameters_modified, false);
+  assert.equal('landmarks' in d, false);
+  assert.equal('predicted_event_timestamps' in d, false);
+
+  const fastInput = trace([170,170,100,100,170,170,170,170], [0,20]);
+  fastInput.frames.forEach((frame, index) => { frame.time_ms = index * 200; });
+  fastInput.frames[2].landmarks = null;
+  const fast = evaluateTrace(fastInput);
+  const summary = fast.m37_observability;
+  assert.equal(summary.input_frame_samples, 8);
+  assert.equal(summary.counter_accepted_ticks, 4);
+  assert.equal(summary.sampling_gate_skips, 4);
+  assert.equal(summary.knee_angle_usable_ticks, 3);
+  assert.equal(summary.knee_angle_unavailable_ticks, 1);
+  assert.equal(summary.knee_angle_high_ticks + summary.knee_angle_low_ticks +
+    summary.knee_angle_middle_ticks, summary.knee_angle_usable_ticks);
+  assert.equal(summary.knee_angle_usable_ticks + summary.knee_angle_unavailable_ticks,
+    summary.counter_accepted_ticks);
+});
+
 test('M37 prevents one detected event from matching two ground truths', () => {
   const actual = matchEvents([2000], [
     {endMs: 1900, toleranceMs: 300},
