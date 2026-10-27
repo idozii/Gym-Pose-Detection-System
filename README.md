@@ -30,6 +30,33 @@ change the Vercel production site.
 
 ---
 
+### M37 - Automatic RepCount real-video Squat evaluation (no user labeling)
+
+[M37 automated RepCount benchmark](docs/M37_REPCOUNT_REAL_VIDEO_EVALUATION.md)
+retrieves only a small, already-annotated **third-party academic-use**
+RepCount-A Squat subset (default three validation clips), extracts
+chronological local MediaPipe Python poses with OpenCV, and replays
+them through the **exact M34 JavaScript `RepCycleCounter`** to
+compare event timestamps against published cycle-frame bounds.
+
+It outputs actual-video count MAE, event TP/FP/FN,
+precision/recall/F1, tracking coverage and excluded clip counts
+only **if one or more real annotated video clips were decoded
+and evaluated successfully**. GitHub CI uses synthetic mocks:
+no dataset download, actual RepCount accuracy result,
+browser/Python estimator parity, source annotation/clip
+byte-level provenance or OHP/Row event ground truth is
+claimed by CI. No user-created CSV, manual webcam rep count,
+private data, model training or original M20 TEST access.
+
+On Ubuntu: `python -m pip install "huggingface_hub>=0.27,<2"`,
+then `python -m scripts.m37_repcount_video_benchmark --max-videos 3`
+from the root with your existing research venv and Node 22.
+Requires eligible research access to the third-party mirror
+and enough local disk/CPU for video pose extraction.
+
+---
+
 ### M36 Auto - deterministic cycle stress suite (no manual validation)
 
 The owner does **not** want to manually count repetitions,
