@@ -62,6 +62,44 @@ def test_m37_original_csv_parser_handles_publisher_float_frame_bounds_and_squant
         parse_official_csv(label_bytes(rows))
 
 
+
+def test_m37_official_zero_count_squat_with_blank_L_columns_is_valid():
+    # Original author LLSP/annotation/valid.csv includes a Squat source
+    # with count=0 and all L* columns blank. Do not invent any GT events.
+    records = [{
+        "name": "stu9_67.mp4", "type": "squat",
+        "count": "0", "L1": "", "L2": "", "L3": "", "L4": ""
+    }]
+    parsed = parse_official_csv(label_bytes(records))
+    assert parsed == [{
+        "video": "stu9_67.mp4", "action": "squat",
+        "annotated_count": 0, "cycle_bounds_frames": []
+    }]
+    records[0]["L1"] = "12"
+    with pytest.raises(ValueError, match="count and ordered"):
+        parse_official_csv(label_bytes(records))
+    records[0]["L1"] = ""
+    records[0]["count"] = "-1"
+    with pytest.raises(ValueError, match="0 and 200"):
+        parse_official_csv(label_bytes(records))
+
+
+def test_m37_zero_count_annotation_remains_an_evaluated_negative_control(tmp_path):
+    # Only source publisher video and source CSV, NO synthetic human labels
+    # inserted by the evaluator. Test fixture files are synthetic.
+    archive = tmp_path / "repcount_negative.zip"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("LLSP/annotation/valid.csv", label_bytes([{
+            "name": "stu9_67.mp4", "type": "squat", "count": 0,
+            "L1": "", "L2": "", "L3": "", "L4": ""
+        }]))
+        zf.writestr("LLSP/video/valid/stu9_67.mp4", b"x"*12000)
+    selected, _ = selected_from_zip(archive, tmp_path / "selected", limit=1)
+    assert len(selected) == 1
+    assert selected[0]["annotated_count"] == 0
+    assert selected[0]["cycle_bounds_frames"] == []
+
+
 def test_m37_archive_inspect_metadata_only_and_select_only_squat_videos(tmp_path):
     path = make_zip(tmp_path)
     metadata = inspect_archive(path)
