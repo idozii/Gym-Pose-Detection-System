@@ -132,6 +132,7 @@ def _frozen_row():
         candidate = novel if name == "dense_200ms" else original
         conditions[name] = {"relative_excursion": candidate}
     return {
+        "annotated_rep_count": 1,
         "original_m44": {
             "m43": {
                 "m41": {
