@@ -16,7 +16,7 @@ export const EVIDENCE = Object.freeze({
     development: Object.freeze({
       id: 'development',
       title: 'Development TRAIN',
-      sampleDescription: 'Original hash ranks 1–20',
+      sampleDescription: 'Original hash ranks 1-20',
       clips: 20,
       groundTruthReps: 312,
       independence: 'Used during detector development; not an independent validation set.',
@@ -34,7 +34,7 @@ export const EVIDENCE = Object.freeze({
     replication: Object.freeze({
       id: 'replication',
       title: 'Filename-disjoint TRAIN replication',
-      sampleDescription: 'Preselected hash ranks 21–40',
+      sampleDescription: 'Preselected hash ranks 21-40',
       clips: 20,
       groundTruthReps: 209,
       independence: 'Filenames only; subject/session/view independence not established.',
