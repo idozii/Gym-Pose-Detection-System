@@ -21,7 +21,7 @@ export function percentile(sorted, fraction) {
 
 export function describePerformance({samples,medianMs,p95Ms,rate,stalls}) {
   if (!samples) return 'WAITING FOR FRAMES';
-  if (stalls > 0) return 'FRAMING INTERRUPTED';
+  if (stalls > 0) return 'PROCESSING GAP OBSERVED';
   if (p95Ms !== null && p95Ms > 80) return 'HIGH POSE LATENCY';
   if (rate !== null && rate < 8 && samples >= 30) return 'LOW THROUGHPUT';
   return 'OBSERVING';
@@ -45,7 +45,7 @@ export class RuntimeHealth {
     if (!Number.isFinite(wallTimeMs) || wallTimeMs < 0 ||
         !Number.isFinite(poseDurationMs) || poseDurationMs < 0 ||
         poseDurationMs > 30000 ||
-        (this.times.length && wallTimeMs <= this.times.at(-1))) {
+        (this.times.length && wallTimeMs < this.times.at(-1))) {
       throw new RangeError('W7 requires monotonic wall clock and finite pose latency');
     }
     if (this.times.length &&
