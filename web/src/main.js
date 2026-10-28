@@ -8,6 +8,10 @@ import { RepCycleCounter, REP_POLICIES } from './rep_counter.js';
 import { LiveRelativeExcursionCounter, RESEARCH_DEMO_MODES, isResearchSquat } from './live_relative_excursion.js';
 import { cameraErrorMessage, shouldRevokeOnHidden, shouldIgnoreEndedTrack } from './camera_readiness.js';
 import { SessionDashboard, tempoBars, tempoFromM34, tempoFromM45 } from './session_dashboard.js';
+import {
+  validateLocalVideoFile, validateVideoMetadata, localVideoTimestampMs,
+  localFrameIsNew, canRequestRemoteInference
+} from './local_video.js';
 import { explainMovement, sourceEvidenceNotice } from './feedback_explainer.js';
 import './style.css';
 
@@ -29,7 +33,10 @@ const state = {
   exerciseFeedback: new ExerciseFeedbackWindow(), lastExerciseFeedback: null,
   repCounter: new RepCycleCounter(), lastRepAnalysis: null,
   liveRelative: new LiveRelativeExcursionCounter(), lastM45: null,
-  demoMode: 'compare', sessionDashboard: new SessionDashboard()
+  demoMode: 'compare', sessionDashboard: new SessionDashboard(),
+  sourceMode: 'camera', localUrl: null, localFile: null,
+  localReady: false, localPlaying: false, localEnded: false,
+  localLoadAbort: null, localLastTimestamp: null
 };
 
 document.querySelector('#app').innerHTML = `
@@ -61,7 +68,7 @@ document.querySelector('#app').innerHTML = `
             <span class="runtime-label" id="runtimeStatus">CAMERA OFFLINE</span>
           </div>
           <div class="camera-stage">
-            <video id="sourceVideo" muted playsinline autoplay aria-hidden="true"></video>
+            <video id="sourceVideo" muted playsinline aria-hidden="true"></video>
             <canvas id="poseCanvas" width="960" height="720" aria-label="Live camera with pose landmark overlay" role="img"></canvas>
             <div class="stage-placeholder" id="placeholder">
               <div class="placeholder-glyph" aria-hidden="true"><span>✳</span></div>
@@ -75,7 +82,26 @@ document.querySelector('#app').innerHTML = `
             </div>
           </div>
           <div class="controls">
-            <div class="camera-actions">
+            <div class="source-mode-switch" role="group" aria-label="Choose local analysis input">
+              <button type="button" class="source-mode-choice" id="chooseCamera" aria-pressed="true">Live camera</button>
+              <button type="button" class="source-mode-choice" id="chooseVideo" aria-pressed="false">Local video file</button>
+            </div>
+            <div class="local-video-actions" id="localVideoActions" hidden>
+              <label class="local-file-picker" for="localVideoFile"><span>CHOOSE MP4 / WEBM</span>
+                <input type="file" id="localVideoFile" accept=".mp4,.webm,video/mp4,video/webm" aria-describedby="localVideoHelp" />
+              </label>
+              <div class="local-play-controls">
+                <button type="button" id="localPlay" disabled>Play video</button>
+                <button type="button" id="localReplay" disabled>Replay from start</button>
+                <button type="button" id="localClear">Clear video</button>
+              </div>
+              <div class="local-progress">
+                <progress id="localProgress" max="1" value="0" aria-label="Local video playback progress"></progress>
+                <span id="localVideoPosition">00:00 / --:--</span>
+              </div>
+              <p id="localVideoHelp">MP4 or WebM, up to 250 MB and 5 minutes. Analyzed in this browser. No video or extracted landmarks are uploaded. Playback is manual. Replay resets pose tracking and both counters.</p>
+            </div>
+            <div class="camera-actions" id="cameraActions">
               <button class="primary-btn" type="button" id="cameraButton"><span aria-hidden="true">◉</span> Start camera</button>
               <label class="camera-picker" for="cameraFacing"><span>CAMERA</span>
                 <select id="cameraFacing" aria-label="Choose front or rear camera">
@@ -154,7 +180,7 @@ document.querySelector('#app').innerHTML = `
               <span class="session-live-state" id="sessionState">CAMERA OFFLINE</span>
             </div>
             <div class="session-stat-grid" aria-live="off">
-              <div class="session-stat session-stat-primary"><span>SESSION ELAPSED</span><strong id="sessionElapsed">00:00</strong><small>Since camera start or Reset set</small></div>
+              <div class="session-stat session-stat-primary"><span id="sessionClockLabel">SESSION ELAPSED</span><strong id="sessionElapsed">00:00</strong><small>Since camera start or Reset set</small></div>
               <div class="session-stat"><span>POSE SEEN</span><strong id="sessionPoseSeen">--</strong><small>Of analyzed video frames</small></div>
               <div class="session-stat"><span>REQUIRED JOINTS VISIBLE</span><strong id="sessionJointReady">--</strong><small>Of analyzed video frames, not confidence</small></div>
               <div class="session-stat"><span>FRAMES ANALYZED</span><strong id="sessionFrames">0</strong><small>Local pose observations</small></div>
@@ -247,6 +273,16 @@ const ui = {
   video: document.querySelector('#sourceVideo'),
   canvas: document.querySelector('#poseCanvas'),
   button: document.querySelector('#cameraButton'),
+  cameraActions: document.querySelector('#cameraActions'),
+  chooseCamera: document.querySelector('#chooseCamera'),
+  chooseVideo: document.querySelector('#chooseVideo'),
+  localVideoActions: document.querySelector('#localVideoActions'),
+  localFileInput: document.querySelector('#localVideoFile'),
+  localPlay: document.querySelector('#localPlay'),
+  localReplay: document.querySelector('#localReplay'),
+  localClear: document.querySelector('#localClear'),
+  localProgress: document.querySelector('#localProgress'),
+  localVideoPosition: document.querySelector('#localVideoPosition'),
   cameraFacing: document.querySelector('#cameraFacing'),
   mirrorButton: document.querySelector('#mirrorButton'),
   cameraModeIndicator: document.querySelector('#cameraModeIndicator'),
@@ -291,6 +327,7 @@ const ui = {
   sessionDashboard: document.querySelector('#sessionDashboard'),
   sessionState: document.querySelector('#sessionState'),
   sessionElapsed: document.querySelector('#sessionElapsed'),
+  sessionClockLabel: document.querySelector('#sessionClockLabel'),
   sessionPoseSeen: document.querySelector('#sessionPoseSeen'),
   sessionJointReady: document.querySelector('#sessionJointReady'),
   sessionFrames: document.querySelector('#sessionFrames'),
@@ -323,8 +360,38 @@ function updateCameraControls() {
     : 'Rear camera preview is never mirrored');
   ui.mirrorButton.querySelector('span').textContent = front
     ? (state.mirrorSelfie ? 'Mirror on' : 'Mirror off') : 'Rear unmirrored';
-  ui.cameraModeIndicator.textContent = front
-    ? (state.mirrorSelfie ? 'FRONT / MIRRORED' : 'FRONT / NATURAL') : 'REAR / OBSERVER';
+  ui.cameraModeIndicator.textContent = state.sourceMode === 'video'
+    ? 'LOCAL FILE / PRIVATE'
+    : front ? (state.mirrorSelfie ? 'FRONT / MIRRORED' : 'FRONT / NATURAL')
+      : 'REAR / OBSERVER';
+}
+
+function updateSourceControls() {
+  const local = state.sourceMode === 'video';
+  ui.chooseCamera.setAttribute('aria-pressed', String(!local));
+  ui.chooseVideo.setAttribute('aria-pressed', String(local));
+  ui.cameraActions.hidden = local;
+  ui.localVideoActions.hidden = !local;
+  ui.localFileInput.disabled = state.starting;
+  ui.localPlay.disabled = !local || !state.localReady || state.starting || state.localEnded;
+  ui.localReplay.disabled = !local || !state.localReady || state.starting;
+  ui.localPlay.textContent = state.localPlaying ? 'Pause video' : 'Play video';
+  ui.localProgress.value = local && Number.isFinite(ui.video.currentTime)
+    ? Math.max(0, ui.video.currentTime) : 0;
+  ui.localProgress.max = local && Number.isFinite(ui.video.duration) && ui.video.duration > 0
+    ? ui.video.duration : 1;
+  ui.localVideoPosition.textContent = local
+    ? clockDisplay(ui.video.currentTime) + ' / ' +
+      (state.localReady ? clockDisplay(ui.video.duration) : '--:--')
+    : '00:00 / --:--';
+  updateCameraControls();
+}
+
+function clockDisplay(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
+  const t = Math.floor(seconds);
+  return String(Math.floor(t / 60)).padStart(2, '0') + ':' +
+    String(t % 60).padStart(2, '0');
 }
 
 function setStatus(text, hint) {
@@ -334,7 +401,16 @@ function setStatus(text, hint) {
 
 function renderModels() {
   const isPushup = state.exercise === 'pushup';
-  ui.inferenceToggle.disabled = isPushup || !API_URL;
+  const local = state.sourceMode === 'video';
+  ui.inferenceToggle.disabled = local || isPushup || !API_URL;
+  if (local) {
+    ui.inferenceToggle.checked = false;
+    ui.inferenceState.textContent = 'LOCAL VIDEO MODE · REMOTE MODELS DISABLED';
+    ui.inferenceInfo.textContent = 'Uploaded videos and extracted landmarks stay in this browser. The optional Python RF inference is disabled in this mode.';
+    ui.sourceHeading.textContent = '03 / REMOTE INFERENCE NOT AVAILABLE';
+    ui.models.innerHTML = '<div class="model-row"><div><strong>Local video analysis</strong><span>Only on-device pose and experimental movement-cycle heuristics are active</span></div><span class="offline-tag">LOCAL ONLY</span></div>';
+    return;
+  }
   ui.inferenceState.textContent = isPushup
     ? 'PUSH-UP LOCAL ONLY / NO MODEL SCORE'
     : !API_URL ? 'MODEL SERVER NOT CONFIGURED' : state.inferenceStatus;
@@ -396,15 +472,23 @@ function updateSessionDashboard() {
   const isPushup = state.exercise === 'pushup';
   ui.sessionDashboard.hidden = isPushup;
   if (isPushup) return;
-  const data = state.sessionDashboard.summary(performance.now());
+  const local = state.sourceMode === 'video';
+  const data = state.sessionDashboard.summary(
+    local ? localVideoTimestampMs(ui.video.currentTime || 0) : performance.now()
+  );
   ui.sessionElapsed.textContent = data.elapsedLabel;
+  ui.sessionClockLabel.textContent = local ? 'VIDEO POSITION' : 'SESSION ELAPSED';
   ui.sessionPoseSeen.textContent = data.poseSeenPct === null
     ? '--' : data.poseSeenPct + '%';
   ui.sessionJointReady.textContent = data.requiredReadyPct === null
     ? '--' : data.requiredReadyPct + '%';
   ui.sessionFrames.textContent = String(data.sampleFrames);
-  ui.sessionState.textContent = data.status;
-  ui.sessionState.dataset.status = data.status;
+  const status = local && state.localReady
+    ? state.localEnded ? 'VIDEO COMPLETE'
+      : !state.localPlaying ? 'VIDEO PAUSED' : data.status
+    : data.status;
+  ui.sessionState.textContent = status;
+  ui.sessionState.dataset.status = status;
   const m34 = state.running ? state.lastRepAnalysis : null;
   ui.sessionM34Mean.textContent = m34?.meanDurationSec == null
     ? '--' : m34.meanDurationSec.toFixed(1) + ' s avg';
@@ -527,6 +611,10 @@ function updateInspector() {
 
 async function requestResearchInference(timestamp) {
   if (state.exercise === 'pushup' || !state.inferenceEnabled || !state.inferenceClient ||
+      !canRequestRemoteInference({
+        sourceMode: state.sourceMode, enabled: state.inferenceEnabled,
+        running: state.running
+      }) ||
       !state.running || !Array.isArray(state.landmarks) ||
       state.inferenceInFlight || timestamp - state.lastInferenceAt < 500) return;
   state.lastInferenceAt = timestamp;
@@ -572,7 +660,7 @@ function disableResearchInference() {
 }
 
 async function enableResearchInference() {
-  if (state.exercise === 'pushup') {
+  if (state.sourceMode === 'video' || state.exercise === 'pushup') {
     disableResearchInference();
     return;
   }
@@ -615,7 +703,8 @@ function drawFrame() {
   }
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.save();
-  if (mirrorPreview(state.facingMode, state.mirrorSelfie)) {
+  if (state.sourceMode === 'camera' &&
+      mirrorPreview(state.facingMode, state.mirrorSelfie)) {
     context.translate(canvas.width, 0);
     context.scale(-1, 1);
   }
