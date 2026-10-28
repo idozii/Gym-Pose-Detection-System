@@ -746,3 +746,34 @@ h1, h2, h3, p { margin: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* W5 research entry on the existing W1-W4 movement studio. */
+.research-header-link {
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #d7ff9a; border: 1px solid #66804f; border-radius: 999px;
+  padding: 9px 12px; font-size: 11px; font-weight: 800;
+  text-decoration: none; white-space: nowrap;
+}
+.research-header-link:hover { border-color: #caff6e; background: #1f2e1b; }
+.research-studio-banner {
+  border: 1px solid #69875b;
+  background: linear-gradient(117deg,#23391d,#151e17);
+  border-radius: 14px; padding: 19px 22px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 18px; margin: 24px 0;
+}
+.research-studio-banner > div { max-width: 870px; display: flex; flex-direction: column; gap: 5px; }
+.research-studio-banner span { font-size: 9px; letter-spacing: .12em; font-weight: 800; color: #cbf6a7; }
+.research-studio-banner strong { color: #efffdb; font-family: 'Space Grotesk',sans-serif; font-size: 17px; line-height: 1.4; }
+.research-studio-banner p { color: #b8cbb1; font-size: 11px; line-height: 1.7; }
+.research-studio-banner > a {
+  flex: none; border-radius: 10px; padding: 13px 16px; min-height: 44px;
+  color: #152009; background: #caff6e; font-size: 12px;
+  font-weight: 800; display: flex; align-items: center;
+}
+.research-studio-banner > a:hover { background: #e2ffb3; }
+@media (max-width: 800px) {
+  .research-studio-banner { align-items: flex-start; flex-direction: column; }
+  .research-studio-banner > a { width: 100%; justify-content: center; }
+}
