@@ -257,6 +257,105 @@ h1, h2, h3, p { margin: 0; }
 .rep-status { color:#eef4e8; font-size:11px; line-height:1.6; margin-top:13px; }
 .rep-guidance { color:#b8c9b1; font-size:11px; line-height:1.6; margin-top:8px; }
 @media(max-width:380px){ .rep-metrics { grid-template-columns:1fr 1fr; } }
+/* W1 + W2: Squat-only parallel research comparison; not an accuracy verdict. */
+.research-comparison {
+  margin-top: 15px;
+  padding: 17px;
+  border: 1px solid #456c5b;
+  border-radius: 14px;
+  background: linear-gradient(145deg, #172b24, #172119);
+}
+.research-comparison[hidden] { display: none; }
+.research-comparison-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.research-comparison-head strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.research-mode-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: .09em;
+  font-weight: 700;
+  color: #c5d8c2;
+}
+.research-mode-label select {
+  min-height: 42px;
+  border-radius: 9px;
+  border: 1px solid #6b8663;
+  background: #203529;
+  color: #efffe5;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  max-width: 165px;
+}
+.research-counter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 15px;
+}
+.research-count-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 7px;
+  border: 1px solid #49684a;
+  background: #112219;
+  border-radius: 12px;
+  padding: 12px 10px;
+}
+.research-count-card[hidden] { display: none; }
+.research-count-card span {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  color: #ccedac;
+}
+.research-count-card strong {
+  color: #efffcc;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(27px, 4.5vw, 40px);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.research-count-card small {
+  color: #b0c6af;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.research-comparison-status {
+  margin-top: 12px;
+  font-size: 11px;
+  color: #edf4e8;
+  line-height: 1.55;
+}
+.research-comparison-limit {
+  margin-top: 8px;
+  color: #b9caba;
+  font-size: 10px;
+  line-height: 1.7;
+}
+@media (max-width: 470px) {
+  .research-comparison { padding: 13px; }
+  .research-comparison-head { align-items: stretch; }
+  .research-mode-label { justify-content: space-between; }
+  .research-count-card { padding: 11px 9px; }
+  .research-count-card span { font-size: 8px; }
+  .research-count-card small { font-size: 9px; }
+}
+
 .exercise-feedback { margin-top:16px; padding:18px; border-radius:14px; border:1px solid #72924b; background:#202e21; }
 .exercise-feedback[hidden] { display:none; }
 .feedback-head { display:flex; flex-wrap:wrap; gap:8px; justify-content:space-between; color:#dbf3c9; font-size:9px; font-weight:800; letter-spacing:.1em; }

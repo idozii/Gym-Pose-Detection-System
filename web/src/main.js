@@ -5,6 +5,8 @@ import { CAMERA_FACING, cameraConstraints, mirrorPreview, cameraFallbackMessage 
 import { PushupMotionWindow } from './pushup.js';
 import { ExerciseFeedbackWindow, EXERCISE_FEEDBACK } from './exercise_feedback.js';
 import { RepCycleCounter, REP_POLICIES } from './rep_counter.js';
+import { LiveRelativeExcursionCounter, RESEARCH_DEMO_MODES, isResearchSquat } from './live_relative_excursion.js';
+import { cameraErrorMessage, shouldRevokeOnHidden, shouldIgnoreEndedTrack } from './camera_readiness.js';
 import { explainMovement, sourceEvidenceNotice } from './feedback_explainer.js';
 import './style.css';
 
@@ -24,7 +26,9 @@ const state = {
   inferenceInFlight: false, lastInferenceAt: 0,
   pushupMotion: new PushupMotionWindow(), lastPushupPreview: null,
   exerciseFeedback: new ExerciseFeedbackWindow(), lastExerciseFeedback: null,
-  repCounter: new RepCycleCounter(), lastRepAnalysis: null
+  repCounter: new RepCycleCounter(), lastRepAnalysis: null,
+  liveRelative: new LiveRelativeExcursionCounter(), lastM45: null,
+  demoMode: 'compare'
 };
 
 document.querySelector('#app').innerHTML = `
@@ -140,6 +144,33 @@ document.querySelector('#app').innerHTML = `
             <p class="rep-guidance" id="repGuidance">Only on-device camera-plane heuristics are used; this is not a verified rep count or exercise-form score.</p>
           </section>
 
+          <section class="research-comparison" id="researchComparison" aria-label="Experimental Squat counter comparison">
+            <div class="research-comparison-head">
+              <div><div class="rep-eyebrow">W2 / LIVE RESEARCH DEMO</div><strong>Two independent cycle heuristics, one camera</strong></div>
+              <label class="research-mode-label" for="researchMode">VIEW
+                <select id="researchMode" aria-label="Choose live research comparison view">
+                  <option value="compare">Compare</option>
+                  <option value="m34">M34 only</option>
+                  <option value="m45">M45 only</option>
+                </select>
+              </label>
+            </div>
+            <div class="research-counter-grid" aria-live="off">
+              <div class="research-count-card" id="researchM34Card">
+                <span>M34 / ORIGINAL LIVE</span>
+                <strong id="researchM34Count">0</strong>
+                <small>Absolute high-low-high / 400ms sampling</small>
+              </div>
+              <div class="research-count-card" id="researchM45Card">
+                <span>M45 / EXPERIMENTAL LIVE</span>
+                <strong id="researchM45Count">0</strong>
+                <small>Relative excursion / 200ms target</small>
+              </div>
+            </div>
+            <p class="research-comparison-status" id="researchComparisonStatus" role="status" aria-live="polite">Start the camera for a Squat-only research comparison.</p>
+            <p class="research-comparison-limit">The counters have different rules and sampling cadences. Their difference is NOT an accuracy score: no live GT labels exist. M45 was studied offline on publisher TRAIN with a different MediaPipe pose implementation. Not exercise form, safety, or browser parity evidence. Neither mode sends video or landmark arrays.</p>
+          </section>
+
           <section class="feedback-explainer" id="feedbackExplainer" aria-label="Explanations of measured movement, not form grading">
             <div class="feedback-explainer-heading">M35 / EXPLAINABLE OBSERVATIONS</div>
             <strong class="feedback-explainer-title" id="explainTitle">Awaiting camera measurements</strong>
@@ -227,6 +258,13 @@ const ui = {
   repStatus: document.querySelector('#repStatus'),
   repGuidance: document.querySelector('#repGuidance'),
   resetSet: document.querySelector('#resetSet'),
+  researchComparison: document.querySelector('#researchComparison'),
+  researchMode: document.querySelector('#researchMode'),
+  researchM34Card: document.querySelector('#researchM34Card'),
+  researchM45Card: document.querySelector('#researchM45Card'),
+  researchM34Count: document.querySelector('#researchM34Count'),
+  researchM45Count: document.querySelector('#researchM45Count'),
+  researchComparisonStatus: document.querySelector('#researchComparisonStatus'),
   feedbackExplainer: document.querySelector('#feedbackExplainer'),
   explainTitle: document.querySelector('#explainTitle'),
   explainMessage: document.querySelector('#explainMessage'),
@@ -303,7 +341,24 @@ function updateInspector() {
   ui.pushupPreview.hidden = !isPushup;
   ui.exerciseFeedback.hidden = isPushup;
   ui.repAnalysis.hidden = isPushup;
+  ui.researchComparison.hidden = !isResearchSquat(state.exercise);
   ui.feedbackExplainer.hidden = isPushup;
+  if (isResearchSquat(state.exercise)) {
+    const original = state.running ? state.lastRepAnalysis : null;
+    const candidate = state.running ? state.lastM45 : null;
+    ui.researchMode.value = state.demoMode;
+    ui.researchM34Card.hidden = state.demoMode === 'm45';
+    ui.researchM45Card.hidden = state.demoMode === 'm34';
+    ui.researchM34Count.textContent = String(original?.cycles ?? 0);
+    ui.researchM45Count.textContent = String(candidate?.cycles ?? 0);
+    ui.researchComparisonStatus.textContent = !state.running
+      ? 'Camera offline. Both research cycle histories are cleared.'
+      : !candidate || candidate.tracking !== 'visible'
+        ? 'Tracking unavailable. Keep hip, knee and ankle visible from the side.'
+        : candidate.phase === 'await_drop'
+          ? 'M45 observes a high knee-angle anchor and waits for a 35-degree drop.'
+          : 'M45 observed a drop and is checking recovery to at least 155 degrees.';
+  }
   if (!isPushup) {
     const observation = explainMovement(
       state.exercise,
@@ -511,6 +566,9 @@ function loop(token, timestamp) {
         state.lastRepAnalysis = state.repCounter.observe(
           state.exercise, state.landmarks, timestamp
         );
+        if (isResearchSquat(state.exercise)) {
+          state.lastM45 = state.liveRelative.observe(state.landmarks, timestamp);
+        }
       }
       state.frames++;
       if (state.landmarks) state.poseFrames++;
@@ -542,6 +600,8 @@ function stopCamera() {
   state.lastExerciseFeedback = null;
   state.repCounter.reset();
   state.lastRepAnalysis = null;
+  state.liveRelative.reset();
+  state.lastM45 = null;
   state.token++;
   state.running = false;
   state.starting = false;
@@ -571,6 +631,10 @@ function stopCamera() {
 
 async function startCamera() {
   if (state.starting || state.running) return;
+  if (document.hidden) {
+    setStatus('CAMERA PAUSED', 'Return to the visible browser tab to start your camera.');
+    return;
+  }
   if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
     setStatus('CAMERA UNAVAILABLE', 'Use HTTPS or localhost and a compatible browser.');
     return;
@@ -601,6 +665,18 @@ async function startCamera() {
     if (token !== state.token) throw new Error('Camera start cancelled');
     state.stream = tempStream;
     state.landmarker = tempLandmarker;
+    // Revocation is automatic if the browser/device unexpectedly ends video.
+    const startedToken = token;
+    tempStream.getVideoTracks().forEach((track) => {
+      track.addEventListener('ended', () => {
+        if (shouldIgnoreEndedTrack({
+          cancelled: !state.running, currentToken: state.token, startedToken
+        })) return;
+        stopCamera();
+        setStatus('CAMERA DISCONNECTED',
+          'The camera track ended. Reconnect the camera, then start a new local session.');
+      }, { once: true });
+    });
     tempStream = null;
     tempLandmarker = null;
     state.running = true;
@@ -622,8 +698,7 @@ async function startCamera() {
     // A previous camera request can resolve after a newer switch. Never stop the new stream.
     if (token !== state.token) return;
     stopCamera();
-    setStatus('COULD NOT START CAMERA',
-      `Check camera permission, browser support and internet for first-time model download. ${error.message || ''}`);
+    setStatus('COULD NOT START CAMERA', cameraErrorMessage(error));
   }
 }
 
@@ -650,6 +725,13 @@ ui.mirrorButton.addEventListener('click', () => {
 ui.resetSet.addEventListener('click', () => {
   state.repCounter.reset();
   state.lastRepAnalysis = null;
+  state.liveRelative.reset();
+  state.lastM45 = null;
+  updateInspector();
+});
+ui.researchMode.addEventListener('change', () => {
+  if (!RESEARCH_DEMO_MODES.includes(ui.researchMode.value)) return;
+  state.demoMode = ui.researchMode.value;
   updateInspector();
 });
 ui.inferenceToggle.disabled = !API_URL;
@@ -663,13 +745,17 @@ ui.exercise.addEventListener('change', () => {
   state.lastExerciseFeedback = null;
   state.repCounter.reset();
   state.lastRepAnalysis = null;
+  state.liveRelative.reset();
+  state.lastM45 = null;
   state.exercise = ui.exercise.value;
   ui.help.textContent = TASKS[state.exercise].subtitle;
   renderModels();
   updateInspector();
 });
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && state.running) stopCamera();
+  if (shouldRevokeOnHidden({
+    hidden: document.hidden, running: state.running, starting: state.starting
+  })) stopCamera();
 });
 window.addEventListener('pagehide', stopCamera);
 ui.help.textContent = TASKS[state.exercise].subtitle;
