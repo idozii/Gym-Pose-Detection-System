@@ -49,6 +49,7 @@ document.querySelector('#app').innerHTML = `
       <div class="top-right">
         <span class="top-separator"></span>
         <span class="version"><span class="version-dot"></span> RESEARCH MODE / V0.5</span>
+        <a class="research-header-link" href="${import.meta.env.BASE_URL}research.html">Research results ↗</a>
         <a class="github-link" href="https://github.com/idozii/Gym-Pose-Detection-System" target="_blank" rel="noopener noreferrer">View source ↗</a>
       </div>
     </header>
@@ -60,6 +61,15 @@ document.querySelector('#app').innerHTML = `
         <p>Turn your phone into a private movement lab. Observe camera-plane motion with an experimental cycle counter for Squat, OHP and Barbell Row. Push-up remains a local geometry preview; all model scores remain separate.</p>
         <div class="hero-pills"><span><i></i> ON-DEVICE POSE TRACKING</span><span>04 EXERCISES</span><span>06 SOURCE MODELS / PUSH-UP LOCAL ONLY</span></div>
       </section>
+
+      <aside class="research-studio-banner" aria-label="Frozen TRAIN research results">
+        <div>
+          <span>RESEARCH EVIDENCE / M45–M52</span>
+          <strong>Explore the experiment behind the demo.</strong>
+          <p>Frozen 20-video TRAIN replication, paired uncertainty, reproducible methods and scientific limitations. No official TEST or live-camera accuracy claim.</p>
+        </div>
+        <a href="${import.meta.env.BASE_URL}research.html">Explore research ↗</a>
+      </aside>
 
       <section class="workbench" aria-label="Pose detection workbench">
         <div class="video-area">
