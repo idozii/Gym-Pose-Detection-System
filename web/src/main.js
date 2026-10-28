@@ -64,7 +64,7 @@ document.querySelector('#app').innerHTML = `
 
       <aside class="research-studio-banner" aria-label="Frozen TRAIN research results">
         <div>
-          <span>RESEARCH EVIDENCE / M45–M52</span>
+          <span>RESEARCH EVIDENCE / M45-M52</span>
           <strong>Explore the experiment behind the demo.</strong>
           <p>Frozen 20-video TRAIN replication, paired uncertainty, reproducible methods and scientific limitations. No official TEST or live-camera accuracy claim.</p>
         </div>
