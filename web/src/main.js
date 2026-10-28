@@ -7,6 +7,7 @@ import { ExerciseFeedbackWindow, EXERCISE_FEEDBACK } from './exercise_feedback.j
 import { RepCycleCounter, REP_POLICIES } from './rep_counter.js';
 import { LiveRelativeExcursionCounter, RESEARCH_DEMO_MODES, isResearchSquat } from './live_relative_excursion.js';
 import { cameraErrorMessage, shouldRevokeOnHidden, shouldIgnoreEndedTrack } from './camera_readiness.js';
+import { cameraFrameIsChronological } from './camera_frame_clock.js';
 import { SessionDashboard, tempoBars, tempoFromM34, tempoFromM45 } from './session_dashboard.js';
 import { RuntimeHealth } from './runtime_health.js';
 import { createQaSnapshot, MIN_QA_FRAMES } from './qa_snapshot.js';
@@ -812,6 +813,15 @@ function loop(token, timestamp) {
   try {
     const local = state.sourceMode === 'video';
     const frameMs = local ? localVideoTimestampMs(v.currentTime || 0) : timestamp;
+    // rAF's timestamp is the PAINT FRAME start, potentially earlier than
+    // performance.now() used when W3 session starts or resets. On reduced
+    // precision clocks successive rAF callbacks may also have equal ticks.
+    // Skip these camera callbacks BEFORE inference so W3/M34/M45 stay strict.
+    const cameraFrameReady = local || cameraFrameIsChronological({
+      frameTimestampMs: frameMs,
+      sessionStartedAtMs: state.sessionDashboard.startedAtMs,
+      lastAnalyzedFrameMs: state.sessionDashboard.lastFrameMs
+    });
     if (local && state.lastVideoTime >= 0 &&
         v.currentTime < state.lastVideoTime - 0.001) {
       // A backwards seek requires a fresh MediaPipe tracker and blank counters.
@@ -822,7 +832,8 @@ function loop(token, timestamp) {
         'The local video timeline moved backwards. Use Replay from start to reset pose tracking.');
       updateSourceControls();
     }
-    if ((!local || (state.localPlaying && !state.localNeedsReplay)) &&
+    if (cameraFrameReady &&
+        (!local || (state.localPlaying && !state.localNeedsReplay)) &&
         v.readyState >= 2 && v.currentTime !== state.lastVideoTime &&
         (!local || localFrameIsNew({
           currentTime: v.currentTime, previousTime: state.lastVideoTime,
