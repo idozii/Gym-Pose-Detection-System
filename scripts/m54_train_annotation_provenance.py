@@ -43,7 +43,10 @@ KNOWN_UNKNOWN = (
     "human_start_end_phase_alignment",
     "participant_session_camera_independence"
 )
-SAFE_FIELD = re.compile(r"^[A-Za-z0-9_]{1,80}$")
+# M37's original parser validates the required author schema and L1..Ln.
+# Optional CSV export/index columns may contain punctuation or blank headers.
+# Never publish their raw header names or data; summarize only their count.
+LABEL_COLUMN = re.compile(r"L[1-9]\d*")
 
 
 def audit_train_csv(raw: bytes) -> dict:
@@ -57,10 +60,22 @@ def audit_train_csv(raw: bytes) -> dict:
 
     reader = csv.DictReader(io.StringIO(raw.decode("utf-8-sig")))
     fields = reader.fieldnames or []
-    if not fields or len(fields)>300 or not all(
-        isinstance(x,str) and SAFE_FIELD.fullmatch(x) for x in fields
-    ):
-        raise ValueError("M54 publisher TRAIN CSV has unsafe/unknown column names")
+    if not fields or len(fields) > 300:
+        raise ValueError("M54 publisher TRAIN CSV header count is invalid")
+    # Do not enforce an ASCII identifier regex on OTHER columns. The frozen
+    # M37 parser already accepted the signed TRAIN CSV, and real CSV exporters
+    # can include unnamed/index/annotation auxiliary columns. Only the
+    # original validated label contract is relevant to counting.
+    known = [name for name in fields if isinstance(name, str) and (
+        name in {"name", "type", "count"} or
+        LABEL_COLUMN.fullmatch(name) is not None
+    )]
+    if (not {"name", "type", "count", "L1", "L2"}.issubset(known) or
+        len(set(known)) != len(known)):
+        raise ValueError("M54 publisher TRAIN required label columns ambiguous")
+    # Redact raw optional column names: they could contain user metadata.
+    # Never write them, raw row values or source filenames to JSON output.
+    auxiliary_header_count = len(fields) - len(known)
     metadata = _header_metadata(raw, [[r["video"].lower() for r in g]
                                        for g in groups])
     positive = [x for x in rows if x["annotated_count"]>0]
@@ -102,7 +117,9 @@ def audit_train_csv(raw: bytes) -> dict:
         "train_squat_annotation_rows":len(rows),
         "train_squat_positive_gt_videos":len(positive),
         "train_squat_zero_gt_videos":len(zero),
-        "publisher_train_csv_column_names":list(fields),
+        "publisher_train_csv_column_names":known,
+        "publisher_train_csv_auxiliary_column_count":auxiliary_header_count,
+        "publisher_train_csv_auxiliary_column_names_persisted":False,
         "recognized_explicit_person_session_camera_schema":metadata,
         "original_frozen_cohorts":summary,
         "count_matches_pairs_under_original_parser":True,
