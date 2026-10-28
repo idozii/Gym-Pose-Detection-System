@@ -197,3 +197,54 @@ def test_m54_duplicate_original_label_columns_still_rejected():
     ])+"\n").encode("utf8")
     with pytest.raises(ValueError,match="required label columns ambiguous"):
         m54.audit_train_csv(forged)
+
+
+def test_m54_accepts_wide_original_L1_to_L1200_label_header():
+    """RepCount TRAIN can have far more than 300 preallocated L columns."""
+    from scripts.m37_repcount_archive import MAX_CSV_BYTES, parse_official_csv
+
+    original=train_csv(include_zero=True)
+    source=list(csv.DictReader(io.StringIO(original.decode("utf8"))))
+    original_header=list(source[0])
+    full_header=original_header+[f"L{i}" for i in range(33,1201)]
+    buffer=io.StringIO()
+    writer=csv.DictWriter(buffer,fieldnames=full_header)
+    writer.writeheader()
+    for row in source:
+        writer.writerow(row)
+    raw=buffer.getvalue().encode("utf8")
+    assert len(full_header)>300
+    assert len(raw)<MAX_CSV_BYTES
+    assert len(parse_official_csv(raw))==41
+    report=m54.audit_train_csv(raw)
+    assert report["train_squat_annotation_rows"]==41
+    assert report["train_squat_zero_gt_videos"]==1
+    assert report["original_frozen_cohorts"]["development_20"][
+        "annotated_repetitions"]==312
+    assert report["original_frozen_cohorts"]["replication_20"][
+        "annotated_repetitions"]==209
+    assert report["publisher_train_csv_auxiliary_column_count"]==0
+    assert "L1200" in report["publisher_train_csv_column_names"]
+    assert report["frame_bounds_are_ordered_nonoverlapping_for_squat_train"]
+
+
+def test_m54_wide_csv_with_auxiliary_headers_does_not_persist_private_names():
+    original=train_csv()
+    source=list(csv.DictReader(io.StringIO(original.decode("utf8"))))
+    original_header=list(source[0])
+    extras=["Unnamed: 0", "operator@email.example"]
+    header=original_header+[f"L{i}" for i in range(33,501)]+extras
+    buffer=io.StringIO()
+    writer=csv.DictWriter(buffer,fieldnames=header)
+    writer.writeheader()
+    for row in source:
+        row["operator@email.example"]="private-value"
+        row["Unnamed: 0"]="index"
+        writer.writerow(row)
+    result=m54.audit_train_csv(buffer.getvalue().encode("utf8"))
+    assert result["publisher_train_csv_auxiliary_column_count"]==2
+    assert "L500" in result["publisher_train_csv_column_names"]
+    assert "operator@email.example" not in json.dumps(result)
+    assert "private-value" not in json.dumps(result)
+    assert result["original_frozen_cohorts"]["replication_20"][
+        "annotated_repetitions"]==209

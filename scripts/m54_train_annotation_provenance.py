@@ -60,8 +60,12 @@ def audit_train_csv(raw: bytes) -> dict:
 
     reader = csv.DictReader(io.StringIO(raw.decode("utf-8-sig")))
     fields = reader.fieldnames or []
-    if not fields or len(fields) > 300:
-        raise ValueError("M54 publisher TRAIN CSV header count is invalid")
+    # The original M37 TRAIN parser already succeeded above, validating
+    # the required label sequence and enforcing a 20-MiB CSV byte ceiling.
+    # RepCount files may contain hundreds or thousands of L1..Ln columns;
+    # an arbitrary M54-specific 300-header cap rejects original signed CSV.
+    if not fields:
+        raise ValueError("M54 publisher TRAIN CSV has no header")
     # Do not enforce an ASCII identifier regex on OTHER columns. The frozen
     # M37 parser already accepted the signed TRAIN CSV, and real CSV exporters
     # can include unnamed/index/annotation auxiliary columns. Only the

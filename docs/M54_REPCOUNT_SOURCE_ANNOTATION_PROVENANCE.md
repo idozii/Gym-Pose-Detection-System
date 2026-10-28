@@ -60,7 +60,13 @@ M54 checks the **original TRAIN CSV only**:
   already does. M54 verifies only canonical name/type/count/L1..Ln
   label fields, reports the number of extra header columns, and
   omits all optional header names and values from the output.
-  This corrects a W7/M54-only overstrict schema check; do NOT
+- Do NOT impose a new cap on the count of annotation headers: original
+  source CSVs can reserve hundreds/thousands of L1..Ln frame-boundary
+  columns (even when some are blank). M37's original 20 MiB CSV size
+  ceiling, contiguous label validation and M48 SHA verification are
+  retained. Regression tests cover 1,200 L columns and auxiliary
+  metadata without changing original GT 312+209.
+  These fixes remove M54-only overstrict checks; do NOT
   modify the original publisher archive or M48 label SHA.
 - Report licensing, original download identity and human
   boundary semantics as NOT INDEPENDENTLY VERIFIED.
