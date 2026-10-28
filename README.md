@@ -71,7 +71,7 @@ No fabricated labels, rep scores or production claims.
 ### W5 - Public research evidence page (TRAIN-only, frozen M46-M52)
 
 [W5 research evidence page and verification](docs/W5_RESEARCH_EVIDENCE_PAGE.md)
-adds a separate, responsive \`web/research.html\` page with
+adds a separate, responsive `web/research.html` page with
 an accessible dropdown for original development TRAIN
 versus filename-disjoint TRAIN replication and nominal
 200ms versus paired shared-tracker 400ms observation.
