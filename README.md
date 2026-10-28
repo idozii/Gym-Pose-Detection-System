@@ -68,6 +68,27 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M49 - Confirm original M48 source bytes match tracked Git
+
+[M49 pre-TEST Git provenance check](docs/M49_PRETEST_GIT_PROVENANCE.md)
+extends the owner-verified M48 SHA256 lock. It checks the
+original M46/M47/M48 bytes without alteration, then verifies
+that **all 17 locked source files** are byte-identical in the
+working tree, at original frozen Git commit
+`fee514c3b34213ad34e3472e88477bfc7fd74ca9`
+and at the current Git HEAD. This distinguishes a genuine
+committed research snapshot from uncommitted changes
+that merely happened to be hashed locally. New commits
+for M49/docs are allowed if frozen research files remain
+identical. M49 also records a prospective, **not yet
+authorized**, one-shot future TEST protocol and explicit
+blockers: source provenance, independent participant
+splits, negative-only controls, GT/video synchronization
+and offline/browser pose differences. No TEST, validation
+or original video content is accessed by M49.
+
+---
+
 ### M48 - Freeze M46/M47 TRAIN evidence and detector source fingerprints
 
 [M48 frozen evidence protocol](docs/M48_FROZEN_TRAIN_EVIDENCE_PROTOCOL.md)
