@@ -94,8 +94,9 @@ export const EVIDENCE = Object.freeze({
  * Values are TRANSCRIBED from the owner's local M53/W6 output and are
  * NOT independently checked against original owner-local report JSON here.
  * Both methods use exactly 20 filename-disjoint TRAIN videos (209 GT).
- * New M53 bootstrap CIs exist only in the private owner-local report;
- * none are claimed here because those intervals were NOT supplied.
+ * New M53 5000-draw percentile bootstrap CI bounds are owner-provided
+ * console output of the owner-local report (not independently inspected
+ * original JSON). No independent publisher or subject-disjoint inference.
  * W6 direct/gated zero disagreements are identical-input ALGORITHM
  * events, NOT browser MediaPipe Tasks Vision vs Python pose parity.
  */
@@ -105,6 +106,55 @@ export const OWNER_M53_W6 = Object.freeze({
   sourceClipCount: 20,
   groundTruthReps: 209,
   newM53BootstrapIntervalsIndependentlyReviewed: false,
+  ownerSharedM53BootstrapIntervals: true,
+  pairedVideoBootstrap: Object.freeze({
+    draws: 5000,
+    seed: 2026,
+    200: Object.freeze({
+      normalizedMAE: Object.freeze({
+        delta: -0.08404923507864687,
+        lower: -0.1872277661064424,
+        upper: 0.015238095238095165
+      }),
+      obo: Object.freeze({
+        delta: 0.09999999999999998,
+        lower: -0.09999999999999998,
+        upper: 0.30000000000000004
+      }),
+      exact: Object.freeze({
+        delta: 0.09999999999999998,
+        lower: 0,
+        upper: 0.25
+      }),
+      absoluteMAE: Object.freeze({
+        delta: -0.6500000000000004,
+        lower: -1.25,
+        upper: -0.10000000000000009
+      })
+    }),
+    400: Object.freeze({
+      normalizedMAE: Object.freeze({
+        delta: -0.05592170471427438,
+        lower: -0.17944823455698064,
+        upper: 0.07934227324533022
+      }),
+      obo: Object.freeze({
+        delta: 0.10000000000000003,
+        lower: -0.09999999999999998,
+        upper: 0.30000000000000004
+      }),
+      exact: Object.freeze({
+        delta: 0.05000000000000002,
+        lower: -0.1,
+        upper: 0.2
+      }),
+      absoluteMAE: Object.freeze({
+        delta: -1.25,
+        lower: -2.45,
+        upper: -0.20000000000000018
+      })
+    })
+  }),
   publisherTestEvaluated: false,
   actualBrowserPoseModelParityVerified: false,
   conditions: Object.freeze({
@@ -168,8 +218,26 @@ export function selectOwnerRunM53W6(cohortId, samplingMs) {
       throw new Error('M53 owner-reported TRAIN count metrics conflict with frozen M46');
     }
   }
+  const bootstrap = OWNER_M53_W6.pairedVideoBootstrap[ms];
+  for (const [field, delta] of [
+    ['normalizedMAE', data.relative_excursion.normalizedMAE -
+      data.low_to_high.normalizedMAE],
+    ['obo', data.relative_excursion.obo - data.low_to_high.obo],
+    ['exact', data.relative_excursion.exact - data.low_to_high.exact],
+    ['absoluteMAE', data.relative_excursion.absoluteMAE -
+      data.low_to_high.absoluteMAE]
+  ]) {
+    const ci = bootstrap[field];
+    if (![ci.delta,ci.lower,ci.upper].every(Number.isFinite) ||
+        ci.lower > ci.upper ||
+        !Number.isFinite(delta) ||
+        Math.abs(ci.delta - delta) > 1e-10) {
+      throw new Error('M53 bootstrap point does not reconcile with owner TRAIN metrics');
+    }
+  }
   return {
     ...data,
+    bootstrap,
     deltaNormalizedMAE:
       data.relative_excursion.normalizedMAE - data.low_to_high.normalizedMAE,
     deltaOBO:
