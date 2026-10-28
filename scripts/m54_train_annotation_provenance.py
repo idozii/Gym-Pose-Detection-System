@@ -46,7 +46,7 @@ KNOWN_UNKNOWN = (
 # M37's original parser validates the required author schema and L1..Ln.
 # Optional CSV export/index columns may contain punctuation or blank headers.
 # Never publish their raw header names or data; summarize only their count.
-LABEL_COLUMN = re.compile(r"L[1-9]\\d*")
+LABEL_COLUMN = re.compile(r"L[1-9]\d*")
 
 
 def audit_train_csv(raw: bytes) -> dict:
