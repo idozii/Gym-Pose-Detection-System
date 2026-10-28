@@ -828,3 +828,33 @@ h1, h2, h3, p { margin: 0; }
   .runtime-health-panel { padding: 13px; }
   .runtime-health-grid > div { padding: 11px 9px; }
 }
+
+
+/* W7b manual QA snapshot stays in browser, never uploaded. */
+.w7-qa-actions {
+  display: flex; gap: 11px; flex-wrap: wrap; align-items: center;
+  margin-top: 15px;
+}
+.w7-qa-actions button {
+  border-radius: 10px; padding: 10px 15px; min-height: 44px;
+  border: 1px solid #8fb96e; background: #29402a;
+  color: #e7ffd5; font-size: 11px; font-weight: 800;
+}
+.w7-qa-actions button:not(:disabled):hover { background: #3f6036; }
+.w7-qa-actions span {
+  flex: 1 1 210px; color: #bed0b8; font-size: 11px; line-height: 1.6;
+}
+.w7-qa-report-label {
+  display: flex; flex-direction: column; gap: 8px;
+  color: #ddf4cb; font-size: 10px; letter-spacing: .09em;
+  font-weight: 800; margin-top: 15px;
+}
+.w7-qa-report-label textarea {
+  display: block; width: 100%; resize: vertical;
+  min-height: 160px; background: #0b150f;
+  color: #dcf6d1; border: 1px solid #6b8760;
+  border-radius: 10px; padding: 12px; line-height: 1.55;
+  font-family: ui-monospace, monospace; letter-spacing: normal;
+  font-size: 11px;
+}
+.w7-qa-report-label[hidden] { display: none !important; }
