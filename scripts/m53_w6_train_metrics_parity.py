@@ -16,7 +16,6 @@ Only aggregate reports saved; raw traces/GT frame events temporary.
 from __future__ import annotations
 
 import argparse
-from collections import defaultdict
 import hashlib
 import json
 import math
@@ -282,7 +281,13 @@ def run(*, archive: Path, root: Path, reference_path: Path,
                 expected["annotated_reps"] or
                 methods[name]["predicted_reps"] !=
                 expected["predicted_reps"] or
-                methods[name]["videos"] != N):
+                methods[name]["videos"] != N or
+                not math.isclose(methods[name]["exact_count_fraction"],
+                                 expected["exact_count_fraction"],
+                                 rel_tol=0, abs_tol=1e-10) or
+                not math.isclose(methods[name]["off_by_one_fraction"],
+                                 expected["within_one_fraction"],
+                                 rel_tol=0, abs_tol=1e-10)):
                 raise ValueError("M53 count MAE/GT does not match original M46")
         all_methods[condition] = methods
         extended_ci[condition] = paired_video_bootstrap(items)
