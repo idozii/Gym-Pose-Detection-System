@@ -118,7 +118,7 @@ def test_m52_exact_constant_fps_has_zero_pts_timing_drift():
 
 
 def test_m52_detects_variable_pts_and_never_extrapolates_missing_exclusive_end():
-    pts=[0.,.04,.08,.12,.16,.20,.24,.33,.37,.41]
+    pts=[0.,.04,.08,.12,.16,.20,.24,.35,.39,.43]
     data=m52.audit_timeline(
         gt_bounds=[0,5,7,10],fps=25.,declared_frames=10,pts=pts
     )
@@ -126,7 +126,7 @@ def test_m52_detects_variable_pts_and_never_extrapolates_missing_exclusive_end()
     assert data["exclusive_GT_ends_without_corresponding_PTS_frame"]==1
     assert data["observable_GT_boundary_points"]==3
     assert data["GT_boundaries_with_abs_drift_gt50ms"]==1
-    assert data["max_abs_timeline_drift_ms"]==pytest.approx(50.)
+    assert data["max_abs_timeline_drift_ms"]==pytest.approx(70.)
     assert data["irregular_interframe_steps_gt20pct_from_median"]==1
     with pytest.raises(ValueError,match="frame count differs"):
         m52.audit_timeline(
@@ -186,9 +186,7 @@ def test_m52_pipeline_checks_original_m50_m51_and_persists_only_aggregates(tmp_p
     assert result["deployed_counter_modified"] is False
     assert result["per_frame_data_persisted"] is False
     assert [x["GT_reps"] for x in result["cohort_video_timeline"]]==[312,209]
-    assert all(x["GT_boundary_points_with_abs_drift_gt50ms"]==0
-               if "GT_boundary_points_with_abs_drift_gt50ms" in x else
-               x["GT_boundary_points_with_abs_drift_gt50ms"]==0
+    assert all(x["GT_boundary_points_with_abs_drift_gt50ms"] == 0
                for x in result["cohort_video_timeline"])
     report_text=args["report"].read_text()
     for forbidden in ("squat_pts_000.mp4",'"frames"',
