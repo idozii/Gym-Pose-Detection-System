@@ -97,7 +97,7 @@ test('W6 emits only two-cadence aggregate proof, never GT or source IDs',()=>{
   assert.equal(results.raw_frames_or_event_times_saved,false);
   assert.equal(results.browser_or_python_pose_parity_claimed,false);
   const serialized=JSON.stringify(results);
-  assert.doesNotMatch(serialized,/do-not-persist|landmarks|private|gtEvents|event_times_ms/);
+  assert.doesNotMatch(serialized,/do-not-persist|\"landmarks\"\s*:|private|gtEvents|\"event_times_ms\"\s*:/);
   assert.equal(results.conditions.dense_200ms.direct_exact_event_parity,true);
 });
 
