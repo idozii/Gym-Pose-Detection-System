@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The new static second page, \`web/research.html\`, is a
+The new static second page, `web/research.html`, is a
 portfolio-oriented **research evidence logbook**, NOT a
 live model performance monitor. It is accessible from
 the existing W1-W4 movement studio and from its own
@@ -10,7 +10,7 @@ relative URL on both Vercel root and the existing
 GitHub Pages project subpath.
 
 W5 is deliberately separate from the camera UI:
-\`web/src/research_page.js\` imports only a reviewed,
+`web/src/research_page.js` imports only a reviewed,
 static frozen evidence module and styles. It never
 requests camera permission, loads selected videos,
 accesses owner-local archived GT or sends research
@@ -104,23 +104,23 @@ M50-M52 inspect TRAIN ONLY. TEST remained untouched.
 ## Design, routing and source paths
 
 Files created:
-- \`web/research.html\`: semantic page with
+- `web/research.html`: semantic page with
   accessible cohort/cadence dropdowns, score bars,
   precise labels, limitations and cited repo links.
-- \`web/src/research_evidence.js\`: strictly
+- `web/src/research_evidence.js`: strictly
   typed, static owner-confirmed aggregate snapshot,
   pure F1 calculation and TRAIN selector.
-- \`web/src/research_page.js\`: updates only
+- `web/src/research_page.js`: updates only
   existing DOM text and width of score bars.
-- \`web/src/research.css\`: responsive layout,
+- `web/src/research.css`: responsive layout,
   semantic bars and reduced-motion support.
-- \`web/vite.config.js\`: multipage Vite build of
-  both \`index.html\` and \`research.html\`.
-- \`web/tests/research_evidence.test.js\`: exact
+- `web/vite.config.js`: multipage Vite build of
+  both `index.html` and `research.html`.
+- `web/tests/research_evidence.test.js`: exact
   M46/M47 outcome/interval checks, zero TEST claim,
   privacy and Vite route coverage.
 
-Existing \`web/src/main.js\` and \`style.css\`
+Existing `web/src/main.js` and `style.css`
 gain a prominent cross-link and research teaser
 to this separate page. The original W1-W4
 camera/video code, cycle heuristics and 17
@@ -145,9 +145,9 @@ npm run dev
 ~~~
 
 Visit:
-- \`http://localhost:5173/\`: verify the W1-W4
+- `http://localhost:5173/`: verify the W1-W4
   camera/local-video UI still works unchanged.
-- \`http://localhost:5173/research.html\`:
+- `http://localhost:5173/research.html`:
   verify the research page and the link back to studio.
 
 Manual W5 acceptance:
@@ -174,10 +174,10 @@ Manual W5 acceptance:
    source links; no private file paths,
    real MP4 bytes, per-video data or
    human identifiers should be published.
-9. Confirm the static \`research.html\` is
-   present in built \`web/dist\` and works
+9. Confirm the static `research.html` is
+   present in built `web/dist` and works
    under both Vercel root and GitHub Pages
-   \`/Gym-Pose-Detection-System/\` base path.
+   `/Gym-Pose-Detection-System/` base path.
 
 CI does not prove production deployment.
 Any Vercel quota/security limits must be
