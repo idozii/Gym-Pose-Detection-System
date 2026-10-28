@@ -75,27 +75,27 @@
       <div class="research-metric-grid">
         <article class="research-method-card">
           <div class="research-method-top"><span>CONTROL / M39</span><small>Low-to-high absolute-angle</small></div>
-          <div class="research-big-number" id="researchM39F1">—</div>
+          <div class="research-big-number" id="researchM39F1">-</div>
           <div class="research-number-label">MICRO EVENT F1 · ↑ higher is better</div>
           <div class="research-track" role="img" aria-label="M39 micro event F1 bar">
             <span class="research-track-fill m39" id="researchM39Bar"></span>
           </div>
-          <div class="research-method-bottom"><span>COUNT MAE <strong id="researchM39MAE">—</strong></span><span>TP / FP / FN <strong id="researchM39TP">—</strong></span></div>
+          <div class="research-method-bottom"><span>COUNT MAE <strong id="researchM39MAE">-</strong></span><span>TP / FP / FN <strong id="researchM39TP">-</strong></span></div>
         </article>
         <article class="research-method-card research-method-card-candidate">
           <div class="research-method-top"><span>CANDIDATE / M45</span><small>Relative excursion · rule-based</small></div>
-          <div class="research-big-number" id="researchM45F1">—</div>
+          <div class="research-big-number" id="researchM45F1">-</div>
           <div class="research-number-label">MICRO EVENT F1 · ↑ higher is better</div>
           <div class="research-track" role="img" aria-label="M45 micro event F1 bar">
             <span class="research-track-fill m45" id="researchM45Bar"></span>
           </div>
-          <div class="research-method-bottom"><span>COUNT MAE <strong id="researchM45MAE">—</strong></span><span>TP / FP / FN <strong id="researchM45TP">—</strong></span></div>
+          <div class="research-method-bottom"><span>COUNT MAE <strong id="researchM45MAE">-</strong></span><span>TP / FP / FN <strong id="researchM45TP">-</strong></span></div>
         </article>
       </div>
       <div class="research-delta-grid" aria-live="polite">
-        <div><span>Δ MICRO EVENT F1</span><strong id="researchDeltaF1">—</strong><small>M45 − M39</small></div>
-        <div><span>Δ COUNT MAE</span><strong id="researchDeltaMAE">—</strong><small>Absolute count error per video, M45 − M39</small></div>
-        <div><span>GROUND TRUTH EVENTS</span><strong id="researchGT">—</strong><small id="researchCohortDescription">Publisher Squat TRAIN, not TEST</small></div>
+        <div><span>Δ MICRO EVENT F1</span><strong id="researchDeltaF1">-</strong><small>M45 − M39</small></div>
+        <div><span>Δ COUNT MAE</span><strong id="researchDeltaMAE">-</strong><small>Absolute count error per video, M45 − M39</small></div>
+        <div><span>GROUND TRUTH EVENTS</span><strong id="researchGT">-</strong><small id="researchCohortDescription">Publisher Squat TRAIN, not TEST</small></div>
       </div>
       <div class="research-bootstrap" id="researchBootstrap" aria-live="polite">
         <div class="research-bootstrap-head">
@@ -103,9 +103,9 @@
           <span>5,000 draws · seed 2026 · n=20</span>
         </div>
         <div class="research-bootstrap-entries">
-          <p><span>ΔF1 95% percentile interval</span><strong id="researchCIEvent">—</strong></p>
-          <p><span>ΔMAE 95% percentile interval</span><strong id="researchCICount">—</strong></p>
-          <p><span>ΔFP events / video 95% interval</span><strong id="researchCIFP">—</strong></p>
+          <p><span>ΔF1 95% percentile interval</span><strong id="researchCIEvent">-</strong></p>
+          <p><span>ΔMAE 95% percentile interval</span><strong id="researchCICount">-</strong></p>
+          <p><span>ΔFP events / video 95% interval</span><strong id="researchCIFP">-</strong></p>
         </div>
         <p class="research-footnote">Resamples whole video pairs, not repetitions. Intervals are exploratory and conditional on 20 TRAIN filenames: shared participants or sessions could reduce effective independent sample size. FP uncertainty includes possible increases.</p>
       </div>
@@ -132,14 +132,14 @@
         <span class="research-rules-title">ORIGINAL FROZEN M45 RULE</span>
         <div><strong>≥155°</strong><small>High-angle anchor / return</small></div>
         <div><strong>≥35°</strong><small>Drop and recovery excursion</small></div>
-        <div><strong>0.4–12 s</strong><small>Recovery timing window</small></div>
+        <div><strong>0.4-12 s</strong><small>Recovery timing window</small></div>
         <div><strong>1.25 s</strong><small>Tracking gap reset threshold</small></div>
       </div>
       <p class="research-footnote">The cycle-counting rule uses no task-specific trained classifier, but pose extraction itself is a pretrained model. The knee angle cannot certify squat depth, technique, or injury risk.</p>
     </section>
 
     <section class="research-section" id="integrity" aria-labelledby="integrity-heading">
-      <div class="research-eyebrow">04 / DATA INTEGRITY · M48–M52</div>
+      <div class="research-eyebrow">04 / DATA INTEGRITY · M48-M52</div>
       <h2 id="integrity-heading">An evidence trail, <em>not a certificate.</em></h2>
       <div class="research-integrity-grid">
         <article><span>M48 / M49</span><strong>Frozen sources & provenance check</strong><p>17 research source files fingerprinted against owner-local evidence reports and original Git commits.</p></article>
