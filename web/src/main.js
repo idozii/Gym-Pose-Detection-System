@@ -1224,6 +1224,8 @@ ui.mirrorButton.addEventListener('click', () => {
   if (state.running) drawFrame();
 });
 ui.resetSet.addEventListener('click', () => {
+  state.runtimeHealth.reset();
+  clearQaSnapshot();
   state.repCounter.reset();
   state.lastRepAnalysis = null;
   state.liveRelative.reset();
@@ -1244,6 +1246,8 @@ ui.inferenceToggle.disabled = !API_URL;
 ui.inferenceToggle.addEventListener('change', () => { void enableResearchInference(); });
 ui.exercise.addEventListener('change', () => {
   if (!TASKS[ui.exercise.value]) return;
+  state.runtimeHealth.reset();
+  clearQaSnapshot();
   disableResearchInference();
   state.pushupMotion.reset();
   state.lastPushupPreview = null;
