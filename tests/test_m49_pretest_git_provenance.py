@@ -83,8 +83,20 @@ def test_m49_detects_committed_change_to_frozen_research_file(tmp_path):
     path.write_bytes(path.read_bytes() + b"changed")
     _git(root, "add", ".")
     _git(root, "commit", "-qm", "unauthorized model source update")
-    with pytest.raises(ValueError, match="differs from Git tracked"):
+    # Original M48 locked hash disagrees with newer committed working tree.
+    with pytest.raises(ValueError, match="local research source differs"):
         m49.verify_git_history(lock, repository_root=root)
+    # Even if someone tries to re-label changed working bytes as the
+    # original lock, the ORIGINAL Git blob still disagrees and is caught.
+    altered_lock = {
+        **lock,
+        "source_code_sha256": {
+            **lock["source_code_sha256"],
+            m48.SOURCES[0]: hashlib.sha256(path.read_bytes()).hexdigest()
+        }
+    }
+    with pytest.raises(ValueError, match="differs from Git tracked"):
+        m49.verify_git_history(altered_lock, repository_root=root)
 
 
 def test_m49_detects_missing_original_git_revision_or_wrong_source_set(tmp_path):
