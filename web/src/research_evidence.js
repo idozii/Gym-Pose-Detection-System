@@ -89,6 +89,96 @@ export const EVIDENCE = Object.freeze({
   })
 });
 
+/**
+ * M53/W6 owner-run TRAIN replication console results, 2026-10-28.
+ * Values are TRANSCRIBED from the owner's local M53/W6 output and are
+ * NOT independently checked against original owner-local report JSON here.
+ * Both methods use exactly 20 filename-disjoint TRAIN videos (209 GT).
+ * New M53 bootstrap CIs exist only in the private owner-local report;
+ * none are claimed here because those intervals were NOT supplied.
+ * W6 direct/gated zero disagreements are identical-input ALGORITHM
+ * events, NOT browser MediaPipe Tasks Vision vs Python pose parity.
+ */
+export const OWNER_M53_W6 = Object.freeze({
+  evidenceStatus: 'owner-reported-original-local-train-replay',
+  sourceCohort: 'replication',
+  sourceClipCount: 20,
+  groundTruthReps: 209,
+  newM53BootstrapIntervalsIndependentlyReviewed: false,
+  publisherTestEvaluated: false,
+  actualBrowserPoseModelParityVerified: false,
+  conditions: Object.freeze({
+    200: Object.freeze({
+      low_to_high: Object.freeze({
+        normalizedMAE: 0.4940229816623005,
+        obo: 0.4,
+        exact: 0.2,
+        absoluteMAE: 4.45
+      }),
+      relative_excursion: Object.freeze({
+        normalizedMAE: 0.40997374658365365,
+        obo: 0.5,
+        exact: 0.3,
+        absoluteMAE: 3.8
+      }),
+      directEventDisagreements: 0,
+      gatedEventDisagreements: 0,
+      framesDroppedByGate: 2
+    }),
+    400: Object.freeze({
+      low_to_high: Object.freeze({
+        normalizedMAE: 0.5397661149480034,
+        obo: 0.35,
+        exact: 0.15,
+        absoluteMAE: 5.45
+      }),
+      relative_excursion: Object.freeze({
+        normalizedMAE: 0.48384441023372904,
+        obo: 0.45,
+        exact: 0.2,
+        absoluteMAE: 4.2
+      }),
+      directEventDisagreements: 0,
+      gatedEventDisagreements: 0,
+      framesDroppedByGate: 0
+    })
+  })
+});
+
+export function selectOwnerRunM53W6(cohortId, samplingMs) {
+  const ms = Number(samplingMs);
+  if (!['development', 'replication'].includes(String(cohortId)) ||
+      ![200, 400].includes(ms)) {
+    throw new RangeError('M53/W6 available only on 200/400ms TRAIN cohorts');
+  }
+  if (cohortId === 'development') return null;
+  const data = OWNER_M53_W6.conditions[ms];
+  const originals = EVIDENCE.cohorts.replication.conditions[ms];
+  for (const [name, prior] of [
+    ['low_to_high', originals.m39],
+    ['relative_excursion', originals.m45]
+  ]) {
+    const item = data[name];
+    if (Math.abs(item.absoluteMAE - prior.mae) > 1e-12 ||
+        !(item.normalizedMAE >= 0) ||
+        ![item.obo, item.exact].every((x) => x >= 0 && x <= 1) ||
+        item.exact > item.obo ||
+        !Number.isInteger(item.obo * 20) ||
+        !Number.isInteger(item.exact * 20)) {
+      throw new Error('M53 owner-reported TRAIN count metrics conflict with frozen M46');
+    }
+  }
+  return {
+    ...data,
+    deltaNormalizedMAE:
+      data.relative_excursion.normalizedMAE - data.low_to_high.normalizedMAE,
+    deltaOBO:
+      data.relative_excursion.obo - data.low_to_high.obo,
+    deltaExact:
+      data.relative_excursion.exact - data.low_to_high.exact
+  };
+}
+
 /** Micro event-matching F1, defined only for frozen offline GT events. */
 export function eventMetrics({tp,fp,fn,mae}) {
   for (const count of [tp,fp,fn]) {
