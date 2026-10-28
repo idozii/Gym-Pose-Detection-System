@@ -68,6 +68,33 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### W5 - Public research evidence page (TRAIN-only, frozen M46-M52)
+
+[W5 research evidence page and verification](docs/W5_RESEARCH_EVIDENCE_PAGE.md)
+adds a separate, responsive \`web/research.html\` page with
+an accessible dropdown for original development TRAIN
+versus filename-disjoint TRAIN replication and nominal
+200ms versus paired shared-tracker 400ms observation.
+It displays original M39/M45 TP/FP/FN, dynamically
+computed micro Event F1 and absolute per-video count
+MAE from frozen M46/M47/M48 owner-confirmed aggregates,
+with video-level 5,000-draw paired bootstrap intervals
+ONLY for the 20-video TRAIN replication cohort.
+The page also presents the original motion-rule
+methodology, explicit M50-M52 TRAIN video integrity
+results, source documentation links and open research
+limitations. This is never a publisher TEST score,
+participant-disjoint estimate, calibrated safety
+metric, or MediaPipe browser/Python parity result.
+No video or landmark data, annotation files or
+person-level records are embedded. A Vite multipage
+build retains the W1-W4 index studio and separately
+builds research.html for Vercel and GitHub Pages.
+Original 17 M48-frozen source paths and all W1-W4
+detectors remain unchanged.
+
+---
+
 ### W4 - Local-only MP4/WebM video analysis (no upload)
 
 [W4 local file analysis and manual acceptance](docs/W4_LOCAL_VIDEO_ANALYSIS.md)
