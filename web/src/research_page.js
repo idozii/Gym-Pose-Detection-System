@@ -16,7 +16,9 @@ const ids = [
   'm53NormalizedM39','m53NormalizedM45','m53NormalizedDelta',
   'm53OboM39','m53OboM45','m53OboDelta',
   'm53ExactM39','m53ExactM45','m53ExactDelta',
-  'w6DirectMismatches','w6GatedMismatches','w6DroppedFrames'
+  'w6DirectMismatches','w6GatedMismatches','w6DroppedFrames',
+  'm53CINorm','m53CINormStatus','m53CIObo','m53CIOboStatus',
+  'm53CIExact','m53CIExactStatus','m53CIAbs','m53CIAbsStatus'
 ];
 const ui = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 if (ids.some((id) => !ui[id])) {
@@ -30,6 +32,19 @@ function signed(value, digits) {
 function interval(item, digits) {
   return '[' + signed(item.lower, digits) + ', ' +
     signed(item.upper, digits) + ']';
+}
+
+function formatM53Bootstrap(ci, digits, units) {
+  const multiplier = units === 'pp' ? 100 : 1;
+  const suffix = units === 'pp' ? ' pp' : units === 'reps' ? ' reps' : '';
+  return '[' + signed(ci.lower*multiplier,digits) + ', ' +
+    signed(ci.upper*multiplier,digits) + ']' + suffix;
+}
+
+function relationToZero(ci) {
+  if (ci.lower < 0 && ci.upper > 0) return 'Includes zero';
+  if (ci.lower === 0 || ci.upper === 0) return 'Touches zero';
+  return 'Excludes zero';
 }
 
 export function renderFrozenResults() {
@@ -100,6 +115,16 @@ export function renderFrozenResults() {
       String(newEvidence.gatedEventDisagreements);
     ui.w6DroppedFrames.textContent =
       String(newEvidence.framesDroppedByGate);
+    for (const [name, field, digits, units] of [
+      ['m53CINorm','normalizedMAE',4,''],
+      ['m53CIObo','obo',0,'pp'],
+      ['m53CIExact','exact',0,'pp'],
+      ['m53CIAbs','absoluteMAE',2,'reps']
+    ]) {
+      const ci = newEvidence.bootstrap[field];
+      ui[name].textContent = formatM53Bootstrap(ci,digits,units);
+      ui[name+'Status'].textContent = relationToZero(ci);
+    }
   }
 }
 
