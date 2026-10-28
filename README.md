@@ -68,6 +68,33 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### W7b + M55 - Privacy-safe real-device QA snapshots and author evidence review
+
+[W7b local browser QA capture](docs/W7_BROWSER_PERFORMANCE_MOBILE_AUDIT.md)
+adds an explicitly clicked, on-page **aggregate-only** diagnostics
+snapshot after >=30 processed frames, without uploading or
+storing any video, landmark, device fingerprint or file name.
+The existing rolling latency, throughput and gap metrics now
+report gaps in the recent window rather than permanent startup
+stalls. No browser/mobile device speed benchmark is claimed
+until the owner tests and shares real device results.
+
+[M55 RepCount author evidence and annotation semantics gate](docs/M55_AUTHOR_ANNOTATION_EVIDENCE_GATE.md)
+adds a read-only local summary tool that checks the owner
+M54 TRAIN report against the original M48 TRAIN annotation
+SHA and original 20+20 cohort invariants. It documents what
+the **original authors** state (YouTube origin, start/end
+action-cycle interval annotations, two-annotator review) and
+separately what the owner observed (101 Squat TRAIN clips,
+0 zero-rep examples, 521 selected GT events). It does NOT
+certify official TAR byte provenance, redistribution/
+commercial rights, an anatomical phase interpretation of
+GT boundaries, subject independence or official TEST.
+No original research detector thresholds or 17 frozen M48
+paths are changed.
+
+---
+
 ### W7 + M54 - Local browser performance and TRAIN dataset provenance gate
 
 [W7 real-device performance and mobile acceptance](docs/W7_BROWSER_PERFORMANCE_MOBILE_AUDIT.md)
