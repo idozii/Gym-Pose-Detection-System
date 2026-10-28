@@ -68,6 +68,27 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M47 - Paired video-bootstrap uncertainty on frozen TRAIN replication
+
+[M47 frozen M46 clip-bootstrap audit](docs/M47_FROZEN_TRAIN_CLIP_BOOTSTRAP.md)
+assesses uncertainty WITHOUT modifying M45 or M39. The
+owner-run, previously unseen publisher TRAIN rank-21..40
+cohort had 20/20 evaluated and 209 GT reps. At 200ms,
+the frozen relative-excursion rule attained F1 74.57% and
+video count MAE 3.80 vs frozen M39 F1 70.27% and MAE 4.45
+(TP +12, FP +1). At paired ~400ms, F1 72.02% vs
+60.84% and MAE 4.20 vs 5.45 (FP tied at 6).
+Source-video filenames are disjoint, but participant/
+session independence is unverified. M47 replays EXACTLY
+that cohort and requires the existing M46 report to
+reproduce before a deterministic 5000-draw paired
+**video-level** percentile bootstrap of delta micro
+F1, video MAE and FP events/video. Results are TRAIN-only
+conditional uncertainty and never TEST accuracy,
+confirmed subject-level generalization or medical/form advice.
+
+---
+
 ### M46 - Frozen M45 replication on unused TRAIN source videos
 
 [M46 frozen TRAIN source-file replication](docs/M46_FROZEN_UNUSED_TRAIN_REPLICATION.md)
