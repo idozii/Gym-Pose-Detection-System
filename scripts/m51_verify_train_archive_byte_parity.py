@@ -70,9 +70,10 @@ def _verify_existing_m50(path: Path, *, publisher_sha: str,
     if not path.is_file():
         raise FileNotFoundError("M51 requires original owner's M50 TRAIN integrity JSON")
     report = json.loads(path.read_bytes())
+    if not isinstance(report, dict):
+        raise ValueError("M51 original M50 report must be a JSON object")
     cohorts = report.get("cohort_video_timing")
     if (
-        not isinstance(report, dict) or
         report.get("protocol") != "m50-squat-train-annotation-video-timing-audit-v1" or
         report.get("source_split") != "train" or
         report.get("publisher_train_annotation_sha256") != publisher_sha or
