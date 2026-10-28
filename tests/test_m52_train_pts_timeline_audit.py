@@ -160,7 +160,7 @@ def test_m52_ffprobe_uses_video_only_show_frames_and_rejects_missing_pts(tmp_pat
     assert commands[0][0][:6]==[
         "ffprobe","-v","error","-select_streams","v:0","-show_frames"
     ]
-    assert "best_effort_timestamp_time" in commands[0][0]
+    assert "frame=best_effort_timestamp_time" in commands[0][0]
     assert commands[0][0][-2:]==["-i",str(video)]
     def no_pts(cmd,**kwargs):
         return Result({"frames":[{
