@@ -932,6 +932,180 @@ async function startCamera() {
   }
 }
 
+/** W4: the file picker is the only source for local media; not an upload API. */
+function waitForLocalMetadata(video, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new Error('Local file loading cancelled'));
+      return;
+    }
+    const cleanup = () => {
+      video.removeEventListener('loadedmetadata', ready);
+      video.removeEventListener('error', failed);
+      signal.removeEventListener('abort', cancelled);
+    };
+    const ready = () => { cleanup(); resolve(); };
+    const failed = () => { cleanup(); reject(new Error('Cannot decode video metadata')); };
+    const cancelled = () => { cleanup(); reject(new Error('Local file loading cancelled')); };
+    video.addEventListener('loadedmetadata', ready, { once: true });
+    video.addEventListener('error', failed, { once: true });
+    signal.addEventListener('abort', cancelled, { once: true });
+    if (video.readyState >= 1) ready();
+  });
+}
+
+async function loadLocalVideo(file) {
+  if (state.sourceMode !== 'video' || !file) return;
+  const fileCheck = validateLocalVideoFile(file);
+  if (!fileCheck.ok) {
+    setStatus('VIDEO NOT ACCEPTED', fileCheck.reason);
+    return;
+  }
+  // Prevent old object URLs, streams, counters, and pending model tasks
+  // from surviving a new local file or replay of an existing file.
+  stopCamera();
+  state.starting = true;
+  const token = ++state.token;
+  state.localFile = file;
+  state.localLoadAbort = new AbortController();
+  ui.video.autoplay = false;
+  ui.video.muted = true;
+  updateSourceControls();
+  setStatus('OPENING LOCAL VIDEO', 'Reading local video metadata. Video is never uploaded.');
+  let candidateLandmarker = null;
+  try {
+    const url = URL.createObjectURL(file);
+    state.localUrl = url;
+    ui.video.srcObject = null;
+    ui.video.src = url;
+    const metadataReady = waitForLocalMetadata(ui.video, state.localLoadAbort.signal);
+    ui.video.load();
+    await metadataReady;
+    if (token !== state.token) return;
+    const metadata = validateVideoMetadata({
+      duration: ui.video.duration, width: ui.video.videoWidth,
+      height: ui.video.videoHeight
+    });
+    if (!metadata.ok) {
+      stopCamera();
+      setStatus('VIDEO NOT ACCEPTED', metadata.reason);
+      return;
+    }
+    setStatus('LOADING POSE ENGINE',
+      'Preparing a local pose tracker. Press Play video after loading.');
+    const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
+    if (token !== state.token) return;
+    candidateLandmarker = await PoseLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: MODEL_URL, delegate: 'CPU' },
+      runningMode: 'VIDEO', numPoses: 1,
+      minPoseDetectionConfidence: .5,
+      minPosePresenceConfidence: .5,
+      minTrackingConfidence: .5
+    });
+    if (token !== state.token) return;
+    state.landmarker = candidateLandmarker;
+    candidateLandmarker = null;
+    state.localReady = true;
+    state.localPlaying = false;
+    state.localEnded = false;
+    state.localNeedsReplay = false;
+    state.localLastTimestamp = null;
+    state.localLoadAbort = null;
+    state.running = true;
+    state.starting = false;
+    state.sessionDashboard.start(0);
+    state.lastVideoTime = -1;
+    state.lastFrameClock = 0;
+    state.frames = 0;
+    state.poseFrames = 0;
+    state.fps = 0;
+    ui.placeholder.hidden = true;
+    ui.indicator.hidden = true;
+    ui.videoFooter.hidden = false;
+    setStatus('LOCAL VIDEO READY',
+      'Press Play video. No webcam permission or remote research inference is used.');
+    drawFrame();
+    updateSourceControls();
+    updateInspector();
+    state.raf = requestAnimationFrame((timestamp) => loop(token, timestamp));
+  } catch (error) {
+    if (token !== state.token) return;
+    stopCamera();
+    setStatus('VIDEO COULD NOT LOAD',
+      'Cannot decode or initialize this local video. Try a supported MP4/WebM file.');
+  } finally {
+    candidateLandmarker?.close();
+  }
+}
+
+async function toggleLocalPlayback() {
+  if (state.sourceMode !== 'video' || !state.localReady ||
+      state.localNeedsReplay || state.localEnded) return;
+  if (state.localPlaying) {
+    ui.video.pause();
+    state.localPlaying = false;
+    setStatus('LOCAL VIDEO PAUSED', 'Playback paused. Cycle counts stay on this device.');
+  } else {
+    const token = state.token;
+    try {
+      await ui.video.play();
+      if (token !== state.token || state.sourceMode !== 'video') return;
+      state.localPlaying = true;
+      setStatus('ANALYZING LOCAL VIDEO',
+        'Video and landmarks stay in the browser. Experimental counters use original fixed rules.');
+    } catch (error) {
+      if (token !== state.token) return;
+      setStatus('VIDEO PLAYBACK BLOCKED',
+        'Browser could not play this format. Try an H.264 MP4 or WebM file.');
+    }
+  }
+  updateSourceControls();
+  updateInspector();
+}
+
+function selectSourceMode(nextMode) {
+  if (!['camera', 'video'].includes(nextMode) || nextMode === state.sourceMode) return;
+  stopCamera();
+  state.sourceMode = nextMode;
+  updateSourceControls();
+  renderModels();
+  setStatus(nextMode === 'video' ? 'LOCAL VIDEO MODE' : 'CAMERA OFFLINE',
+    nextMode === 'video'
+      ? 'Choose MP4 or WebM to analyze locally. Remote model inference is disabled.'
+      : 'Camera mode is opt-in. Press Start camera when ready.');
+  updateInspector();
+}
+
+ui.chooseCamera.addEventListener('click', () => selectSourceMode('camera'));
+ui.chooseVideo.addEventListener('click', () => selectSourceMode('video'));
+ui.localFileInput.addEventListener('change', () => {
+  const file = ui.localFileInput.files?.[0] ?? null;
+  ui.localFileInput.value = '';
+  if (file) void loadLocalVideo(file);
+});
+ui.localPlay.addEventListener('click', () => { void toggleLocalPlayback(); });
+ui.localReplay.addEventListener('click', () => {
+  if (state.localFile && state.sourceMode === 'video') {
+    const file = state.localFile;
+    void loadLocalVideo(file);
+  }
+});
+ui.localClear.addEventListener('click', () => {
+  if (state.sourceMode !== 'video') return;
+  stopCamera();
+  setStatus('LOCAL VIDEO CLEARED',
+    'Temporary video URL and local pose history were released. Choose another file.');
+});
+ui.video.addEventListener('ended', () => {
+  if (state.sourceMode !== 'video' || !state.localReady) return;
+  state.localPlaying = false;
+  state.localEnded = true;
+  setStatus('LOCAL VIDEO COMPLETE',
+    'Analysis ended. Replay from start creates a fresh tracker and resets both counters.');
+  updateSourceControls();
+  updateInspector();
+});
+
 ui.button.addEventListener('click', () => state.running ? stopCamera() : startCamera());
 ui.cameraFacing.addEventListener('change', () => {
   const next = ui.cameraFacing.value;
@@ -943,7 +1117,7 @@ ui.cameraFacing.addEventListener('change', () => {
   state.facingMode = next;
   state.mirrorSelfie = next === CAMERA_FACING.FRONT;
   updateCameraControls();
-  if (wasActive) void startCamera();
+  if (wasActive && state.sourceMode === 'camera') void startCamera();
 });
 ui.mirrorButton.addEventListener('click', () => {
   if (state.facingMode !== CAMERA_FACING.FRONT) return;
@@ -957,7 +1131,10 @@ ui.resetSet.addEventListener('click', () => {
   state.lastRepAnalysis = null;
   state.liveRelative.reset();
   state.lastM45 = null;
-  if (state.running) state.sessionDashboard.start(performance.now());
+  if (state.running) state.sessionDashboard.start(
+    state.sourceMode === 'video'
+      ? localVideoTimestampMs(ui.video.currentTime || 0) : performance.now()
+  );
   else state.sessionDashboard.reset();
   updateInspector();
 });
@@ -979,7 +1156,10 @@ ui.exercise.addEventListener('change', () => {
   state.lastRepAnalysis = null;
   state.liveRelative.reset();
   state.lastM45 = null;
-  if (state.running) state.sessionDashboard.start(performance.now());
+  if (state.running) state.sessionDashboard.start(
+    state.sourceMode === 'video'
+      ? localVideoTimestampMs(ui.video.currentTime || 0) : performance.now()
+  );
   else state.sessionDashboard.reset();
   state.exercise = ui.exercise.value;
   ui.help.textContent = TASKS[state.exercise].subtitle;
@@ -993,6 +1173,6 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', stopCamera);
 ui.help.textContent = TASKS[state.exercise].subtitle;
-updateCameraControls();
+updateSourceControls();
 renderModels();
 updateInspector();
