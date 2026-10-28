@@ -5,7 +5,7 @@ import { RuntimeHealth, percentile, describePerformance, W7_WINDOW } from '../sr
 
 test('W7 bounded pose latency percentiles are correct from synthetic data',()=>{
   assert.equal(percentile([2,3,5,7,10],.5),5);
-  assert.equal(percentile([2,3,5,7,10],.95),9.4);
+  assert.ok(Math.abs(percentile([2,3,5,7,10],.95)-9.4)<1e-10);
   assert.equal(percentile([], .95),null);
   assert.equal(percentile([2,1],.95),null);
   assert.equal(percentile([1,3],Number.NaN),null);
@@ -78,7 +78,8 @@ test('W7 main app observes model CPU duration on-device, resets on camera/clip l
 
 test('W7 has no upload, persisted pose, user/device fingerprint or video record',()=>{
   const model=readFileSync(new URL('../src/runtime_health.js',import.meta.url),'utf8');
-  assert.doesNotMatch(model,/\bfetch\s*\(|XMLHttpRequest|navigator\.sendBeacon|localStorage|sessionStorage|indexedDB|MediaRecorder|getUserMedia|document\.cookie|navigator\.userAgent|deviceMemory/);
+  const executable=model.replace(/\/\*[\s\S]*?\*\//g,'');
+  assert.doesNotMatch(executable,/\bfetch\s*\(|XMLHttpRequest|navigator\.sendBeacon|localStorage|sessionStorage|indexedDB|MediaRecorder|getUserMedia|document\.cookie|navigator\.userAgent|deviceMemory/);
   const health=new RuntimeHealth();
   health.observe({wallTimeMs:1000,poseDurationMs:17});
   assert.equal(JSON.stringify(health.summary()).includes('landmarks'),false);
