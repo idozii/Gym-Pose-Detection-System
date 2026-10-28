@@ -8,6 +8,10 @@ import { RepCycleCounter, REP_POLICIES } from './rep_counter.js';
 import { LiveRelativeExcursionCounter, RESEARCH_DEMO_MODES, isResearchSquat } from './live_relative_excursion.js';
 import { cameraErrorMessage, shouldRevokeOnHidden, shouldIgnoreEndedTrack } from './camera_readiness.js';
 import { SessionDashboard, tempoBars, tempoFromM34, tempoFromM45 } from './session_dashboard.js';
+import {
+  validateLocalVideoFile, validateVideoMetadata, localVideoTimestampMs,
+  localFrameIsNew, canRequestRemoteInference
+} from './local_video.js';
 import { explainMovement, sourceEvidenceNotice } from './feedback_explainer.js';
 import './style.css';
 
@@ -29,7 +33,10 @@ const state = {
   exerciseFeedback: new ExerciseFeedbackWindow(), lastExerciseFeedback: null,
   repCounter: new RepCycleCounter(), lastRepAnalysis: null,
   liveRelative: new LiveRelativeExcursionCounter(), lastM45: null,
-  demoMode: 'compare', sessionDashboard: new SessionDashboard()
+  demoMode: 'compare', sessionDashboard: new SessionDashboard(),
+  sourceMode: 'camera', localUrl: null, localFile: null,
+  localReady: false, localPlaying: false, localEnded: false,
+  localLoadAbort: null, localLastTimestamp: null, localNeedsReplay: false
 };
 
 document.querySelector('#app').innerHTML = `
@@ -61,7 +68,7 @@ document.querySelector('#app').innerHTML = `
             <span class="runtime-label" id="runtimeStatus">CAMERA OFFLINE</span>
           </div>
           <div class="camera-stage">
-            <video id="sourceVideo" muted playsinline autoplay aria-hidden="true"></video>
+            <video id="sourceVideo" muted playsinline aria-hidden="true"></video>
             <canvas id="poseCanvas" width="960" height="720" aria-label="Live camera with pose landmark overlay" role="img"></canvas>
             <div class="stage-placeholder" id="placeholder">
               <div class="placeholder-glyph" aria-hidden="true"><span>✳</span></div>
@@ -75,7 +82,26 @@ document.querySelector('#app').innerHTML = `
             </div>
           </div>
           <div class="controls">
-            <div class="camera-actions">
+            <div class="source-mode-switch" role="group" aria-label="Choose local analysis input">
+              <button type="button" class="source-mode-choice" id="chooseCamera" aria-pressed="true">Live camera</button>
+              <button type="button" class="source-mode-choice" id="chooseVideo" aria-pressed="false">Local video file</button>
+            </div>
+            <div class="local-video-actions" id="localVideoActions" hidden>
+              <label class="local-file-picker" for="localVideoFile"><span>CHOOSE MP4 / WEBM</span>
+                <input type="file" id="localVideoFile" accept=".mp4,.webm,video/mp4,video/webm" aria-describedby="localVideoHelp" />
+              </label>
+              <div class="local-play-controls">
+                <button type="button" id="localPlay" disabled>Play video</button>
+                <button type="button" id="localReplay" disabled>Replay from start</button>
+                <button type="button" id="localClear">Clear video</button>
+              </div>
+              <div class="local-progress">
+                <progress id="localProgress" max="1" value="0" aria-label="Local video playback progress"></progress>
+                <span id="localVideoPosition">00:00 / --:--</span>
+              </div>
+              <p id="localVideoHelp">MP4 or WebM, up to 250 MB and 5 minutes. Analyzed in this browser. No video or extracted landmarks are uploaded. Playback is manual. Replay resets pose tracking and both counters.</p>
+            </div>
+            <div class="camera-actions" id="cameraActions">
               <button class="primary-btn" type="button" id="cameraButton"><span aria-hidden="true">◉</span> Start camera</button>
               <label class="camera-picker" for="cameraFacing"><span>CAMERA</span>
                 <select id="cameraFacing" aria-label="Choose front or rear camera">
@@ -154,7 +180,7 @@ document.querySelector('#app').innerHTML = `
               <span class="session-live-state" id="sessionState">CAMERA OFFLINE</span>
             </div>
             <div class="session-stat-grid" aria-live="off">
-              <div class="session-stat session-stat-primary"><span>SESSION ELAPSED</span><strong id="sessionElapsed">00:00</strong><small>Since camera start or Reset set</small></div>
+              <div class="session-stat session-stat-primary"><span id="sessionClockLabel">SESSION ELAPSED</span><strong id="sessionElapsed">00:00</strong><small>Since camera start or Reset set</small></div>
               <div class="session-stat"><span>POSE SEEN</span><strong id="sessionPoseSeen">--</strong><small>Of analyzed video frames</small></div>
               <div class="session-stat"><span>REQUIRED JOINTS VISIBLE</span><strong id="sessionJointReady">--</strong><small>Of analyzed video frames, not confidence</small></div>
               <div class="session-stat"><span>FRAMES ANALYZED</span><strong id="sessionFrames">0</strong><small>Local pose observations</small></div>
@@ -247,6 +273,16 @@ const ui = {
   video: document.querySelector('#sourceVideo'),
   canvas: document.querySelector('#poseCanvas'),
   button: document.querySelector('#cameraButton'),
+  cameraActions: document.querySelector('#cameraActions'),
+  chooseCamera: document.querySelector('#chooseCamera'),
+  chooseVideo: document.querySelector('#chooseVideo'),
+  localVideoActions: document.querySelector('#localVideoActions'),
+  localFileInput: document.querySelector('#localVideoFile'),
+  localPlay: document.querySelector('#localPlay'),
+  localReplay: document.querySelector('#localReplay'),
+  localClear: document.querySelector('#localClear'),
+  localProgress: document.querySelector('#localProgress'),
+  localVideoPosition: document.querySelector('#localVideoPosition'),
   cameraFacing: document.querySelector('#cameraFacing'),
   mirrorButton: document.querySelector('#mirrorButton'),
   cameraModeIndicator: document.querySelector('#cameraModeIndicator'),
@@ -291,6 +327,7 @@ const ui = {
   sessionDashboard: document.querySelector('#sessionDashboard'),
   sessionState: document.querySelector('#sessionState'),
   sessionElapsed: document.querySelector('#sessionElapsed'),
+  sessionClockLabel: document.querySelector('#sessionClockLabel'),
   sessionPoseSeen: document.querySelector('#sessionPoseSeen'),
   sessionJointReady: document.querySelector('#sessionJointReady'),
   sessionFrames: document.querySelector('#sessionFrames'),
@@ -323,8 +360,38 @@ function updateCameraControls() {
     : 'Rear camera preview is never mirrored');
   ui.mirrorButton.querySelector('span').textContent = front
     ? (state.mirrorSelfie ? 'Mirror on' : 'Mirror off') : 'Rear unmirrored';
-  ui.cameraModeIndicator.textContent = front
-    ? (state.mirrorSelfie ? 'FRONT / MIRRORED' : 'FRONT / NATURAL') : 'REAR / OBSERVER';
+  ui.cameraModeIndicator.textContent = state.sourceMode === 'video'
+    ? 'LOCAL FILE / PRIVATE'
+    : front ? (state.mirrorSelfie ? 'FRONT / MIRRORED' : 'FRONT / NATURAL')
+      : 'REAR / OBSERVER';
+}
+
+function updateSourceControls() {
+  const local = state.sourceMode === 'video';
+  ui.chooseCamera.setAttribute('aria-pressed', String(!local));
+  ui.chooseVideo.setAttribute('aria-pressed', String(local));
+  ui.cameraActions.hidden = local;
+  ui.localVideoActions.hidden = !local;
+  ui.localFileInput.disabled = state.starting;
+  ui.localPlay.disabled = !local || !state.localReady || state.starting || state.localEnded || state.localNeedsReplay;
+  ui.localReplay.disabled = !local || !state.localReady || state.starting;
+  ui.localPlay.textContent = state.localPlaying ? 'Pause video' : 'Play video';
+  ui.localProgress.value = local && Number.isFinite(ui.video.currentTime)
+    ? Math.max(0, ui.video.currentTime) : 0;
+  ui.localProgress.max = local && Number.isFinite(ui.video.duration) && ui.video.duration > 0
+    ? ui.video.duration : 1;
+  ui.localVideoPosition.textContent = local
+    ? clockDisplay(ui.video.currentTime) + ' / ' +
+      (state.localReady ? clockDisplay(ui.video.duration) : '--:--')
+    : '00:00 / --:--';
+  updateCameraControls();
+}
+
+function clockDisplay(seconds) {
+  if (!Number.isFinite(seconds) || seconds < 0) return '00:00';
+  const t = Math.floor(seconds);
+  return String(Math.floor(t / 60)).padStart(2, '0') + ':' +
+    String(t % 60).padStart(2, '0');
 }
 
 function setStatus(text, hint) {
@@ -334,7 +401,16 @@ function setStatus(text, hint) {
 
 function renderModels() {
   const isPushup = state.exercise === 'pushup';
-  ui.inferenceToggle.disabled = isPushup || !API_URL;
+  const local = state.sourceMode === 'video';
+  ui.inferenceToggle.disabled = local || isPushup || !API_URL;
+  if (local) {
+    ui.inferenceToggle.checked = false;
+    ui.inferenceState.textContent = 'LOCAL VIDEO MODE · REMOTE MODELS DISABLED';
+    ui.inferenceInfo.textContent = 'Uploaded videos and extracted landmarks stay in this browser. The optional Python RF inference is disabled in this mode.';
+    ui.sourceHeading.textContent = '03 / REMOTE INFERENCE NOT AVAILABLE';
+    ui.models.innerHTML = '<div class="model-row"><div><strong>Local video analysis</strong><span>Only on-device pose and experimental movement-cycle heuristics are active</span></div><span class="offline-tag">LOCAL ONLY</span></div>';
+    return;
+  }
   ui.inferenceState.textContent = isPushup
     ? 'PUSH-UP LOCAL ONLY / NO MODEL SCORE'
     : !API_URL ? 'MODEL SERVER NOT CONFIGURED' : state.inferenceStatus;
@@ -396,15 +472,23 @@ function updateSessionDashboard() {
   const isPushup = state.exercise === 'pushup';
   ui.sessionDashboard.hidden = isPushup;
   if (isPushup) return;
-  const data = state.sessionDashboard.summary(performance.now());
+  const local = state.sourceMode === 'video';
+  const data = state.sessionDashboard.summary(
+    local ? localVideoTimestampMs(ui.video.currentTime || 0) : performance.now()
+  );
   ui.sessionElapsed.textContent = data.elapsedLabel;
+  ui.sessionClockLabel.textContent = local ? 'ANALYSIS ELAPSED' : 'SESSION ELAPSED';
   ui.sessionPoseSeen.textContent = data.poseSeenPct === null
     ? '--' : data.poseSeenPct + '%';
   ui.sessionJointReady.textContent = data.requiredReadyPct === null
     ? '--' : data.requiredReadyPct + '%';
   ui.sessionFrames.textContent = String(data.sampleFrames);
-  ui.sessionState.textContent = data.status;
-  ui.sessionState.dataset.status = data.status;
+  const status = local && state.localReady
+    ? state.localEnded ? 'VIDEO COMPLETE'
+      : !state.localPlaying ? 'VIDEO PAUSED' : data.status
+    : data.status;
+  ui.sessionState.textContent = status;
+  ui.sessionState.dataset.status = status;
   const m34 = state.running ? state.lastRepAnalysis : null;
   ui.sessionM34Mean.textContent = m34?.meanDurationSec == null
     ? '--' : m34.meanDurationSec.toFixed(1) + ' s avg';
@@ -527,6 +611,10 @@ function updateInspector() {
 
 async function requestResearchInference(timestamp) {
   if (state.exercise === 'pushup' || !state.inferenceEnabled || !state.inferenceClient ||
+      !canRequestRemoteInference({
+        sourceMode: state.sourceMode, enabled: state.inferenceEnabled,
+        running: state.running
+      }) ||
       !state.running || !Array.isArray(state.landmarks) ||
       state.inferenceInFlight || timestamp - state.lastInferenceAt < 500) return;
   state.lastInferenceAt = timestamp;
@@ -572,7 +660,7 @@ function disableResearchInference() {
 }
 
 async function enableResearchInference() {
-  if (state.exercise === 'pushup') {
+  if (state.sourceMode === 'video' || state.exercise === 'pushup') {
     disableResearchInference();
     return;
   }
@@ -615,7 +703,8 @@ function drawFrame() {
   }
   context.clearRect(0, 0, canvas.width, canvas.height);
   context.save();
-  if (mirrorPreview(state.facingMode, state.mirrorSelfie)) {
+  if (state.sourceMode === 'camera' &&
+      mirrorPreview(state.facingMode, state.mirrorSelfie)) {
     context.translate(canvas.width, 0);
     context.scale(-1, 1);
   }
@@ -650,40 +739,59 @@ function loop(token, timestamp) {
   if (!state.running || token !== state.token) return;
   const v = ui.video;
   try {
-    if (v.readyState >= 2 && v.currentTime !== state.lastVideoTime) {
+    const local = state.sourceMode === 'video';
+    const frameMs = local ? localVideoTimestampMs(v.currentTime || 0) : timestamp;
+    if (local && state.lastVideoTime >= 0 &&
+        v.currentTime < state.lastVideoTime - 0.001) {
+      // A backwards seek requires a fresh MediaPipe tracker and blank counters.
+      v.pause();
+      state.localPlaying = false;
+      state.localNeedsReplay = true;
+      setStatus('REPLAY REQUIRED',
+        'The local video timeline moved backwards. Use Replay from start to reset pose tracking.');
+      updateSourceControls();
+    }
+    if ((!local || (state.localPlaying && !state.localNeedsReplay)) &&
+        v.readyState >= 2 && v.currentTime !== state.lastVideoTime &&
+        (!local || localFrameIsNew({
+          currentTime: v.currentTime, previousTime: state.lastVideoTime,
+          timestampMs: frameMs, previousTimestampMs: state.localLastTimestamp
+        }))) {
       state.lastVideoTime = v.currentTime;
-      const result = state.landmarker.detectForVideo(v, timestamp);
+      if (local) state.localLastTimestamp = frameMs;
+      const result = state.landmarker.detectForVideo(v, frameMs);
       state.landmarks = result.landmarks?.[0] ?? null;
       if (state.exercise === 'pushup') {
-        state.lastPushupPreview = state.pushupMotion.observe(state.landmarks, timestamp);
+        state.lastPushupPreview = state.pushupMotion.observe(state.landmarks, frameMs);
       } else {
         state.lastExerciseFeedback = state.exerciseFeedback.observe(
-          state.exercise, state.landmarks, timestamp
+          state.exercise, state.landmarks, frameMs
         );
         state.lastRepAnalysis = state.repCounter.observe(
-          state.exercise, state.landmarks, timestamp
+          state.exercise, state.landmarks, frameMs
         );
         if (isResearchSquat(state.exercise)) {
-          state.lastM45 = state.liveRelative.observe(state.landmarks, timestamp);
+          state.lastM45 = state.liveRelative.observe(state.landmarks, frameMs);
         }
       }
-      state.sessionDashboard.observe(timestamp, {
+      state.sessionDashboard.observe(frameMs, {
         poseSeen: Array.isArray(state.landmarks),
         requiredReady: readiness(state.exercise, state.landmarks).basicVisibilityReady
       });
       state.frames++;
       if (state.landmarks) state.poseFrames++;
       if (state.lastFrameClock) {
-        const delta = timestamp - state.lastFrameClock;
+        const delta = frameMs - state.lastFrameClock;
         if (delta > 0) state.fps = state.fps ? state.fps * .85 + (1000 / delta) * .15 : (1000 / delta);
       }
-      state.lastFrameClock = timestamp;
+      state.lastFrameClock = frameMs;
       drawFrame();
-      void requestResearchInference(timestamp);
+      if (!local) void requestResearchInference(timestamp);
     }
     // Clock and stalled-video status keep updating even if decoded frames stop.
     if (timestamp - state.lastRendered > 220) {
       state.lastRendered = timestamp;
+      updateSourceControls();
       updateInspector();
     }
   } catch (error) {
@@ -695,6 +803,8 @@ function loop(token, timestamp) {
 }
 
 function stopCamera() {
+  state.localLoadAbort?.abort();
+  state.localLoadAbort = null;
   disableResearchInference();
   state.pushupMotion.reset();
   state.lastPushupPreview = null;
@@ -714,6 +824,19 @@ function stopCamera() {
   state.stream = null;
   ui.video.pause();
   ui.video.srcObject = null;
+  if (state.localUrl !== null) {
+    ui.video.removeAttribute('src');
+    ui.video.load();
+    URL.revokeObjectURL(state.localUrl);
+  }
+  state.localUrl = null;
+  state.localFile = null;
+  state.localReady = false;
+  state.localPlaying = false;
+  state.localEnded = false;
+  state.localLastTimestamp = null;
+  state.localNeedsReplay = false;
+  ui.localFileInput.value = '';
   state.landmarker?.close();
   state.landmarker = null;
   state.landmarks = null;
@@ -729,11 +852,12 @@ function stopCamera() {
   ui.button.disabled = false;
   ui.button.innerHTML = '<span aria-hidden="true">◉</span> Start camera';
   setStatus('CAMERA OFFLINE', 'No camera recording. You can start again at any time.');
+  updateSourceControls();
   updateInspector();
 }
 
 async function startCamera() {
-  if (state.starting || state.running) return;
+  if (state.sourceMode !== 'camera' || state.starting || state.running) return;
   if (document.hidden) {
     setStatus('CAMERA PAUSED', 'Return to the visible browser tab to start your camera.');
     return;
@@ -755,6 +879,7 @@ async function startCamera() {
     const actualFacing = tempStream.getVideoTracks()[0]?.getSettings?.().facingMode;
     const fallback = cameraFallbackMessage(state.facingMode, actualFacing);
     if (token !== state.token) throw new Error('Camera start cancelled');
+    ui.video.autoplay = true;
     ui.video.srcObject = tempStream;
     await ui.video.play();
     const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
@@ -796,6 +921,7 @@ async function startCamera() {
     ui.button.innerHTML = '<span aria-hidden="true">■</span> Stop camera';
     setStatus('LOCAL POSE ACTIVE', fallback || 'Live local preview. Research inference requires a separate opt-in.');
     state.raf = requestAnimationFrame((timestamp) => loop(token, timestamp));
+    updateSourceControls();
   } catch (error) {
     tempStream?.getTracks().forEach((track) => track.stop());
     tempLandmarker?.close();
@@ -805,6 +931,180 @@ async function startCamera() {
     setStatus('COULD NOT START CAMERA', cameraErrorMessage(error));
   }
 }
+
+/** W4: the file picker is the only source for local media; not an upload API. */
+function waitForLocalMetadata(video, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new Error('Local file loading cancelled'));
+      return;
+    }
+    const cleanup = () => {
+      video.removeEventListener('loadedmetadata', ready);
+      video.removeEventListener('error', failed);
+      signal.removeEventListener('abort', cancelled);
+    };
+    const ready = () => { cleanup(); resolve(); };
+    const failed = () => { cleanup(); reject(new Error('Cannot decode video metadata')); };
+    const cancelled = () => { cleanup(); reject(new Error('Local file loading cancelled')); };
+    video.addEventListener('loadedmetadata', ready, { once: true });
+    video.addEventListener('error', failed, { once: true });
+    signal.addEventListener('abort', cancelled, { once: true });
+    if (video.readyState >= 1) ready();
+  });
+}
+
+async function loadLocalVideo(file) {
+  if (state.sourceMode !== 'video' || !file) return;
+  const fileCheck = validateLocalVideoFile(file);
+  if (!fileCheck.ok) {
+    setStatus('VIDEO NOT ACCEPTED', fileCheck.reason);
+    return;
+  }
+  // Prevent old object URLs, streams, counters, and pending model tasks
+  // from surviving a new local file or replay of an existing file.
+  stopCamera();
+  state.starting = true;
+  const token = ++state.token;
+  state.localFile = file;
+  state.localLoadAbort = new AbortController();
+  ui.video.autoplay = false;
+  ui.video.muted = true;
+  updateSourceControls();
+  setStatus('OPENING LOCAL VIDEO', 'Reading local video metadata. Video is never uploaded.');
+  let candidateLandmarker = null;
+  try {
+    const url = URL.createObjectURL(file);
+    state.localUrl = url;
+    ui.video.srcObject = null;
+    ui.video.src = url;
+    const metadataReady = waitForLocalMetadata(ui.video, state.localLoadAbort.signal);
+    ui.video.load();
+    await metadataReady;
+    if (token !== state.token) return;
+    const metadata = validateVideoMetadata({
+      duration: ui.video.duration, width: ui.video.videoWidth,
+      height: ui.video.videoHeight
+    });
+    if (!metadata.ok) {
+      stopCamera();
+      setStatus('VIDEO NOT ACCEPTED', metadata.reason);
+      return;
+    }
+    setStatus('LOADING POSE ENGINE',
+      'Preparing a local pose tracker. Press Play video after loading.');
+    const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
+    if (token !== state.token) return;
+    candidateLandmarker = await PoseLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: MODEL_URL, delegate: 'CPU' },
+      runningMode: 'VIDEO', numPoses: 1,
+      minPoseDetectionConfidence: .5,
+      minPosePresenceConfidence: .5,
+      minTrackingConfidence: .5
+    });
+    if (token !== state.token) return;
+    state.landmarker = candidateLandmarker;
+    candidateLandmarker = null;
+    state.localReady = true;
+    state.localPlaying = false;
+    state.localEnded = false;
+    state.localNeedsReplay = false;
+    state.localLastTimestamp = null;
+    state.localLoadAbort = null;
+    state.running = true;
+    state.starting = false;
+    state.sessionDashboard.start(0);
+    state.lastVideoTime = -1;
+    state.lastFrameClock = 0;
+    state.frames = 0;
+    state.poseFrames = 0;
+    state.fps = 0;
+    ui.placeholder.hidden = true;
+    ui.indicator.hidden = true;
+    ui.videoFooter.hidden = false;
+    setStatus('LOCAL VIDEO READY',
+      'Press Play video. No webcam permission or remote research inference is used.');
+    drawFrame();
+    updateSourceControls();
+    updateInspector();
+    state.raf = requestAnimationFrame((timestamp) => loop(token, timestamp));
+  } catch (error) {
+    if (token !== state.token) return;
+    stopCamera();
+    setStatus('VIDEO COULD NOT LOAD',
+      'Cannot decode or initialize this local video. Try a supported MP4/WebM file.');
+  } finally {
+    candidateLandmarker?.close();
+  }
+}
+
+async function toggleLocalPlayback() {
+  if (state.sourceMode !== 'video' || !state.localReady ||
+      state.localNeedsReplay || state.localEnded) return;
+  if (state.localPlaying) {
+    ui.video.pause();
+    state.localPlaying = false;
+    setStatus('LOCAL VIDEO PAUSED', 'Playback paused. Cycle counts stay on this device.');
+  } else {
+    const token = state.token;
+    try {
+      await ui.video.play();
+      if (token !== state.token || state.sourceMode !== 'video') return;
+      state.localPlaying = true;
+      setStatus('ANALYZING LOCAL VIDEO',
+        'Video and landmarks stay in the browser. Experimental counters use original fixed rules.');
+    } catch (error) {
+      if (token !== state.token) return;
+      setStatus('VIDEO PLAYBACK BLOCKED',
+        'Browser could not play this format. Try an H.264 MP4 or WebM file.');
+    }
+  }
+  updateSourceControls();
+  updateInspector();
+}
+
+function selectSourceMode(nextMode) {
+  if (!['camera', 'video'].includes(nextMode) || nextMode === state.sourceMode) return;
+  stopCamera();
+  state.sourceMode = nextMode;
+  updateSourceControls();
+  renderModels();
+  setStatus(nextMode === 'video' ? 'LOCAL VIDEO MODE' : 'CAMERA OFFLINE',
+    nextMode === 'video'
+      ? 'Choose MP4 or WebM to analyze locally. Remote model inference is disabled.'
+      : 'Camera mode is opt-in. Press Start camera when ready.');
+  updateInspector();
+}
+
+ui.chooseCamera.addEventListener('click', () => selectSourceMode('camera'));
+ui.chooseVideo.addEventListener('click', () => selectSourceMode('video'));
+ui.localFileInput.addEventListener('change', () => {
+  const file = ui.localFileInput.files?.[0] ?? null;
+  ui.localFileInput.value = '';
+  if (file) void loadLocalVideo(file);
+});
+ui.localPlay.addEventListener('click', () => { void toggleLocalPlayback(); });
+ui.localReplay.addEventListener('click', () => {
+  if (state.localFile && state.sourceMode === 'video') {
+    const file = state.localFile;
+    void loadLocalVideo(file);
+  }
+});
+ui.localClear.addEventListener('click', () => {
+  if (state.sourceMode !== 'video') return;
+  stopCamera();
+  setStatus('LOCAL VIDEO CLEARED',
+    'Temporary video URL and local pose history were released. Choose another file.');
+});
+ui.video.addEventListener('ended', () => {
+  if (state.sourceMode !== 'video' || !state.localReady) return;
+  state.localPlaying = false;
+  state.localEnded = true;
+  setStatus('LOCAL VIDEO COMPLETE',
+    'Analysis ended. Replay from start creates a fresh tracker and resets both counters.');
+  updateSourceControls();
+  updateInspector();
+});
 
 ui.button.addEventListener('click', () => state.running ? stopCamera() : startCamera());
 ui.cameraFacing.addEventListener('change', () => {
@@ -817,7 +1117,7 @@ ui.cameraFacing.addEventListener('change', () => {
   state.facingMode = next;
   state.mirrorSelfie = next === CAMERA_FACING.FRONT;
   updateCameraControls();
-  if (wasActive) void startCamera();
+  if (wasActive && state.sourceMode === 'camera') void startCamera();
 });
 ui.mirrorButton.addEventListener('click', () => {
   if (state.facingMode !== CAMERA_FACING.FRONT) return;
@@ -831,7 +1131,10 @@ ui.resetSet.addEventListener('click', () => {
   state.lastRepAnalysis = null;
   state.liveRelative.reset();
   state.lastM45 = null;
-  if (state.running) state.sessionDashboard.start(performance.now());
+  if (state.running) state.sessionDashboard.start(
+    state.sourceMode === 'video'
+      ? localVideoTimestampMs(ui.video.currentTime || 0) : performance.now()
+  );
   else state.sessionDashboard.reset();
   updateInspector();
 });
@@ -853,7 +1156,10 @@ ui.exercise.addEventListener('change', () => {
   state.lastRepAnalysis = null;
   state.liveRelative.reset();
   state.lastM45 = null;
-  if (state.running) state.sessionDashboard.start(performance.now());
+  if (state.running) state.sessionDashboard.start(
+    state.sourceMode === 'video'
+      ? localVideoTimestampMs(ui.video.currentTime || 0) : performance.now()
+  );
   else state.sessionDashboard.reset();
   state.exercise = ui.exercise.value;
   ui.help.textContent = TASKS[state.exercise].subtitle;
@@ -867,6 +1173,6 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('pagehide', stopCamera);
 ui.help.textContent = TASKS[state.exercise].subtitle;
-updateCameraControls();
+updateSourceControls();
 renderModels();
 updateInspector();

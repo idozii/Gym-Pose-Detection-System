@@ -61,8 +61,8 @@ test('web mode blocks Push-up backend calls and disables remote consent', () => 
   assert.match(source, /option value="pushup"/);
   assert.match(source, /id="pushupPreview"/);
   assert.match(source, /state\.exercise === 'pushup' \|\| !state\.inferenceEnabled/);
-  assert.match(source, /if \(state\.exercise === 'pushup'\) \{\s*disableResearchInference\(\)/);
-  assert.match(source, /ui\.inferenceToggle\.disabled = isPushup \|\| !API_URL/);
+  assert.match(source, /if \(state\.sourceMode === 'video' \|\| state\.exercise === 'pushup'\) \{\s*disableResearchInference\(\)/);
+  assert.match(source, /ui\.inferenceToggle\.disabled = local \|\| isPushup \|\| !API_URL/);
   assert.match(source, /state\.pushupMotion\.reset\(\)/);
   assert.match(source, /NO QUALITY SCORE/);
 });

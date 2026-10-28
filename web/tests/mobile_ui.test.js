@@ -15,7 +15,7 @@ test('mobile camera controls are accessible and wired to physical track switchin
 });
 
 test('selfie mirroring is restricted to display canvas, not AI landmark payload', () => {
-  assert.match(source, /if \(mirrorPreview\(state\.facingMode, state\.mirrorSelfie\)\)/);
+  assert.match(source, /if \(state\.sourceMode === 'camera' &&\s*mirrorPreview\(state\.facingMode, state\.mirrorSelfie\)\)/);
   assert.match(source, /context\.translate\(canvas\.width, 0\)/);
   assert.match(source, /context\.scale\(-1, 1\)/);
   assert.doesNotMatch(source, /state\.landmarks\s*=\s*state\.landmarks\.map/);

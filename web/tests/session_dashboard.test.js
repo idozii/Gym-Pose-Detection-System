@@ -112,7 +112,8 @@ test('W3 site wires start, frame updates, clock even on frame stall, and all pri
     assert.match(main,new RegExp('id="'+id+'"'));
   }
   assert.match(main,/state\.sessionDashboard\.start\(performance\.now\(\)\)/);
-  assert.match(main,/state\.sessionDashboard\.observe\(timestamp/);
+  assert.match(main,/state\.sessionDashboard\.observe\(frameMs/);
+  assert.match(main,/local \? localVideoTimestampMs\(v\.currentTime \|\| 0\) : timestamp/);
   assert.match(main,/state\.sessionDashboard\.reset\(\)/);
   assert.match(main,/ui\.sessionDashboard\.hidden = isPushup/);
   assert.match(main,/ui\.sessionM45Panel\.hidden = !squat/);
