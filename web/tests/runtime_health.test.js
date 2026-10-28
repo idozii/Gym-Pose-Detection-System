@@ -40,7 +40,7 @@ test('W7 gaps reflect only observed pause/decode gaps, not inferred frame loss',
   t.observe({wallTimeMs:110,poseDurationMs:18});
   t.observe({wallTimeMs:1110,poseDurationMs:20});
   assert.equal(t.summary().observedGapsOver750ms,1);
-  assert.equal(t.summary().status,'FRAMING INTERRUPTED');
+  assert.equal(t.summary().status,'PROCESSING GAP OBSERVED');
   assert.match(t.summary().interpretation,/not sensor FPS/);
   assert.throws(()=>t.observe({wallTimeMs:1100,poseDurationMs:2}),/monotonic/);
   assert.throws(()=>t.observe({wallTimeMs:1500,poseDurationMs:-1}),/finite/);
