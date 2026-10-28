@@ -68,6 +68,24 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M52 - Audit TRAIN presentation timestamps versus original FPS clock
+
+[M52 original TRAIN PTS timeline audit](docs/M52_TRAIN_PTS_TIMELINE_AUDIT.md)
+builds on owner-verified M51 source-byte parity of
+40 frozen TRAIN Squat videos (521 GT). It uses FFprobe
+per-frame video presentation timestamps to compare
+the container-derived clock with the frozen original
+M37-M47 GT time formula (frame_index / OpenCV fps).
+It reports anonymous two-cohort PTS timing drift at
+observed GT boundaries and variable frame-step signals
+without changing detector source, event matching or
+ever running publisher TEST. Original M48/M49 source
+freeze, M50 and M51 owner evidence are required.
+Video PTS cannot validate human GT label timing,
+archive provenance or subject independence.
+
+---
+
 ### M51 - Verify frozen TRAIN video bytes against the original source TAR
 
 [M51 publisher TRAIN source-copy parity](docs/M51_TRAIN_ARCHIVE_SOURCE_PARITY.md)
