@@ -9,6 +9,7 @@ import { LiveRelativeExcursionCounter, RESEARCH_DEMO_MODES, isResearchSquat } fr
 import { cameraErrorMessage, shouldRevokeOnHidden, shouldIgnoreEndedTrack } from './camera_readiness.js';
 import { SessionDashboard, tempoBars, tempoFromM34, tempoFromM45 } from './session_dashboard.js';
 import { RuntimeHealth } from './runtime_health.js';
+import { createQaSnapshot, MIN_QA_FRAMES } from './qa_snapshot.js';
 import {
   validateLocalVideoFile, validateVideoMetadata, localVideoTimestampMs,
   localFrameIsNew, canRequestRemoteInference
@@ -225,6 +226,13 @@ document.querySelector('#app').innerHTML = `
               <div><span>OBSERVED GAPS &gt;750 MS</span><strong id="runtimeGaps">0</strong><small>Accumulated between processed frames</small></div>
             </div>
             <p class="runtime-health-note">Measurements use only a bounded local timing window. They are not camera sensor FPS, video frames dropped, exercise accuracy or an indication of safe technique. A pause, slow source decode or background scheduling can affect the numbers. Nothing is sent or stored.</p>
+            <div class="w7-qa-actions">
+              <button type="button" id="qaCapture" disabled>Capture local QA summary</button>
+              <span id="qaCaptureHint" role="status">Analyze at least 30 frames to enable a private QA snapshot.</span>
+            </div>
+            <label class="w7-qa-report-label" for="qaReport" id="qaReportLabel" hidden>QA SUMMARY - SELECT TEXT TO COPY
+              <textarea id="qaReport" rows="10" readonly aria-label="Private, aggregate-only QA snapshot; select text to copy"></textarea>
+            </label>
           </section>
 
           <section class="research-comparison" id="researchComparison" aria-label="Experimental Squat counter comparison">
@@ -358,6 +366,10 @@ const ui = {
   runtimeP95: document.querySelector('#runtimeP95'),
   runtimeRate: document.querySelector('#runtimeRate'),
   runtimeGaps: document.querySelector('#runtimeGaps'),
+  qaCapture: document.querySelector('#qaCapture'),
+  qaCaptureHint: document.querySelector('#qaCaptureHint'),
+  qaReport: document.querySelector('#qaReport'),
+  qaReportLabel: document.querySelector('#qaReportLabel'),
   sessionState: document.querySelector('#sessionState'),
   sessionElapsed: document.querySelector('#sessionElapsed'),
   sessionClockLabel: document.querySelector('#sessionClockLabel'),
@@ -538,6 +550,13 @@ function updateSessionDashboard() {
   }
 }
 
+function clearQaSnapshot() {
+  ui.qaReport.value = '';
+  ui.qaReportLabel.hidden = true;
+  ui.qaCaptureHint.textContent =
+    'Analyze at least 30 frames to enable a private QA snapshot.';
+}
+
 function updateRuntimeHealth() {
   const s=state.runtimeHealth.summary();
   ui.runtimeMedian.textContent = s.medianPoseMs === null
@@ -548,6 +567,12 @@ function updateRuntimeHealth() {
     ? '--' : s.throughputFps.toFixed(1) + ' fps';
   ui.runtimeGaps.textContent = String(s.observedGapsOver750ms);
   ui.runtimeHealthStatus.textContent = s.status;
+  ui.qaCapture.disabled = !state.running ||
+    s.windowFrames < MIN_QA_FRAMES || s.throughputFps === null;
+  if (!ui.qaCapture.disabled && ui.qaReportLabel.hidden) {
+    ui.qaCaptureHint.textContent =
+      'Ready: snapshot stays in this browser until you copy it.';
+  }
 }
 
 function updateInspector() {
@@ -867,6 +892,7 @@ function stopCamera() {
   state.lastM45 = null;
   state.sessionDashboard.reset();
   state.runtimeHealth.reset();
+  clearQaSnapshot();
   state.token++;
   state.running = false;
   state.starting = false;
@@ -961,6 +987,7 @@ async function startCamera() {
     tempLandmarker = null;
     state.sessionDashboard.start(performance.now());
     state.runtimeHealth.reset();
+    clearQaSnapshot();
     state.running = true;
     state.starting = false;
     state.frames = 0;
@@ -1068,6 +1095,7 @@ async function loadLocalVideo(file) {
     state.starting = false;
     state.sessionDashboard.start(0);
     state.runtimeHealth.reset();
+    clearQaSnapshot();
     state.lastVideoTime = -1;
     state.lastFrameClock = 0;
     state.frames = 0;
@@ -1158,6 +1186,21 @@ ui.video.addEventListener('ended', () => {
     'Analysis ended. Replay from start creates a fresh tracker and resets both counters.');
   updateSourceControls();
   updateInspector();
+});
+
+ui.qaCapture.addEventListener('click', () => {
+  if (!state.running) return;
+  try {
+    const summary = createQaSnapshot(state.runtimeHealth.summary(), {
+      sourceMode: state.sourceMode, exercise: state.exercise
+    });
+    ui.qaReport.value = JSON.stringify(summary, null, 2);
+    ui.qaReportLabel.hidden = false;
+    ui.qaCaptureHint.textContent =
+      'Captured locally. Select and copy this aggregate summary manually; nothing was uploaded.';
+  } catch {
+    ui.qaCaptureHint.textContent = 'Analyze at least 30 new frames before capturing.';
+  }
 });
 
 ui.button.addEventListener('click', () => state.running ? stopCamera() : startCamera());
