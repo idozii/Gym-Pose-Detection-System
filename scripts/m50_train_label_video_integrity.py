@@ -156,15 +156,17 @@ def probe_video(video: Path, *, cv2_module=None) -> dict:
             raise ValueError("M50 source FPS/frame metadata invalid")
         claimed = int(frame_claim)
         decoded = 0
-        while decoded <= claimed + 4:
+        # Independently count *all* decodable frames rather than stopping
+        # at metadata count. A metadata discrepancy is an audit result,
+        # not a reason to truncate the source video during inspection.
+        hard_cap = math.ceil(fps * 121) + 3
+        while decoded <= hard_cap:
             ok, frame = cap.read()
             if not ok:
                 break
             decoded += 1
-        if decoded > claimed + 3:
-            # No assumptions about labels if OpenCV decoder exposes many
-            # more frames than its own metadata claims.
-            raise ValueError("M50 decoder extends beyond declared frame count")
+        if decoded > hard_cap:
+            raise ValueError("M50 source video decode exceeds frozen 121s cap")
         if decoded <= 0:
             raise ValueError("M50 video has no decodable source frames")
         return {"fps": fps, "claimed_frames": claimed, "decoded_frames": decoded}
