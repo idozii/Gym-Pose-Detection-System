@@ -68,6 +68,27 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M50 - Audit publisher TRAIN GT/frame timing before any TEST
+
+[M50 TRAIN label/video integrity audit](docs/M50_TRAIN_LABEL_VIDEO_INTEGRITY.md)
+uses the 40 original publisher TRAIN Squat clips already
+extracted in M45/M46 (312 + 209 annotated reps).
+After rechecking original M49/M48 Git evidence, it reads
+ONLY the embedded publisher TRAIN CSV and its frozen
+SHA256, then probes local TRAIN video FPS and *actual*
+decoded frame counts against GT frame bounds and reported
+header frames. It aggregates GT interval durations, FPS
+ranges and timing anomalies, and reports whether original
+publisher TRAIN CSV has explicit subject/session/view
+fields. It does NOT infer IDs from filenames, evaluate
+TEST, generate additional model scores or modify the
+17 research files frozen at M48. Clean frame bounds
+cannot establish precise GT timing or person-level
+independence; original archive provenance and real
+negative controls are still unresolved.
+
+---
+
 ### M49 - Confirm original M48 source bytes match tracked Git
 
 [M49 pre-TEST Git provenance check](docs/M49_PRETEST_GIT_PROVENANCE.md)
