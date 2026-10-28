@@ -68,6 +68,19 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M56 - Scientific evaluation preregistration (official TEST blocked)
+
+[M56 read-only preregistration gate](docs/M56_PREREGISTERED_EVALUATION_READINESS.md)
+checks original M49 source/Git provenance together with the owner-local
+M55 and M48 TRAIN evidence, then writes a Git-ignored **BLOCKED**
+one-shot future TEST protocol. It specifies M39/M45 comparisons,
+200ms/400ms cadence, frozen matching tolerance, zero-GT policies,
+paired uncertainty, exclusions and remaining author/rights/identity
+blockers. No TEST or VALID media, labels, manifest or new model
+experiment is accessed; a PASS is not authorization or TEST readiness.
+
+---
+
 ### W7b + M55 - Privacy-safe real-device QA snapshots and author evidence review
 
 [W7b local browser QA capture](docs/W7_BROWSER_PERFORMANCE_MOBILE_AUDIT.md)
