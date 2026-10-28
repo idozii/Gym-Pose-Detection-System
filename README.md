@@ -68,6 +68,29 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M51 - Verify frozen TRAIN video bytes against the original source TAR
+
+[M51 publisher TRAIN source-copy parity](docs/M51_TRAIN_ARCHIVE_SOURCE_PARITY.md)
+checks that the 40 already-extracted frozen Squat TRAIN
+video files (312 + 209 publisher GT reps) are **byte-for-byte
+identical** to their selected original TRAIN MP4 members
+inside the owner-provided RepCountA.tar.gz. The owner-run
+M50 audit found zero frame decode/header count mismatches
+and zero GT bounds extending beyond decoded video frames,
+but M50 could not independently establish video-copy source
+identity or subject independence. M51 rechecks frozen
+M46-M50 report/source provenance, reconstructs exact original
+SHA256 filename-rank cohorts and verifies selected original
+TRAIN video payload SHA256 plus file length. The large TAR
+stream traverses other split headers but DOES NOT open,
+hash, extract or decode any non-TRAIN video member payload
+or non-TRAIN annotation CSV. Cohort aggregates only;
+no original M34/M39/M45 code, thresholds or TEST evaluation
+are modified. Archive publisher origin, participant overlap
+and precise GT timestamp alignment remain unverified.
+
+---
+
 ### M50 - Audit publisher TRAIN GT/frame timing before any TEST
 
 [M50 TRAIN label/video integrity audit](docs/M50_TRAIN_LABEL_VIDEO_INTEGRITY.md)
