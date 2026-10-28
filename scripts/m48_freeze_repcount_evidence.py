@@ -334,12 +334,63 @@ def run(*, m46_path: Path, m47_path: Path, report_path: Path,
     return report
 
 
+def verify_existing_lock(*, lock_path: Path, m46_path: Path,
+                         m47_path: Path, repository_root: Path = ROOT) -> dict:
+    """Read-only verification; refuse changed reports OR frozen source bytes."""
+    if not lock_path.is_file():
+        raise FileNotFoundError("M48 lock JSON does not exist")
+    lock = json.loads(lock_path.read_bytes())
+    if not isinstance(lock, dict) or lock.get("protocol") != PROTOCOL:
+        raise ValueError("M48 lock protocol mismatch")
+    if not m46_path.is_file() or not m47_path.is_file():
+        raise FileNotFoundError("M48 verify requires original M46/M47 JSONs")
+    m46_bytes = m46_path.read_bytes()
+    m47_bytes = m47_path.read_bytes()
+    if lock.get("report_sha256") != {
+        "original_m46_train_replication": _sha(m46_bytes),
+        "original_m47_train_paired_bootstrap": _sha(m47_bytes)
+    }:
+        raise ValueError("M48 owner report SHA256 changed since freeze")
+    original = json.loads(m46_bytes)
+    bootstrap = json.loads(m47_bytes)
+    validate_evidence(original, bootstrap, m46_bytes)
+    if lock.get("source_code_sha256") != _fingerprint_sources(repository_root):
+        raise ValueError("M48 frozen research source-code SHA256 changed since lock")
+    if (lock.get("source_split") != "train" or
+        lock.get("test_or_validation_media_scanned") is not False or
+        lock.get("creates_test_evaluation") is not False or
+        lock.get("owner_observed_evidence_locked") is not True):
+        raise ValueError("M48 lock evidence/protocol metadata invalid")
+    return {
+        "protocol": PROTOCOL,
+        "verified_original_report_bytes": True,
+        "verified_frozen_source_bytes": True,
+        "original_git_head_at_lock": lock["git_head_commit_at_freeze"],
+        "source_paths_verified": len(SOURCES),
+        "test_or_validation_media_scanned": False
+    }
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--m46-report", type=Path, default=DEFAULT_M46)
     parser.add_argument("--m47-report", type=Path, default=DEFAULT_M47)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
+    parser.add_argument("--verify-freeze", action="store_true",
+                        help="Read-only check that M46, M47 and frozen source hashes remain identical")
     args = parser.parse_args(argv)
+    if args.verify_freeze:
+        try:
+            verified = verify_existing_lock(
+                lock_path=args.report, m46_path=args.m46_report,
+                m47_path=args.m47_report
+            )
+        except (OSError, ValueError, TypeError, KeyError,
+                json.JSONDecodeError) as exc:
+            print("M48 freeze verification refused: " + str(exc), file=sys.stderr)
+            return 1
+        print(json.dumps(verified, indent=2))
+        return 0
     try:
         result = run(
             m46_path=args.m46_report, m47_path=args.m47_report,
