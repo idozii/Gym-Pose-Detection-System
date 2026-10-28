@@ -90,6 +90,15 @@ def test_m55_matches_owner_real_m54_counts_with_no_test():
         "development_20"].update(annotated_repetitions=313),
     lambda x:x["train_label_aggregate"]["original_frozen_cohorts"][
         "replication_20"].update(adjacent_cycle_gaps_with_positive_unlabeled_frames=35),
+    lambda x:x["train_label_aggregate"]["original_frozen_cohorts"][
+        "development_20"].update(adjacent_cycle_gaps_with_zero_unlabeled_frames=156,
+                                 adjacent_cycle_gaps_with_positive_unlabeled_frames=136),
+    lambda x:x["train_label_aggregate"]["original_frozen_cohorts"][
+        "replication_20"].update(first_cycle_starts_at_frame_zero=0),
+    lambda x:x["train_label_aggregate"]["original_frozen_cohorts"][
+        "development_20"].update(smallest_cycle_span_frames=25),
+    lambda x:x["train_label_aggregate"]["original_frozen_cohorts"][
+        "replication_20"].update(largest_cycle_span_frames=165),
     lambda x:x["license_and_provenance_blockers"].update(
         commercial_use_permission="verified"),
     lambda x:x["train_label_aggregate"].update(
