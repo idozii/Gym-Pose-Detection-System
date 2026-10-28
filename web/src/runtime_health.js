@@ -66,6 +66,11 @@ export class RuntimeHealth {
     const rate=elapsed>0?(n-1)*1000/elapsed:null;
     const medianMs=percentile(sorted,.5);
     const p95Ms=percentile(sorted,.95);
+    // Only recent samples belong to the visible diagnostic window.
+    // A historical startup stall must not poison later steady-state QA.
+    const recentGaps = this.times.slice(1).reduce(
+      (count, t, i) => count + Number(t - this.times[i] > 750), 0
+    );
     return {
       windowFrames:n,
       totalFrames:this.totalFrames,
@@ -73,8 +78,8 @@ export class RuntimeHealth {
       medianPoseMs:medianMs,
       p95PoseMs:p95Ms,
       maxPoseMs:n?sorted.at(-1):null,
-      observedGapsOver750ms:this.stalls,
-      status:describePerformance({samples:n,medianMs,p95Ms,rate,stalls:this.stalls}),
+      observedGapsOver750ms:recentGaps,
+      status:describePerformance({samples:n,medianMs,p95Ms,rate,stalls:recentGaps}),
       interpretation:'Local on-device sampled CPU pose timing, not sensor FPS, MediaPipe accuracy, or dropped source frames.'
     };
   }
