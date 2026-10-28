@@ -223,7 +223,7 @@ document.querySelector('#app').innerHTML = `
               <div><span>POSE INFERENCE · MEDIAN</span><strong id="runtimeMedian">--</strong><small>Synchronous CPU call, recent 120 frames</small></div>
               <div><span>POSE INFERENCE · P95</span><strong id="runtimeP95">--</strong><small>Local browser processing time</small></div>
               <div><span>PROCESSED THROUGHPUT</span><strong id="runtimeRate">--</strong><small>Analyzed frames per wall-clock second</small></div>
-              <div><span>OBSERVED GAPS &gt;750 MS</span><strong id="runtimeGaps">0</strong><small>Accumulated between processed frames</small></div>
+              <div><span>OBSERVED GAPS &gt;750 MS</span><strong id="runtimeGaps">0</strong><small>Between frames in the recent window</small></div>
             </div>
             <p class="runtime-health-note">Measurements use only a bounded local timing window. They are not camera sensor FPS, video frames dropped, exercise accuracy or an indication of safe technique. A pause, slow source decode or background scheduling can affect the numbers. Nothing is sent or stored.</p>
             <div class="w7-qa-actions">
