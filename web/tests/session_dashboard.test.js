@@ -95,8 +95,8 @@ test('W3 builds bounded relative tempo bars, filters invalid data, and keeps ori
   assert.deepEqual(tempoBars([NaN,-1,0,Infinity,61]),[]);
   const large=tempoBars(Array.from({length:29},(_,i)=>.2+i*.1));
   assert.equal(large.length,12);
-  assert.equal(large[0].durationSec,1.9);
-  assert.equal(large[11].durationSec,3);
+  assert.ok(Math.abs(large[0].durationSec-1.9)<1e-10);
+  assert.ok(Math.abs(large[11].durationSec-3)<1e-10);
   assert.ok(large.every(x=>x.heightPercent>=9&&x.heightPercent<=100));
   assert.throws(()=>tempoBars([1],0), /bounded/);
 });
