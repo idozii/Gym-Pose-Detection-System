@@ -223,3 +223,37 @@
   .research-m53-panel { padding: 14px; }
   .research-w6-summary { grid-template-columns: 1fr; }
 }
+
+
+/* Owner-reported M53 bootstrap intervals: descriptive, not badges. */
+.research-m53-ci {
+  margin-top: 22px;
+  border-top: 1px solid #54704d;
+  padding-top: 18px;
+}
+.research-m53-ci-heading {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 7px 16px;
+  margin-bottom: 13px;
+}
+.research-m53-ci-heading strong {
+  color: #e3ffc6;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.research-m53-ci-heading span {
+  color: #b0c9ab;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.research-m53-ci-table td:nth-child(2) {
+  color: #e1f9d1;
+  font-variant-numeric: tabular-nums;
+}
+.research-m53-ci-table td:last-child {
+  color: #c3d2bc;
+  font-size: 11px;
+  font-weight: 600;
+}
