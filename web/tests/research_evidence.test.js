@@ -120,7 +120,10 @@ test('W5 research is a separate, Vite-built accessible HTML page', () => {
     'm53NormalizedM39','m53NormalizedM45','m53NormalizedDelta',
     'm53OboM39','m53OboM45','m53OboDelta',
     'm53ExactM39','m53ExactM45','m53ExactDelta',
-    'w6DirectMismatches','w6GatedMismatches','w6DroppedFrames'
+    'w6DirectMismatches','w6GatedMismatches','w6DroppedFrames',
+    'm53CINorm','m53CINormStatus',
+    'm53CIObo','m53CIOboStatus','m53CIExact','m53CIExactStatus',
+    'm53CIAbs','m53CIAbsStatus'
   ]) assert.match(html,new RegExp('id="'+id+'"'));
   assert.match(html,/aria-live="polite"/);
   assert.match(html,/aria-current="page"/);
@@ -176,6 +179,9 @@ test('W5 only publishes owner-observed M53/W6 TRAIN replication point estimates'
   assert.equal(declared.publisherTestEvaluated,false);
   assert.equal(declared.actualBrowserPoseModelParityVerified,false);
   assert.equal(declared.newM53BootstrapIntervalsIndependentlyReviewed,false);
+  assert.equal(declared.ownerSharedM53BootstrapIntervals,true);
+  assert.equal(declared.pairedVideoBootstrap.draws,5000);
+  assert.equal(declared.pairedVideoBootstrap.seed,2026);
   assert.match(declared.evidenceStatus,/owner-reported/);
   for(const [ms,baseN,newN,obo1,obo2,exact1,exact2,drops] of [
     [200,.4940229816623005,.40997374658365365,.4,.5,.2,.3,2],
@@ -217,7 +223,53 @@ test('W5 M53/W6 selector never leaks results onto original development cohort',(
   assert.match(script,/ui\.w6GatedMismatches\.textContent/);
   assert.match(script,/ui\.w6DroppedFrames\.textContent/);
   assert.match(html,/owner's 20-clip TRAIN replication replay/i);
-  assert.match(html,/No new M53 confidence intervals are displayed/i);
+  assert.match(html,/Paired-video 95% bootstrap intervals below come from the owner's local console output/i);
   assert.match(html,/original M45 comparator and the website's M45 algorithm/i);
   assert.doesNotMatch(html,/official TEST MAE:\s*\d/i);
+});
+
+test('W5 M53 bootstrap 5000 paired draws match exactly owner console output', () => {
+  const expected = {
+    200: {
+      normalizedMAE: [-0.08404923507864687,-0.1872277661064424,0.015238095238095165],
+      obo: [0.09999999999999998,-0.09999999999999998,0.30000000000000004],
+      exact: [0.09999999999999998,0,0.25],
+      absoluteMAE: [-0.6500000000000004,-1.25,-0.10000000000000009]
+    },
+    400: {
+      normalizedMAE: [-0.05592170471427438,-0.17944823455698064,0.07934227324533022],
+      obo: [0.10000000000000003,-0.09999999999999998,0.30000000000000004],
+      exact: [0.05000000000000002,-0.1,0.2],
+      absoluteMAE: [-1.25,-2.45,-0.20000000000000018]
+    }
+  };
+  for(const [ms, conditions] of Object.entries(expected)){
+    const evidence = selectOwnerRunM53W6('replication',Number(ms));
+    const reported = OWNER_M53_W6.pairedVideoBootstrap[ms];
+    assert.equal(evidence.bootstrap,reported);
+    for(const [metric,[delta,lower,upper]] of Object.entries(conditions)){
+      assert.deepEqual(reported[metric],{delta,lower,upper});
+      assert.ok(lower <= delta && delta <= upper);
+      if(metric==='absoluteMAE')assert.ok(upper<0);
+      if(metric==='normalizedMAE'||metric==='obo')
+        assert.ok(lower<0&&upper>0);
+    }
+    if(ms==='200')assert.equal(reported.exact.lower,0);
+    else assert.ok(reported.exact.lower<0&&reported.exact.upper>0);
+  }
+  assert.equal(selectOwnerRunM53W6('development',200),null);
+  assert.equal(selectOwnerRunM53W6('development',400),null);
+});
+
+test('W5 M53 CI renderer includes zero classification and does not report TEST confidence',()=>{
+  const html=read('../research.html');
+  const page=read('../src/research_page.js');
+  assert.match(page,/formatM53Bootstrap/);
+  assert.match(page,/function relationToZero/);
+  assert.match(page,/ui\[name\+'Status'\]\.textContent = relationToZero\(ci\)/);
+  assert.match(html,/The normalized MAE and OBO intervals include zero/);
+  assert.match(html,/exact-count touches zero at 200 ms/);
+  assert.match(html,/not adjusted for multiple comparisons or subject\/session overlap/);
+  assert.match(html,/owner's local console output/);
+  assert.doesNotMatch(html,/normalized MAE improvements? (are|is) statistically significant/i);
 });
