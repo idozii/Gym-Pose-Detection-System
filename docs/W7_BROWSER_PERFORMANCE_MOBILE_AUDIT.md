@@ -26,6 +26,41 @@ No video frames, landmarks, filenames, browser device fingerprints
 or individual GT event timestamps are logged or uploaded.
 The existing opt-in webcam RF inference remains unchanged.
 
+## W7b opt-in local QA snapshot
+
+W7 now includes **Capture local QA summary** below the live
+median/P95/throughput cards. The button is disabled until >=30
+processed frames in the current bounded window. Clicking it
+copies no data to a server; it displays a readonly JSON text
+box which the owner can select and copy by choice. It includes
+only source TYPE (camera/video), selected exercise type, count
+of sampled/total analyzed frames, rounded local pose latency,
+processed throughput, and count of gaps within the **recent**
+sample window. It does NOT record browser/OS fingerprint,
+IP address, filenames, personal information, raw videos,
+joint positions, individual timestamps, GT or user accounts.
+
+Stop, replay, set reset and exercise changes clear the
+previous QA text and reset the sampled timings. Startup
+stalls no longer permanently affect subsequent samples:
+the gap diagnostic reflects the current rolling window.
+CI tests simulate the calculations and privacy guard;
+they do not generate real hardware performance evidence.
+
+Suggested owner-side on-device acceptance for each test:
+1. Start local-only camera or a short video **you own**.
+2. Select Squat, let at least 30 frames process, ideally
+   a full uninterrupted 60-second observation.
+3. Click "Capture local QA summary" and select/copy only the
+   JSON aggregate. Do not share browser console URLs, personal
+   screenshots or sensitive local videos.
+4. Repeat on Ubuntu Chrome and Firefox, then on a mobile
+   phone via trusted HTTPS. Record layout/permission outcomes
+   manually beside the JSON if appropriate.
+5. Assess actual behavior before claiming device compatibility.
+   A successful benchmark is not an assessment of rep accuracy,
+   clinical safety or MediaPipe Python/browser parity.
+
 ## Acceptance matrix (real devices)
 
 CI covers calculation arithmetic, latency percentiles, bounded
