@@ -36,7 +36,7 @@ test('W7b rejects unobserved, corrupted or wrong-source metrics',()=>{
   ])assert.throws(()=>createQaSnapshot(item,{sourceMode:'camera',exercise:'squat'}));
   assert.throws(()=>createQaSnapshot(s,{sourceMode:'upload',exercise:'squat'}));
   assert.throws(()=>createQaSnapshot(s,{sourceMode:'camera',exercise:'dance'}));
-  assert.equal(createQaSnapshot(s,{sourceMode:'video',exercise:'row'}).source_type,'video');
+  assert.equal(createQaSnapshot(s,{sourceMode:'video',exercise:'barbell_row'}).source_type,'video');
 });
 test('W7 recent window does not carry permanent old startup stalls',()=>{
   const w=new RuntimeHealth({maxSamples:10});
