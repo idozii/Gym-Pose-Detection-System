@@ -79,8 +79,14 @@ found 0 direct and 0 gated event timestamp disagreements,
 while the W2 200ms gate discarded 2 source frames in total
 (400ms condition: 0). These statements are **not**
 browser MediaPipe/Python pose parity, official TEST,
-or published paper benchmarking. New M53 bootstrap
-bounds have not been reviewed and are not displayed.
+or published paper benchmarking. Owner-reported M53 paired-video
+bootstrap 95% intervals are now shown for each TRAIN cadence:
+normalized MAE and OBO intervals contain zero at 200ms and
+400ms; exact-count touches/includes zero; absolute count MAE
+intervals exclude zero in the direction favoring M45.
+These are not multiple-comparison-adjusted or subject-disjoint
+population estimates; original private JSON bytes were not
+independently examined.
 The development cohort never inherits replication M53
 numbers. [W5 evidence scope and updates](docs/W5_RESEARCH_EVIDENCE_PAGE.md).
 

@@ -187,9 +187,10 @@ resolved independently of W5 build results.
 
 The owner ran the newly merged M53/W6 one-pass original M46 TRAIN
 replication replay and shared the following local aggregate printout.
-The owner-local JSON file contents and bootstrap percentile bounds
-were not independently inspected in this update. These are
-**owner-reported TRAIN point estimates**, not official publisher TEST.
+The owner-local original JSON bytes have not been independently
+inspected; the owner shared BOTH point estimates and the M53
+bootstrap percentile bounds via local console output. These are
+**owner-reported TRAIN aggregates**, not official publisher TEST.
 
 | Frozen TRAIN replication cohort (n=20, GT=209) | M39 | M45 |
 | --- | ---: | ---: |
@@ -204,10 +205,29 @@ The new normalized count MAE is mean_i(|predicted_i - GT_i|/GT_i)
 over 20 positive-count videos. The difference is -0.0840492 at
 200ms and -0.0559217 at 400ms. OBO increases by ten percentage
 points at both cadences. Exact-count increases by ten percentage
-points at 200ms and five at 400ms. Without reviewing the M53
-bootstrap output, no new confidence interval or inference
-about statistical significance of these NEW metrics is claimed.
-The original M47 F1/bootstrap evidence remains separate.
+points at 200ms and five at 400ms. The owner's printed M53 bootstrap intervals are listed below.
+They are exploratory TRAIN intervals and not adjusted for multiple
+comparisons or for possibly overlapping subjects and sessions.
+The original M47 event-F1 bootstrap evidence remains separate.
+
+The owner-reported M53 paired 5,000-draw video bootstrap produced:
+
+| TRAIN condition | M45-M39 delta | 95% percentile interval | Relation to 0 |
+| --- | ---: | --- | --- |
+| 200ms normalized MAE | -0.0840492 | [-0.1872278, +0.0152381] | Includes zero |
+| 200ms OBO | +10 percentage points | [-10, +30] pp | Includes zero |
+| 200ms exact count | +10 percentage points | [0, +25] pp | Touches zero |
+| 200ms absolute MAE | -0.65 reps | [-1.25, -0.10] reps | Excludes zero |
+| 400ms normalized MAE | -0.0559217 | [-0.1794482, +0.0793423] | Includes zero |
+| 400ms OBO | +10 percentage points | [-10, +30] pp | Includes zero |
+| 400ms exact count | +5 percentage points | [-10, +20] pp | Includes zero |
+| 400ms absolute MAE | -1.25 reps | [-2.45, -0.20] reps | Excludes zero |
+
+Note: The four measures are non-independent endpoints on only
+20 TRAIN source filenames. A percentile interval including/touching
+zero does not demonstrate an advantage for that endpoint, and even
+an interval excluding zero should not be treated as confirmatory
+without independent subjects, TEST, or multiplicity planning.
 
 W6 same-input M45 algorithmic replay on these TRAIN videos
 reported **zero direct event-time disagreements** and **zero
@@ -221,12 +241,11 @@ accuracy. A zero mismatch with the gated M45 reference does
 not establish zero difference from the original full trace
 after sampling.
 
-The W5 page publishes only these owner-reported aggregate
-point estimates and explicitly displays no new M53 confidence
-intervals until the actual owner-local M53 JSON output has
-been checked. The original development 20 TRAIN clips did
-not receive a new M53/W6 replay; those results remain hidden
-when the user selects the development cohort.
+The W5 page publishes the owner-reported TRAIN point estimates
+and the owner-provided M53 bootstrap intervals. The original
+report JSON has not been independently reviewed. The 20 original
+development TRAIN clips did not receive a new M53/W6 replay;
+M53 results and intervals remain hidden for development.
 
 Source protocols:
 - [M53 normalized count metrics](M53_TRAIN_NORMALIZED_COUNT_METRICS.md)
@@ -234,9 +253,9 @@ Source protocols:
 
 ## Research priorities NOT implemented by W5
 
-- M53 normalized count MAE and off-by-one
-  (OBO) require genuine per-video scores,
-  not derivations from aggregate TP/FP/FN.
+- M53 normalized MAE, OBO and bootstrap intervals have been computed
+  on the owner-local frozen replication TRAIN videos; these do NOT
+  establish independent TEST generalization.
 - Publisher source origin/licensing and
   exact annotation-cycle semantics are open.
 - Valid zero-rep negative controls and

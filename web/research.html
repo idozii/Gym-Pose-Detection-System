@@ -148,7 +148,34 @@
             </tbody>
           </table>
         </div>
-        <p class="research-footnote">Normalized MAE is the mean of |predicted - GT| / GT across 20 positive-GT videos, NOT total errors divided by total GT. OBO is the fraction of videos with count difference no greater than one. Exact count compares only the integer number of cycles, not temporal matching quality. No new M53 confidence intervals are displayed until the owner-local bootstrap report is reviewed.</p>
+        <p class="research-footnote">Normalized MAE is the mean of |predicted - GT| / GT across 20 positive-GT videos, NOT total errors divided by total GT. OBO is the fraction of videos with count difference no greater than one. Exact count compares only the integer number of cycles, not temporal matching quality. Paired-video 95% bootstrap intervals below come from the owner's local console output (5,000 draws, seed 2026), not an independent inspection of the original JSON. They are exploratory TRAIN intervals; a CI that includes or touches zero does not establish a reliable improvement.</p>
+
+        <div class="research-m53-ci" aria-label="Owner-reported paired video bootstrap percentile intervals">
+          <div class="research-m53-ci-heading">
+            <strong>95% paired-video bootstrap intervals / M45 - M39</strong>
+            <span>5,000 resamples - seed 2026 - 20 TRAIN source clips</span>
+          </div>
+          <div class="research-m53-table-wrap">
+            <table class="research-m53-table research-m53-ci-table">
+              <thead><tr>
+                <th scope="col">METRIC DIFFERENCE</th>
+                <th scope="col">95% PERCENTILE INTERVAL</th>
+                <th scope="col">RELATION TO ZERO</th>
+              </tr></thead>
+              <tbody>
+                <tr><th scope="row">Normalized MAE (lower is better)</th>
+                  <td id="m53CINorm">-</td><td id="m53CINormStatus">-</td></tr>
+                <tr><th scope="row">Off-By-One (percentage points)</th>
+                  <td id="m53CIObo">-</td><td id="m53CIOboStatus">-</td></tr>
+                <tr><th scope="row">Exact count (percentage points)</th>
+                  <td id="m53CIExact">-</td><td id="m53CIExactStatus">-</td></tr>
+                <tr><th scope="row">Absolute count MAE (reps)</th>
+                  <td id="m53CIAbs">-</td><td id="m53CIAbsStatus">-</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="research-footnote"><strong>Interpretation:</strong> The absolute count MAE intervals exclude zero in favor of M45 at both cadences. The normalized MAE and OBO intervals include zero; exact-count touches zero at 200 ms and includes zero at 400 ms. These are descriptive exploratory intervals, not adjusted for multiple comparisons or subject/session overlap, and not official TEST results.</p>
+        </div>
 
         <div class="research-w6-summary">
           <div>
