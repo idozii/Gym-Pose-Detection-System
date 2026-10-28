@@ -68,6 +68,30 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### W4 - Local-only MP4/WebM video analysis (no upload)
+
+[W4 local file analysis and manual acceptance](docs/W4_LOCAL_VIDEO_ANALYSIS.md)
+adds a user-selected MP4/WebM input to the W1-W3 browser
+workbench (<=250 MiB and <=5 minutes). It decodes frames
+locally with the same on-device MediaPipe Tasks Vision,
+reuses unmodified M34 and the experimental W2 M45
+Squat counter, and displays W3 tempo/visibility
+observations. The video model clock uses HTMLVideoElement
+currentTime, not RAF wall time. Playback is manual
+(Play/Pause), and Replay creates a **fresh** tracker and
+resets cycle/timing data. No seeking controls are exposed.
+Files use temporary blob: URLs, revoked when changing or
+clearing sources; no raw video, file name, landmark or GT
+is uploaded. The optional remote Python RF research
+inference is forcibly disabled in local video mode,
+regardless of prior camera consent. This is an
+experimental browser demonstration, not evidence of
+rep-count correctness, source GT, publisher TEST
+performance, technique safety or browser/Python parity.
+Original M48-frozen research source remains unchanged.
+
+---
+
 ### W3 - Private local session dashboard for rep-cycle visualization
 
 [W3 local session dashboard](docs/W3_SESSION_DASHBOARD.md)
