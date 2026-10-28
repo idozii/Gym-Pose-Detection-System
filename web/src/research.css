@@ -131,3 +131,95 @@
 @media (prefers-reduced-motion: reduce) {
   .research-track-fill { transition: none; }
 }
+
+
+/* M53/W6 owner-reported TRAIN addendum; scoped to replication cohort. */
+.research-m53-panel[hidden], #m53OwnerUnavailable[hidden] {
+  display: none !important;
+}
+.research-m53-panel {
+  margin-top: 24px;
+  padding: 20px;
+  background: linear-gradient(145deg, #1e2c20, #141e17);
+  border: 1px solid #69845b;
+  border-radius: 15px;
+}
+.research-m53-heading {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 18px;
+}
+.research-m53-heading strong {
+  color: #d7ffa6;
+  font: 600 17px/1.4 'Space Grotesk', sans-serif;
+}
+.research-m53-heading span {
+  color: #b1cbac;
+  font-size: 11px;
+}
+.research-m53-table-wrap { overflow-x: auto; }
+.research-m53-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  min-width: 440px;
+}
+.research-m53-table th, .research-m53-table td {
+  padding: 15px 11px;
+  border-bottom: 1px solid #476347;
+  font-size: clamp(11px, 1.2vw, 14px);
+}
+.research-m53-table thead th {
+  color: #abc79e;
+  font-size: 10px;
+  letter-spacing: .07em;
+  line-height: 1.5;
+}
+.research-m53-table th:first-child { text-align: left; }
+.research-m53-table tbody th {
+  font-weight: 600;
+  color: #e4f3d7;
+  line-height: 1.5;
+}
+.research-m53-table tbody td {
+  color: #f3ffda;
+  font-weight: 700;
+}
+.research-m53-table tbody td:nth-child(3) { color: #d4ff9e; }
+.research-m53-table tbody td:last-child { color: #b7f3b4; }
+.research-w6-summary {
+  margin-top: 25px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+}
+.research-w6-summary > div {
+  padding: 15px;
+  border: 1px solid #4a6b55;
+  border-radius: 10px;
+  background: #14241d;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.research-w6-summary span {
+  color: #b6d2bc;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  line-height: 1.6;
+}
+.research-w6-summary strong {
+  color: #d1ffe5;
+  font: 700 27px/1 'Space Grotesk', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+#m53 .research-footnote a { color: #d3ffa2; text-decoration: underline; }
+@media (max-width: 620px) {
+  .research-m53-panel { padding: 14px; }
+  .research-w6-summary { grid-template-columns: 1fr; }
+}

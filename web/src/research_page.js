@@ -1,7 +1,7 @@
 /** W5 self-contained TRAIN-only evidence visualization.
  * Do not import webcam/media trackers, API clients or user media here.
  */
-import { selectFrozenEvidence, formatFixed } from './research_evidence.js';
+import { selectFrozenEvidence, selectOwnerRunM53W6, formatFixed } from './research_evidence.js';
 import './style.css';
 import './research.css';
 
@@ -11,7 +11,12 @@ const ids = [
   'researchM39TP','researchM45TP','researchM39Bar','researchM45Bar',
   'researchDeltaF1','researchDeltaMAE','researchGT','researchCohortDescription',
   'researchCIEvent','researchCICount','researchCIFP',
-  'researchBootstrap','researchBootstrapUnavailable'
+  'researchBootstrap','researchBootstrapUnavailable',
+  'm53OwnerResults','m53OwnerUnavailable','m53CadenceLabel',
+  'm53NormalizedM39','m53NormalizedM45','m53NormalizedDelta',
+  'm53OboM39','m53OboM45','m53OboDelta',
+  'm53ExactM39','m53ExactM45','m53ExactDelta',
+  'w6DirectMismatches','w6GatedMismatches','w6DroppedFrames'
 ];
 const ui = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
 if (ids.some((id) => !ui[id])) {
@@ -62,6 +67,39 @@ export function renderFrozenResults() {
     ui.researchCIEvent.textContent = 'Not applicable';
     ui.researchCICount.textContent = 'Not applicable';
     ui.researchCIFP.textContent = 'Not applicable';
+  }
+  // Owner-run M53/W6 report covers only the frozen replication TRAIN
+  // cohort and the same offline pose inputs. No development/TEST
+  // counts, confidence intervals or browser-estimator parity invented.
+  const newEvidence = selectOwnerRunM53W6(
+    ui.researchCohort.value, ui.researchCadence.value
+  );
+  ui.m53OwnerResults.hidden = newEvidence === null;
+  ui.m53OwnerUnavailable.hidden = newEvidence !== null;
+  if (newEvidence !== null) {
+    const a = newEvidence.low_to_high;
+    const b = newEvidence.relative_excursion;
+    ui.m53CadenceLabel.textContent =
+      'Owner-run replication TRAIN / ' + selected.samplingMs + ' ms';
+    ui.m53NormalizedM39.textContent = formatFixed(a.normalizedMAE,4);
+    ui.m53NormalizedM45.textContent = formatFixed(b.normalizedMAE,4);
+    ui.m53NormalizedDelta.textContent = signed(
+      newEvidence.deltaNormalizedMAE,4
+    );
+    ui.m53OboM39.textContent = formatFixed(a.obo*100,0)+'%';
+    ui.m53OboM45.textContent = formatFixed(b.obo*100,0)+'%';
+    ui.m53OboDelta.textContent =
+      signed(newEvidence.deltaOBO*100,0)+' pp';
+    ui.m53ExactM39.textContent = formatFixed(a.exact*100,0)+'%';
+    ui.m53ExactM45.textContent = formatFixed(b.exact*100,0)+'%';
+    ui.m53ExactDelta.textContent =
+      signed(newEvidence.deltaExact*100,0)+' pp';
+    ui.w6DirectMismatches.textContent =
+      String(newEvidence.directEventDisagreements);
+    ui.w6GatedMismatches.textContent =
+      String(newEvidence.gatedEventDisagreements);
+    ui.w6DroppedFrames.textContent =
+      String(newEvidence.framesDroppedByGate);
   }
 }
 

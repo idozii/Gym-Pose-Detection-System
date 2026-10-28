@@ -183,6 +183,55 @@ CI does not prove production deployment.
 Any Vercel quota/security limits must be
 resolved independently of W5 build results.
 
+## M53 and W6 owner-run TRAIN addendum (28 October 2026)
+
+The owner ran the newly merged M53/W6 one-pass original M46 TRAIN
+replication replay and shared the following local aggregate printout.
+The owner-local JSON file contents and bootstrap percentile bounds
+were not independently inspected in this update. These are
+**owner-reported TRAIN point estimates**, not official publisher TEST.
+
+| Frozen TRAIN replication cohort (n=20, GT=209) | M39 | M45 |
+| --- | ---: | ---: |
+| 200ms normalized count MAE | 0.4940229816623005 | 0.40997374658365365 |
+| 200ms OBO fraction | 0.40 | 0.50 |
+| 200ms exact-count fraction | 0.20 | 0.30 |
+| 400ms normalized count MAE | 0.5397661149480034 | 0.48384441023372904 |
+| 400ms OBO fraction | 0.35 | 0.45 |
+| 400ms exact-count fraction | 0.15 | 0.20 |
+
+The new normalized count MAE is mean_i(|predicted_i - GT_i|/GT_i)
+over 20 positive-count videos. The difference is -0.0840492 at
+200ms and -0.0559217 at 400ms. OBO increases by ten percentage
+points at both cadences. Exact-count increases by ten percentage
+points at 200ms and five at 400ms. Without reviewing the M53
+bootstrap output, no new confidence interval or inference
+about statistical significance of these NEW metrics is claimed.
+The original M47 F1/bootstrap evidence remains separate.
+
+W6 same-input M45 algorithmic replay on these TRAIN videos
+reported **zero direct event-time disagreements** and **zero
+sampling-gated disagreements** at both conditions. The 200ms
+web sampler dropped two input frames in total; the 400ms
+subsample dropped none. This is equality of event times
+**conditional on identical offline Python pose landmarks**;
+not equality between browser Tasks Vision and Python Solutions
+pose estimators, real device frame scheduling, or live camera
+accuracy. A zero mismatch with the gated M45 reference does
+not establish zero difference from the original full trace
+after sampling.
+
+The W5 page publishes only these owner-reported aggregate
+point estimates and explicitly displays no new M53 confidence
+intervals until the actual owner-local M53 JSON output has
+been checked. The original development 20 TRAIN clips did
+not receive a new M53/W6 replay; those results remain hidden
+when the user selects the development cohort.
+
+Source protocols:
+- [M53 normalized count metrics](M53_TRAIN_NORMALIZED_COUNT_METRICS.md)
+- [W6 same-input algorithm parity](W6_BROWSER_SAME_INPUT_PARITY.md)
+
 ## Research priorities NOT implemented by W5
 
 - M53 normalized count MAE and off-by-one
