@@ -68,6 +68,24 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### W5 M53/W6 results addendum (owner-run TRAIN replication)
+
+The W5 research page now includes **owner-reported M53**
+normalized count MAE (M39 0.4940 to M45 0.4100 at 200ms;
+0.5398 to 0.4838 at 400ms), OBO and exact-count results
+from the same 20 frozen replication TRAIN files (GT209).
+The user-reported W6 same-input JS event-parity report
+found 0 direct and 0 gated event timestamp disagreements,
+while the W2 200ms gate discarded 2 source frames in total
+(400ms condition: 0). These statements are **not**
+browser MediaPipe/Python pose parity, official TEST,
+or published paper benchmarking. New M53 bootstrap
+bounds have not been reviewed and are not displayed.
+The development cohort never inherits replication M53
+numbers. [W5 evidence scope and updates](docs/W5_RESEARCH_EVIDENCE_PAGE.md).
+
+---
+
 ### M53 + W6 - TRAIN normalized count metrics and same-input M45 browser logic parity
 
 [M53 normalized count MAE / OBO / exact-count protocol](docs/M53_TRAIN_NORMALIZED_COUNT_METRICS.md)
