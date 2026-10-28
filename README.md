@@ -68,6 +68,28 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### W1 + W2 - Browser readiness and M34/M45 Squat live research comparison
+
+[W1/W2 browser validation and live comparison protocol](docs/W1_W2_LIVE_RESEARCH_DEMO.md)
+enhances the existing local, user-consented browser pose workbench:
+explicit camera permission/device error guidance; immediate camera
+revocation when a tab is hidden even DURING startup; ended camera
+track recovery; and a responsive experimental Squat-only
+**M34 / M45 / Compare** readout using the same Tasks Vision landmarks.
+The original M34 high-low-high counter stays unchanged at 400ms;
+a *separate* new live M45 module uses its frozen relative excursion
+rule at a nominal >=200ms sample cadence. Switching view shows/hides
+cards but does not change model state; Reset set, camera stop and
+exercise change clear both local counters. Synthetic tests validate
+event parity against the exact untouched original M45 TRAIN JS
+comparator. No GT labels, webcam accuracy, user-video recording,
+automatic uploads, exercise-form advice or browser/Python parity
+are inferred. All 17 M48-frozen research source files are untouched.
+CI validates code and Vite build, but real mobile/desktop camera
+testing and public Vercel deployment must be checked separately.
+
+---
+
 ### M52 - Audit TRAIN presentation timestamps versus original FPS clock
 
 [M52 original TRAIN PTS timeline audit](docs/M52_TRAIN_PTS_TIMELINE_AUDIT.md)
