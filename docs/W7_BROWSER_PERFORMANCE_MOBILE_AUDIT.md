@@ -26,6 +26,32 @@ No video frames, landmarks, filenames, browser device fingerprints
 or individual GT event timestamps are logged or uploaded.
 The existing opt-in webcam RF inference remains unchanged.
 
+## W7 camera startup clock guard
+
+A real Ubuntu browser QA screenshot showed `POSE ENGINE ERROR` with
+`W3 requires chronological video frame timestamps`. The camera session
+started on `performance.now()`, while the frame loop used
+`requestAnimationFrame` callback timestamps. Because a callback
+timestamp identifies the *beginning* of a paint frame, it may be
+slightly older than the W3 session start (or repeat on browsers with
+reduced timer precision). Previously an early/equal callback could
+terminate an otherwise usable camera.
+
+The W7 camera-only guard now skips such callbacks **before** invoking
+MediaPipe or updating W3, M34, M45 and runtime QA counters. It does
+not fabricate timestamps, relax W3's strict chronological requirement,
+or modify W4 local-video media presentation clocks. Session reset,
+exercise change, startup and equal-tick regression cases are tested
+synthetically in `web/tests/camera_frame_clock.test.js`.
+
+The synthetic regression is not a physical-camera pass. On Ubuntu,
+reload the updated Vite build, start the camera, confirm at least 30
+processed frames without the W3 error, capture a private W7 QA
+snapshot, and verify Stop/Reset clears it. Repeat with an owned local
+video file to check the isolated W4 path. If the error persists,
+capture the exact on-page message and sanitized browser Console error
+(without frame contents, device identifiers or file paths).
+
 ## W7b opt-in local QA snapshot
 
 W7 now includes **Capture local QA summary** below the live
