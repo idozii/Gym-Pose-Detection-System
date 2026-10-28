@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   EVIDENCE, RESEARCH_EVIDENCE_VERSION, eventMetrics,
-  selectFrozenEvidence, formatFixed
+  selectFrozenEvidence, formatFixed, OWNER_M53_W6, selectOwnerRunM53W6
 } from '../src/research_evidence.js';
 
 const read = (path) =>
@@ -116,7 +116,11 @@ test('W5 research is a separate, Vite-built accessible HTML page', () => {
     'researchM39Bar','researchM45Bar','researchDeltaF1','researchDeltaMAE',
     'researchBootstrap','researchBootstrapUnavailable','researchCIEvent',
     'researchCICount','researchCIFP','researchGT','integrity','method',
-    'limitations','reproduce'
+    'limitations','reproduce','m53','m53OwnerResults','m53OwnerUnavailable',
+    'm53NormalizedM39','m53NormalizedM45','m53NormalizedDelta',
+    'm53OboM39','m53OboM45','m53OboDelta',
+    'm53ExactM39','m53ExactM45','m53ExactDelta',
+    'w6DirectMismatches','w6GatedMismatches','w6DroppedFrames'
   ]) assert.match(html,new RegExp('id="'+id+'"'));
   assert.match(html,/aria-live="polite"/);
   assert.match(html,/aria-current="page"/);
@@ -143,7 +147,9 @@ test('W5 separates offline TRAIN research from browser inference and permits no 
   assert.match(html,/TRAIN evidence only/i);
   assert.match(html,/No official TEST results/i);
   assert.match(html,/No live camera GT is available/i);
-  assert.match(html,/M53 normalized MAE, OBO and official TEST results are not claimed/i);
+  assert.match(html,/New M53 bootstrap confidence intervals and official TEST results are not claimed/i);
+  assert.match(html,/full private JSON report was not independently inspected/i);
+  assert.match(html,/same-input/i);
   assert.match(html,/source filenames/i);
   assert.match(html,/MediaPipe Solutions/);
   assert.match(html,/browser Tasks Vision/);
@@ -159,4 +165,59 @@ test('W5 separates offline TRAIN research from browser inference and permits no 
     assert.match(html,new RegExp('docs/|m45_compare_train_relative'));
     assert.match(EVIDENCE.sourceDocuments[name],/^https:\/\/github\.com\/idozii\//);
   }
+});
+
+
+test('W5 only publishes owner-observed M53/W6 TRAIN replication point estimates', () => {
+  const declared = OWNER_M53_W6;
+  assert.equal(declared.sourceClipCount,20);
+  assert.equal(declared.groundTruthReps,209);
+  assert.equal(declared.sourceCohort,'replication');
+  assert.equal(declared.publisherTestEvaluated,false);
+  assert.equal(declared.actualBrowserPoseModelParityVerified,false);
+  assert.equal(declared.newM53BootstrapIntervalsIndependentlyReviewed,false);
+  assert.match(declared.evidenceStatus,/owner-reported/);
+  for(const [ms,baseN,newN,obo1,obo2,exact1,exact2,drops] of [
+    [200,.4940229816623005,.40997374658365365,.4,.5,.2,.3,2],
+    [400,.5397661149480034,.48384441023372904,.35,.45,.15,.2,0]
+  ]) {
+    const data = selectOwnerRunM53W6('replication',ms);
+    assert.equal(data.low_to_high.normalizedMAE,baseN);
+    assert.equal(data.relative_excursion.normalizedMAE,newN);
+    assert.equal(data.low_to_high.obo,obo1);
+    assert.equal(data.relative_excursion.obo,obo2);
+    assert.equal(data.low_to_high.exact,exact1);
+    assert.equal(data.relative_excursion.exact,exact2);
+    assert.ok(data.deltaNormalizedMAE<0);
+    assert.equal(data.deltaOBO,obo2-obo1);
+    assert.equal(data.deltaExact,exact2-exact1);
+    assert.equal(data.directEventDisagreements,0);
+    assert.equal(data.gatedEventDisagreements,0);
+    assert.equal(data.framesDroppedByGate,drops);
+    assert.equal(data.low_to_high.absoluteMAE,
+      EVIDENCE.cohorts.replication.conditions[ms].m39.mae);
+    assert.equal(data.relative_excursion.absoluteMAE,
+      EVIDENCE.cohorts.replication.conditions[ms].m45.mae);
+    assert.ok(Object.isFrozen(declared.conditions[ms]));
+  }
+  assert.equal(selectOwnerRunM53W6('development',200),null);
+  assert.equal(selectOwnerRunM53W6('development',400),null);
+  for(const pair of [['test',200],['validation',200],['replication',500]]) {
+    assert.throws(()=>selectOwnerRunM53W6(...pair),/TRAIN cohorts/);
+  }
+});
+
+test('W5 M53/W6 selector never leaks results onto original development cohort',()=>{
+  const script=read('../src/research_page.js');
+  const html=read('../research.html');
+  assert.match(script,/selectOwnerRunM53W6\(/);
+  assert.match(script,/ui\.m53OwnerResults\.hidden = newEvidence === null/);
+  assert.match(script,/ui\.m53OwnerUnavailable\.hidden = newEvidence !== null/);
+  assert.match(script,/ui\.w6DirectMismatches\.textContent/);
+  assert.match(script,/ui\.w6GatedMismatches\.textContent/);
+  assert.match(script,/ui\.w6DroppedFrames\.textContent/);
+  assert.match(html,/owner's 20-clip TRAIN replication replay/i);
+  assert.match(html,/No new M53 confidence intervals are displayed/i);
+  assert.match(html,/original M45 comparator and the website's M45 algorithm/i);
+  assert.doesNotMatch(html,/official TEST MAE:\s*\d/i);
 });
