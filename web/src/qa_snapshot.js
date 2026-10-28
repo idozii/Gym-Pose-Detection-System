@@ -12,7 +12,7 @@ export const MIN_QA_FRAMES = 30;
 
 export function createQaSnapshot(summary, {sourceMode, exercise}={}) {
   if (!summary || !['camera','video'].includes(sourceMode) ||
-      !['squat','ohp','row','pushup'].includes(exercise) ||
+      !['squat','ohp','barbell_row','pushup'].includes(exercise) ||
       !Number.isSafeInteger(summary.windowFrames) ||
       summary.windowFrames < MIN_QA_FRAMES ||
       summary.windowFrames > 120 ||
