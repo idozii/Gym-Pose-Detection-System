@@ -68,20 +68,6 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
-### W8 - Multi-window browser robustness and mobile acceptance (pending hardware)
-
-[W8 private session stability protocol](docs/W8_BROWSER_ROBUSTNESS_MOBILE_VALIDATION.md)
-adds opt-in, browser-local rolling session envelopes over non-overlapping
-120-frame windows (maximum 16 retained). Capture requires 240 processed
-frames; it reports per-window median/P95 and analyzed-throughput ranges
-plus session processing gaps without raw video, device fingerprints,
-landmarks, files, server telemetry or persistence. Synthetic CI does
-NOT establish real-device speed or multi-browser compatibility.
-Ubuntu owner W7 Squat/OHP snapshots remain separate from W8 and from
-any official publisher benchmark.
-
----
-
 ### W7b + M55 - Privacy-safe real-device QA snapshots and author evidence review
 
 [W7b local browser QA capture](docs/W7_BROWSER_PERFORMANCE_MOBILE_AUDIT.md)
@@ -106,6 +92,20 @@ commercial rights, an anatomical phase interpretation of
 GT boundaries, subject independence or official TEST.
 No original research detector thresholds or 17 frozen M48
 paths are changed.
+
+---
+
+### W8 - Multi-window browser robustness and mobile acceptance (pending hardware)
+
+[W8 private session stability protocol](docs/W8_BROWSER_ROBUSTNESS_MOBILE_VALIDATION.md)
+adds opt-in, browser-local rolling session envelopes over non-overlapping
+120-frame windows (maximum 16 retained). Capture requires 240 processed
+frames; it reports per-window median/P95 and analyzed-throughput ranges
+plus session processing gaps without raw video, device fingerprints,
+landmarks, files, server telemetry or persistence. Synthetic CI does
+NOT establish real-device speed or multi-browser compatibility.
+Ubuntu owner W7 Squat/OHP snapshots remain separate from W8 and from
+any official publisher benchmark.
 
 ---
 
