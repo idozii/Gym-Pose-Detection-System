@@ -68,6 +68,33 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M53 + W6 - TRAIN normalized count metrics and same-input M45 browser logic parity
+
+[M53 normalized count MAE / OBO / exact-count protocol](docs/M53_TRAIN_NORMALIZED_COUNT_METRICS.md)
+and [W6 M45 incremental/browser logic parity](docs/W6_BROWSER_SAME_INPUT_PARITY.md)
+add a single owner-run, original publisher TRAIN-only replication
+audit on the **same frozen 20 M46 source-file hashes** (GT209).
+M53 reruns original M47 replay and cross-verifies original
+M46 aggregate count MAE, exact count fraction and within-one
+fraction, then calculates video-mean normalized absolute count
+error and paired 5,000-draw video-bootstrap percentile intervals
+without saving private per-clip predictions or raw landmarks.
+W6 compares **identical offline Python landmark inputs**
+and timestamps between original M45 and the experimental
+incremental website M45 counter, distinguishing direct input
+from the browser's nominal 200ms sample gate. Both original
+M49 Git/source gate and M46 reference are mandatory; the
+separate owner-local output reports remain Git-ignored.
+**No M53 or W6 owner-run numerical result is available before
+running the command.** W6 same-input algorithm parity is NOT
+browser MediaPipe Tasks Vision vs Python Solutions end-to-end
+pose-estimator parity or live-camera accuracy. No publisher
+validation/TEST data, source archive source identifiers or
+17 M48-frozen modules are modified/accessed outside original
+TRAIN scope.
+
+---
+
 ### W5 - Public research evidence page (TRAIN-only, frozen M46-M52)
 
 [W5 research evidence page and verification](docs/W5_RESEARCH_EVIDENCE_PAGE.md)
