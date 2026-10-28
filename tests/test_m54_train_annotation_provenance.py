@@ -139,3 +139,61 @@ def test_m54_does_not_touch_media_or_claim_license_by_assumption():
     assert "extractfile" not in source
     assert "test_or_validation_csv_or_media_opened" in source
     assert set(m54.PUBLIC_AUTHOR_SOURCES)=={"official_dataset","official_repo"}
+
+
+def train_csv_with_auxiliary_export_columns():
+    """Real CSV exporters may append index/notes/blank headers outside GT labels."""
+    raw=train_csv(include_zero=True)
+    reader=csv.DictReader(io.StringIO(raw.decode("utf8")))
+    existing=reader.fieldnames
+    extras=["Unnamed: 0","notes (original publisher)", "", "session/path?"]
+    buffer=io.StringIO()
+    writer=csv.DictWriter(buffer,fieldnames=existing+extras)
+    writer.writeheader()
+    for i,row in enumerate(reader):
+        row.update({
+            "Unnamed: 0":str(i),
+            "notes (original publisher)":"private-note-do-not-persist",
+            "":"ignored blank-header value",
+            "session/path?":"private/field-not-to-store"
+        })
+        writer.writerow(row)
+    return buffer.getvalue().encode("utf8")
+
+
+def test_m54_accepts_realistic_auxiliary_csv_headers_and_redacts_them():
+    raw=train_csv_with_auxiliary_export_columns()
+    # Frozen M37 already accepts and interprets the original GT annotations.
+    from scripts.m37_repcount_archive import parse_official_csv
+    assert len(parse_official_csv(raw))==41
+    result=m54.audit_train_csv(raw)
+    assert result["train_squat_annotation_rows"]==41
+    assert result["train_squat_zero_gt_videos"]==1
+    assert result["publisher_train_csv_auxiliary_column_count"]==4
+    assert result["publisher_train_csv_auxiliary_column_names_persisted"] is False
+    assert "name" in result["publisher_train_csv_column_names"]
+    assert "L1" in result["publisher_train_csv_column_names"]
+    report=json.dumps(result)
+    for secret in ("private-note", "private/field", "Unnamed: 0",
+                   "notes (original publisher)", "session/path?"):
+        assert secret not in report
+    # Original first20/next20 hash cohorts and GT remain untouched.
+    assert result["original_frozen_cohorts"]["development_20"][
+        "annotated_repetitions"]==312
+    assert result["original_frozen_cohorts"]["replication_20"][
+        "annotated_repetitions"]==209
+
+
+def test_m54_duplicate_original_label_columns_still_rejected():
+    original=train_csv()
+    content=original.decode("utf8").splitlines()
+    header=content[0].split(",")
+    # The canonical GT source schema is uniquely indexed, not duplicate.
+    header.insert(3,"name")
+    forged=("\n".join([",".join(header)]+[
+        line.split(",",3)[0]+","+line.split(",",3)[1]+","+
+        line.split(",",3)[2]+","+line.split(",",3)[0]+","+
+        line.split(",",3)[3] for line in content[1:]
+    ])+"\n").encode("utf8")
+    with pytest.raises(ValueError,match="required label columns ambiguous"):
+        m54.audit_train_csv(forged)
