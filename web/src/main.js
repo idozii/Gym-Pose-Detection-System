@@ -36,7 +36,7 @@ const state = {
   demoMode: 'compare', sessionDashboard: new SessionDashboard(),
   sourceMode: 'camera', localUrl: null, localFile: null,
   localReady: false, localPlaying: false, localEnded: false,
-  localLoadAbort: null, localLastTimestamp: null
+  localLoadAbort: null, localLastTimestamp: null, localNeedsReplay: false
 };
 
 document.querySelector('#app').innerHTML = `
@@ -373,7 +373,7 @@ function updateSourceControls() {
   ui.cameraActions.hidden = local;
   ui.localVideoActions.hidden = !local;
   ui.localFileInput.disabled = state.starting;
-  ui.localPlay.disabled = !local || !state.localReady || state.starting || state.localEnded;
+  ui.localPlay.disabled = !local || !state.localReady || state.starting || state.localEnded || state.localNeedsReplay;
   ui.localReplay.disabled = !local || !state.localReady || state.starting;
   ui.localPlay.textContent = state.localPlaying ? 'Pause video' : 'Play video';
   ui.localProgress.value = local && Number.isFinite(ui.video.currentTime)
@@ -477,7 +477,7 @@ function updateSessionDashboard() {
     local ? localVideoTimestampMs(ui.video.currentTime || 0) : performance.now()
   );
   ui.sessionElapsed.textContent = data.elapsedLabel;
-  ui.sessionClockLabel.textContent = local ? 'VIDEO POSITION' : 'SESSION ELAPSED';
+  ui.sessionClockLabel.textContent = local ? 'ANALYSIS ELAPSED' : 'SESSION ELAPSED';
   ui.sessionPoseSeen.textContent = data.poseSeenPct === null
     ? '--' : data.poseSeenPct + '%';
   ui.sessionJointReady.textContent = data.requiredReadyPct === null
@@ -739,40 +739,59 @@ function loop(token, timestamp) {
   if (!state.running || token !== state.token) return;
   const v = ui.video;
   try {
-    if (v.readyState >= 2 && v.currentTime !== state.lastVideoTime) {
+    const local = state.sourceMode === 'video';
+    const frameMs = local ? localVideoTimestampMs(v.currentTime || 0) : timestamp;
+    if (local && state.lastVideoTime >= 0 &&
+        v.currentTime < state.lastVideoTime - 0.001) {
+      // A backwards seek requires a fresh MediaPipe tracker and blank counters.
+      v.pause();
+      state.localPlaying = false;
+      state.localNeedsReplay = true;
+      setStatus('REPLAY REQUIRED',
+        'The local video timeline moved backwards. Use Replay from start to reset pose tracking.');
+      updateSourceControls();
+    }
+    if ((!local || (state.localPlaying && !state.localNeedsReplay)) &&
+        v.readyState >= 2 && v.currentTime !== state.lastVideoTime &&
+        (!local || localFrameIsNew({
+          currentTime: v.currentTime, previousTime: state.lastVideoTime,
+          timestampMs: frameMs, previousTimestampMs: state.localLastTimestamp
+        }))) {
       state.lastVideoTime = v.currentTime;
-      const result = state.landmarker.detectForVideo(v, timestamp);
+      if (local) state.localLastTimestamp = frameMs;
+      const result = state.landmarker.detectForVideo(v, frameMs);
       state.landmarks = result.landmarks?.[0] ?? null;
       if (state.exercise === 'pushup') {
-        state.lastPushupPreview = state.pushupMotion.observe(state.landmarks, timestamp);
+        state.lastPushupPreview = state.pushupMotion.observe(state.landmarks, frameMs);
       } else {
         state.lastExerciseFeedback = state.exerciseFeedback.observe(
-          state.exercise, state.landmarks, timestamp
+          state.exercise, state.landmarks, frameMs
         );
         state.lastRepAnalysis = state.repCounter.observe(
-          state.exercise, state.landmarks, timestamp
+          state.exercise, state.landmarks, frameMs
         );
         if (isResearchSquat(state.exercise)) {
-          state.lastM45 = state.liveRelative.observe(state.landmarks, timestamp);
+          state.lastM45 = state.liveRelative.observe(state.landmarks, frameMs);
         }
       }
-      state.sessionDashboard.observe(timestamp, {
+      state.sessionDashboard.observe(frameMs, {
         poseSeen: Array.isArray(state.landmarks),
         requiredReady: readiness(state.exercise, state.landmarks).basicVisibilityReady
       });
       state.frames++;
       if (state.landmarks) state.poseFrames++;
       if (state.lastFrameClock) {
-        const delta = timestamp - state.lastFrameClock;
+        const delta = frameMs - state.lastFrameClock;
         if (delta > 0) state.fps = state.fps ? state.fps * .85 + (1000 / delta) * .15 : (1000 / delta);
       }
-      state.lastFrameClock = timestamp;
+      state.lastFrameClock = frameMs;
       drawFrame();
-      void requestResearchInference(timestamp);
+      if (!local) void requestResearchInference(timestamp);
     }
     // Clock and stalled-video status keep updating even if decoded frames stop.
     if (timestamp - state.lastRendered > 220) {
       state.lastRendered = timestamp;
+      updateSourceControls();
       updateInspector();
     }
   } catch (error) {
@@ -784,6 +803,8 @@ function loop(token, timestamp) {
 }
 
 function stopCamera() {
+  state.localLoadAbort?.abort();
+  state.localLoadAbort = null;
   disableResearchInference();
   state.pushupMotion.reset();
   state.lastPushupPreview = null;
@@ -803,6 +824,19 @@ function stopCamera() {
   state.stream = null;
   ui.video.pause();
   ui.video.srcObject = null;
+  if (state.localUrl !== null) {
+    ui.video.removeAttribute('src');
+    ui.video.load();
+    URL.revokeObjectURL(state.localUrl);
+  }
+  state.localUrl = null;
+  state.localFile = null;
+  state.localReady = false;
+  state.localPlaying = false;
+  state.localEnded = false;
+  state.localLastTimestamp = null;
+  state.localNeedsReplay = false;
+  ui.localFileInput.value = '';
   state.landmarker?.close();
   state.landmarker = null;
   state.landmarks = null;
@@ -818,11 +852,12 @@ function stopCamera() {
   ui.button.disabled = false;
   ui.button.innerHTML = '<span aria-hidden="true">◉</span> Start camera';
   setStatus('CAMERA OFFLINE', 'No camera recording. You can start again at any time.');
+  updateSourceControls();
   updateInspector();
 }
 
 async function startCamera() {
-  if (state.starting || state.running) return;
+  if (state.sourceMode !== 'camera' || state.starting || state.running) return;
   if (document.hidden) {
     setStatus('CAMERA PAUSED', 'Return to the visible browser tab to start your camera.');
     return;
@@ -844,6 +879,7 @@ async function startCamera() {
     const actualFacing = tempStream.getVideoTracks()[0]?.getSettings?.().facingMode;
     const fallback = cameraFallbackMessage(state.facingMode, actualFacing);
     if (token !== state.token) throw new Error('Camera start cancelled');
+    ui.video.autoplay = true;
     ui.video.srcObject = tempStream;
     await ui.video.play();
     const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
@@ -885,6 +921,7 @@ async function startCamera() {
     ui.button.innerHTML = '<span aria-hidden="true">■</span> Stop camera';
     setStatus('LOCAL POSE ACTIVE', fallback || 'Live local preview. Research inference requires a separate opt-in.');
     state.raf = requestAnimationFrame((timestamp) => loop(token, timestamp));
+    updateSourceControls();
   } catch (error) {
     tempStream?.getTracks().forEach((track) => track.stop());
     tempLandmarker?.close();
