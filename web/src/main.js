@@ -10,6 +10,7 @@ import { cameraErrorMessage, shouldRevokeOnHidden, shouldIgnoreEndedTrack } from
 import { cameraFrameIsChronological } from './camera_frame_clock.js';
 import { SessionDashboard, tempoBars, tempoFromM34, tempoFromM45 } from './session_dashboard.js';
 import { RuntimeHealth } from './runtime_health.js';
+import { StabilityAudit, createStabilitySnapshot, W8_MIN_COMPLETED_WINDOWS } from './stability_audit.js';
 import { createQaSnapshot, MIN_QA_FRAMES } from './qa_snapshot.js';
 import {
   validateLocalVideoFile, validateVideoMetadata, localVideoTimestampMs,
@@ -37,7 +38,7 @@ const state = {
   repCounter: new RepCycleCounter(), lastRepAnalysis: null,
   liveRelative: new LiveRelativeExcursionCounter(), lastM45: null,
   demoMode: 'compare', sessionDashboard: new SessionDashboard(),
-  runtimeHealth: new RuntimeHealth(),
+  runtimeHealth: new RuntimeHealth(), stabilityAudit: new StabilityAudit(),
   sourceMode: 'camera', localUrl: null, localFile: null,
   localReady: false, localPlaying: false, localEnded: false,
   localLoadAbort: null, localLastTimestamp: null, localNeedsReplay: false
@@ -234,6 +235,14 @@ document.querySelector('#app').innerHTML = `
             <label class="w7-qa-report-label" for="qaReport" id="qaReportLabel" hidden>QA SUMMARY - SELECT TEXT TO COPY
               <textarea id="qaReport" rows="10" readonly aria-label="Private, aggregate-only QA snapshot; select text to copy"></textarea>
             </label>
+            <div class="w7-qa-actions" aria-label="W8 multi-window stability audit">
+              <button type="button" id="w8Capture" disabled>Capture W8 stability summary</button>
+              <span id="w8Hint" role="status">Analyze 240 frames to collect two full 120-frame windows.</span>
+            </div>
+            <label class="w7-qa-report-label" for="w8Report" id="w8ReportLabel" hidden>W8 STABILITY - SELECT TEXT TO COPY
+              <textarea id="w8Report" rows="12" readonly aria-label="Private W8 non-overlapping window aggregate"></textarea>
+            </label>
+            <p class="runtime-health-note">W8 retains at most 16 completed 120-frame window summaries; it also counts processing gaps across the current session. These are not dropped camera frames, model accuracy or proof of continuous hardware reliability. No upload or persistent recording.</p>
           </section>
 
           <section class="research-comparison" id="researchComparison" aria-label="Experimental Squat counter comparison">
@@ -371,6 +380,10 @@ const ui = {
   qaCaptureHint: document.querySelector('#qaCaptureHint'),
   qaReport: document.querySelector('#qaReport'),
   qaReportLabel: document.querySelector('#qaReportLabel'),
+  w8Capture: document.querySelector('#w8Capture'),
+  w8Hint: document.querySelector('#w8Hint'),
+  w8Report: document.querySelector('#w8Report'),
+  w8ReportLabel: document.querySelector('#w8ReportLabel'),
   sessionState: document.querySelector('#sessionState'),
   sessionElapsed: document.querySelector('#sessionElapsed'),
   sessionClockLabel: document.querySelector('#sessionClockLabel'),
@@ -556,6 +569,10 @@ function clearQaSnapshot() {
   ui.qaReportLabel.hidden = true;
   ui.qaCaptureHint.textContent =
     'Analyze at least 30 frames to enable a private QA snapshot.';
+  state.stabilityAudit.reset();
+  ui.w8Report.value = '';
+  ui.w8ReportLabel.hidden = true;
+  ui.w8Hint.textContent = 'Analyze 240 frames to collect two full 120-frame windows.';
 }
 
 function updateRuntimeHealth() {
@@ -573,6 +590,13 @@ function updateRuntimeHealth() {
   if (!ui.qaCapture.disabled && ui.qaReportLabel.hidden) {
     ui.qaCaptureHint.textContent =
       'Ready: snapshot stays in this browser until you copy it.';
+  }
+  const w8=state.stabilityAudit.summary();
+  ui.w8Capture.disabled = !state.running ||
+    w8.completedWindows < W8_MIN_COMPLETED_WINDOWS ||
+    w8.throughputRangeFps === null;
+  if (!ui.w8Capture.disabled && ui.w8ReportLabel.hidden) {
+    ui.w8Hint.textContent = 'Ready: select and copy private multi-window stability JSON.';
   }
 }
 
@@ -845,6 +869,9 @@ function loop(token, timestamp) {
       const result = state.landmarker.detectForVideo(v, frameMs);
       const poseEnd = performance.now();
       state.runtimeHealth.observe({
+        wallTimeMs: poseEnd, poseDurationMs: poseEnd - poseStart
+      });
+      state.stabilityAudit.observe({
         wallTimeMs: poseEnd, poseDurationMs: poseEnd - poseStart
       });
       state.landmarks = result.landmarks?.[0] ?? null;
@@ -1211,6 +1238,21 @@ ui.qaCapture.addEventListener('click', () => {
       'Captured locally. Select and copy this aggregate summary manually; nothing was uploaded.';
   } catch {
     ui.qaCaptureHint.textContent = 'Analyze at least 30 new frames before capturing.';
+  }
+});
+
+ui.w8Capture.addEventListener('click', () => {
+  if (!state.running) return;
+  try {
+    const summary = createStabilitySnapshot(state.stabilityAudit.summary(), {
+      sourceMode: state.sourceMode, exercise: state.exercise
+    });
+    ui.w8Report.value = JSON.stringify(summary, null, 2);
+    ui.w8ReportLabel.hidden = false;
+    ui.w8Hint.textContent =
+      'Captured locally. Select and copy the aggregate; nothing was uploaded.';
+  } catch {
+    ui.w8Hint.textContent = 'Analyze two complete 120-frame windows before capturing.';
   }
 });
 
