@@ -55,6 +55,13 @@ M54 checks the **original TRAIN CSV only**:
   only aggregate lengths, gaps and boundary counts.
 - Reuse M50 schema-only person/session/camera field inspection.
   No participant ID is inferred from filename patterns.
+- Accept optional index/auxiliary CSV headers containing punctuation,
+  whitespace or blank names, as the original frozen M37 TRAIN parser
+  already does. M54 verifies only canonical name/type/count/L1..Ln
+  label fields, reports the number of extra header columns, and
+  omits all optional header names and values from the output.
+  This corrects a W7/M54-only overstrict schema check; do NOT
+  modify the original publisher archive or M48 label SHA.
 - Report licensing, original download identity and human
   boundary semantics as NOT INDEPENDENTLY VERIFIED.
 
