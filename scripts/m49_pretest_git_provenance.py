@@ -31,6 +31,7 @@ DEFAULT_M47 = Path("data/processed/m47_train_replication_bootstrap.json")
 DEFAULT_M48 = Path("data/processed/m48_train_evidence_freeze.json")
 DEFAULT_REPORT = Path("data/processed/m49_pretest_provenance.json")
 COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 
 
 def _sha(content: bytes) -> str:
@@ -81,7 +82,7 @@ def verify_git_history(lock: dict, *, repository_root: Path = ROOT) -> dict:
     for path in m48.SOURCES:
         expected = fingerprints[path]
         if (not isinstance(expected, str) or
-            COMMIT_PATTERN.fullmatch(expected) is None):
+            SHA256_PATTERN.fullmatch(expected) is None):
             raise ValueError("M49 invalid SHA256 of frozen source")
         current_path = repository_root / path
         if not current_path.is_file() or current_path.is_symlink():
