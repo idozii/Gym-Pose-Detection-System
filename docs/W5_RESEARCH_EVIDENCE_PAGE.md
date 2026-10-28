@@ -122,7 +122,7 @@ Files created:
 
 Existing \`web/src/main.js\` and \`style.css\`
 gain a prominent cross-link and research teaser
-to this separate page. The original W1–W4
+to this separate page. The original W1-W4
 camera/video code, cycle heuristics and 17
 M48-frozen research files remain untouched.
 
