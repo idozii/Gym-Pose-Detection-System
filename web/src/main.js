@@ -8,6 +8,7 @@ import { RepCycleCounter, REP_POLICIES } from './rep_counter.js';
 import { LiveRelativeExcursionCounter, RESEARCH_DEMO_MODES, isResearchSquat } from './live_relative_excursion.js';
 import { cameraErrorMessage, shouldRevokeOnHidden, shouldIgnoreEndedTrack } from './camera_readiness.js';
 import { SessionDashboard, tempoBars, tempoFromM34, tempoFromM45 } from './session_dashboard.js';
+import { RuntimeHealth } from './runtime_health.js';
 import {
   validateLocalVideoFile, validateVideoMetadata, localVideoTimestampMs,
   localFrameIsNew, canRequestRemoteInference
@@ -34,6 +35,7 @@ const state = {
   repCounter: new RepCycleCounter(), lastRepAnalysis: null,
   liveRelative: new LiveRelativeExcursionCounter(), lastM45: null,
   demoMode: 'compare', sessionDashboard: new SessionDashboard(),
+  runtimeHealth: new RuntimeHealth(),
   sourceMode: 'camera', localUrl: null, localFile: null,
   localReady: false, localPlaying: false, localEnded: false,
   localLoadAbort: null, localLastTimestamp: null, localNeedsReplay: false
@@ -210,6 +212,21 @@ document.querySelector('#app').innerHTML = `
             <p class="session-disclaimer">Tempo panels use different start/end definitions and independent scales: bar heights and values are NOT accuracy, coaching guidance or directly comparable rep times. Camera data stays local unless research inference is separately enabled.</p>
           </section>
 
+          <section class="runtime-health-panel" id="runtimeHealthPanel" aria-label="W7 on-device browser diagnostic">
+            <div class="session-heading">
+              <div><div class="rep-eyebrow">W7 / DEVICE PERFORMANCE AUDIT</div>
+                <strong>On-device performance <span class="session-subtitle"> / recent processed frames</span></strong></div>
+              <span class="session-live-state" id="runtimeHealthStatus">WAITING FOR FRAMES</span>
+            </div>
+            <div class="runtime-health-grid" aria-live="off">
+              <div><span>POSE INFERENCE · MEDIAN</span><strong id="runtimeMedian">--</strong><small>Synchronous CPU call, recent 120 frames</small></div>
+              <div><span>POSE INFERENCE · P95</span><strong id="runtimeP95">--</strong><small>Local browser processing time</small></div>
+              <div><span>PROCESSED THROUGHPUT</span><strong id="runtimeRate">--</strong><small>Analyzed frames per wall-clock second</small></div>
+              <div><span>OBSERVED GAPS &gt;750 MS</span><strong id="runtimeGaps">0</strong><small>Accumulated between processed frames</small></div>
+            </div>
+            <p class="runtime-health-note">Measurements use only a bounded local timing window. They are not camera sensor FPS, video frames dropped, exercise accuracy or an indication of safe technique. A pause, slow source decode or background scheduling can affect the numbers. Nothing is sent or stored.</p>
+          </section>
+
           <section class="research-comparison" id="researchComparison" aria-label="Experimental Squat counter comparison">
             <div class="research-comparison-head">
               <div><div class="rep-eyebrow">W2 / LIVE RESEARCH DEMO</div><strong>Two independent cycle heuristics, one camera</strong></div>
@@ -335,6 +352,12 @@ const ui = {
   repGuidance: document.querySelector('#repGuidance'),
   resetSet: document.querySelector('#resetSet'),
   sessionDashboard: document.querySelector('#sessionDashboard'),
+  runtimeHealthPanel: document.querySelector('#runtimeHealthPanel'),
+  runtimeHealthStatus: document.querySelector('#runtimeHealthStatus'),
+  runtimeMedian: document.querySelector('#runtimeMedian'),
+  runtimeP95: document.querySelector('#runtimeP95'),
+  runtimeRate: document.querySelector('#runtimeRate'),
+  runtimeGaps: document.querySelector('#runtimeGaps'),
   sessionState: document.querySelector('#sessionState'),
   sessionElapsed: document.querySelector('#sessionElapsed'),
   sessionClockLabel: document.querySelector('#sessionClockLabel'),
@@ -515,8 +538,21 @@ function updateSessionDashboard() {
   }
 }
 
+function updateRuntimeHealth() {
+  const s=state.runtimeHealth.summary();
+  ui.runtimeMedian.textContent = s.medianPoseMs === null
+    ? '--' : s.medianPoseMs.toFixed(1) + ' ms';
+  ui.runtimeP95.textContent = s.p95PoseMs === null
+    ? '--' : s.p95PoseMs.toFixed(1) + ' ms';
+  ui.runtimeRate.textContent = s.throughputFps === null
+    ? '--' : s.throughputFps.toFixed(1) + ' fps';
+  ui.runtimeGaps.textContent = String(s.observedGapsOver750ms);
+  ui.runtimeHealthStatus.textContent = s.status;
+}
+
 function updateInspector() {
   updateSessionDashboard();
+  updateRuntimeHealth();
   const data = readiness(state.exercise, state.landmarks);
   const rawPoseSeen = state.running && Array.isArray(state.landmarks);
   ui.poseMetric.textContent = state.frames === 0 ? '-' : `${Math.round(state.poseFrames / state.frames * 100)}%`;
@@ -769,7 +805,12 @@ function loop(token, timestamp) {
         }))) {
       state.lastVideoTime = v.currentTime;
       if (local) state.localLastTimestamp = frameMs;
+      const poseStart = performance.now();
       const result = state.landmarker.detectForVideo(v, frameMs);
+      const poseEnd = performance.now();
+      state.runtimeHealth.observe({
+        wallTimeMs: poseEnd, poseDurationMs: poseEnd - poseStart
+      });
       state.landmarks = result.landmarks?.[0] ?? null;
       if (state.exercise === 'pushup') {
         state.lastPushupPreview = state.pushupMotion.observe(state.landmarks, frameMs);
@@ -825,6 +866,7 @@ function stopCamera() {
   state.liveRelative.reset();
   state.lastM45 = null;
   state.sessionDashboard.reset();
+  state.runtimeHealth.reset();
   state.token++;
   state.running = false;
   state.starting = false;
@@ -918,6 +960,7 @@ async function startCamera() {
     tempStream = null;
     tempLandmarker = null;
     state.sessionDashboard.start(performance.now());
+    state.runtimeHealth.reset();
     state.running = true;
     state.starting = false;
     state.frames = 0;
@@ -1024,6 +1067,7 @@ async function loadLocalVideo(file) {
     state.running = true;
     state.starting = false;
     state.sessionDashboard.start(0);
+    state.runtimeHealth.reset();
     state.lastVideoTime = -1;
     state.lastFrameClock = 0;
     state.frames = 0;

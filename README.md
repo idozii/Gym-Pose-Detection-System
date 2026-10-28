@@ -68,6 +68,40 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### W7 + M54 - Local browser performance and TRAIN dataset provenance gate
+
+[W7 real-device performance and mobile acceptance](docs/W7_BROWSER_PERFORMANCE_MOBILE_AUDIT.md)
+adds bounded, nonpersistent on-device pose processing median/P95
+latency, real processed-frame wall throughput and observed
+processing gaps to the existing camera/local-video studio.
+These statistics are **not** camera sensor FPS, dropped-frame
+counts, GT performance or measured device benchmarks from CI.
+Users still need to test Android/iPhone camera over trusted HTTPS
+and confirm local model/codec behavior. W7 sends no telemetry.
+
+[M54 RepCount-A provenance and annotation semantics](docs/M54_REPCOUNT_SOURCE_ANNOTATION_PROVENANCE.md)
+documents the official ShanghaiTech / TransRAC author's
+RepCount-A description (Part-A sourced from YouTube,
+1,041 videos, cycle count/location annotations) while
+explicitly leaving video redistribution/commercial licensing,
+human frame-boundary phase semantics, owner archive authenticity
+and subject/session identity unverified. A local audit only reads
+the original TAR's TRAIN CSV and verifies its M48 SHA and the
+original read-only M49 gate. It summarizes the total number
+of zero-rep Squat TRAIN source clips separately from the 40
+previously selected positive-GT Squat videos, then reports
+schema/interval consistency without saving filenames,
+identities or GT intervals. **No TEST/VALID access and no video
+extraction.** M54 owner-run outputs are unavailable until the
+owner executes the command.
+
+Original M34/M39/M45 rules, 17 M48-frozen files and W5
+research numbers are unchanged. CI verifies functions and
+frontend build only, not physical phone performance or source
+authorization.
+
+---
+
 ### W5 M53/W6 results addendum (owner-run TRAIN replication)
 
 The W5 research page now includes **owner-reported M53**
