@@ -257,6 +257,159 @@ h1, h2, h3, p { margin: 0; }
 .rep-status { color:#eef4e8; font-size:11px; line-height:1.6; margin-top:13px; }
 .rep-guidance { color:#b8c9b1; font-size:11px; line-height:1.6; margin-top:8px; }
 @media(max-width:380px){ .rep-metrics { grid-template-columns:1fr 1fr; } }
+/* W3 local session telemetry, descriptive only. */
+.session-dashboard {
+  margin-top: 15px;
+  padding: 18px;
+  border: 1px solid #596b4c;
+  border-radius: 15px;
+  background: linear-gradient(143deg, #202b1f 0%, #171e19 100%);
+}
+.session-dashboard[hidden], .session-tempo-panel[hidden] { display: none !important; }
+.session-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.session-heading strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 15px;
+  line-height: 1.4;
+  color: #f1f7e9;
+}
+.session-subtitle { font-size: 11px; font-weight: 500; color: #b7c2b2; }
+.session-live-state {
+  border: 1px solid #567150;
+  border-radius: 999px;
+  background: #253626;
+  color: #dbefcb;
+  padding: 9px 11px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  max-width: 200px;
+  line-height: 1.3;
+}
+.session-live-state[data-status="NO POSE VISIBLE"],
+.session-live-state[data-status="VIDEO STALLED"],
+.session-live-state[data-status="LIMITED JOINT VIEW"] {
+  border-color: #866e45; color: #f8d7a5; background: #322c21;
+}
+.session-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 15px;
+}
+.session-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 14px 10px;
+  background: #141e16;
+  border: 1px solid #465d43;
+  border-radius: 11px;
+}
+.session-stat-primary { background: #253420; border-color: #67895a; }
+.session-stat span {
+  font-size: 9px;
+  font-weight: 800;
+  color: #bad5b1;
+  letter-spacing: .065em;
+  line-height: 1.5;
+}
+.session-stat strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(20px, 2.2vw, 29px);
+  color: #efffcc;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.session-stat small { color: #a9bda5; font-size: 9px; line-height: 1.5; }
+.session-tempo-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 13px;
+}
+.session-tempo-panel {
+  min-width: 0;
+  border: 1px solid #405640;
+  border-radius: 11px;
+  padding: 12px;
+  background: rgba(6, 13, 9, .25);
+}
+.session-tempo-heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 5px;
+}
+.session-tempo-heading span {
+  color: #bed7b4;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  line-height: 1.4;
+}
+.session-tempo-heading strong {
+  color: #f1ffc7;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.session-tempo-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 4px;
+  width: 100%;
+  height: 84px;
+  padding: 6px 3px 0;
+  margin-top: 9px;
+  border-bottom: 1px solid #607f57;
+}
+.session-tempo-bar {
+  flex: 1 1 0;
+  max-width: 22px;
+  min-width: 3px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, #d8ff9c, #83ad6e);
+}
+.session-tempo-bars-m45 .session-tempo-bar {
+  background: linear-gradient(180deg, #b0eddf, #5cafa3);
+}
+.session-tempo-empty {
+  align-self: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #9fb59a;
+  letter-spacing: .07em;
+  text-align: center;
+}
+.session-tempo-panel p { color: #a5b7a0; font-size: 9px; line-height: 1.5; margin-top: 7px; }
+.session-disclaimer {
+  margin-top: 12px;
+  color: #becbb8;
+  font-size: 10px;
+  line-height: 1.7;
+}
+@media (max-width: 1160px) {
+  .session-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 470px) {
+  .session-dashboard { padding: 13px; }
+  .session-tempo-grid { grid-template-columns: 1fr; }
+  .session-stat { padding: 11px 9px; }
+  .session-stat strong { font-size: 22px; }
+}
+
 /* W1 + W2: Squat-only parallel research comparison; not an accuracy verdict. */
 .research-comparison {
   margin-top: 15px;

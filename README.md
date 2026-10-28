@@ -68,6 +68,27 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### W3 - Private local session dashboard for rep-cycle visualization
+
+[W3 local session dashboard](docs/W3_SESSION_DASHBOARD.md)
+adds an elapsed set clock, analyzed-frame count, pose-seen
+coverage, required-joint visibility coverage, readable
+tracking status and **bounded 12-observation tempo charts**
+to the live Squat/OHP/Row browser workbench. The clock
+continues to update when camera video stalls, and both
+M34/M45 cycle history and session telemetry reset together
+on Reset set/camera stop/exercise change. M45's Squat-only
+chart explicitly measures low-to-return segment duration,
+different from M34's full-cycle time, so heights are not
+directly comparable. Coverage is NOT classifier confidence,
+form correctness or rep accuracy. Original M34/M45 research
+source and M48 17-path SHA256 freeze remain unchanged.
+No TEST/VAL media, backend requests, video recording or
+persistent pose data are introduced. Tests and Vite build
+verify logic but not physical phone cameras or live Vercel.
+
+---
+
 ### W1 + W2 - Browser readiness and M34/M45 Squat live research comparison
 
 [W1/W2 browser validation and live comparison protocol](docs/W1_W2_LIVE_RESEARCH_DEMO.md)

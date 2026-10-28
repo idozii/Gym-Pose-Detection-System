@@ -7,6 +7,7 @@ import { ExerciseFeedbackWindow, EXERCISE_FEEDBACK } from './exercise_feedback.j
 import { RepCycleCounter, REP_POLICIES } from './rep_counter.js';
 import { LiveRelativeExcursionCounter, RESEARCH_DEMO_MODES, isResearchSquat } from './live_relative_excursion.js';
 import { cameraErrorMessage, shouldRevokeOnHidden, shouldIgnoreEndedTrack } from './camera_readiness.js';
+import { SessionDashboard, tempoBars, tempoFromM34, tempoFromM45 } from './session_dashboard.js';
 import { explainMovement, sourceEvidenceNotice } from './feedback_explainer.js';
 import './style.css';
 
@@ -28,7 +29,7 @@ const state = {
   exerciseFeedback: new ExerciseFeedbackWindow(), lastExerciseFeedback: null,
   repCounter: new RepCycleCounter(), lastRepAnalysis: null,
   liveRelative: new LiveRelativeExcursionCounter(), lastM45: null,
-  demoMode: 'compare'
+  demoMode: 'compare', sessionDashboard: new SessionDashboard()
 };
 
 document.querySelector('#app').innerHTML = `
@@ -142,6 +143,35 @@ document.querySelector('#app').innerHTML = `
             </div>
             <p class="rep-status" id="repStatus" role="status" aria-live="polite">Start the camera to observe a complete bending-and-return cycle.</p>
             <p class="rep-guidance" id="repGuidance">Only on-device camera-plane heuristics are used; this is not a verified rep count or exercise-form score.</p>
+          </section>
+
+          <section class="session-dashboard" id="sessionDashboard" aria-label="Local experimental repetition session dashboard">
+            <div class="session-heading">
+              <div>
+                <div class="rep-eyebrow">W3 / LIVE SESSION TELEMETRY</div>
+                <strong>Movement session<span class="session-subtitle"> / experimental observations only</span></strong>
+              </div>
+              <span class="session-live-state" id="sessionState">CAMERA OFFLINE</span>
+            </div>
+            <div class="session-stat-grid" aria-live="off">
+              <div class="session-stat session-stat-primary"><span>SESSION ELAPSED</span><strong id="sessionElapsed">00:00</strong><small>Since camera start or Reset set</small></div>
+              <div class="session-stat"><span>POSE SEEN</span><strong id="sessionPoseSeen">--</strong><small>Of analyzed video frames</small></div>
+              <div class="session-stat"><span>REQUIRED JOINTS VISIBLE</span><strong id="sessionJointReady">--</strong><small>Of analyzed video frames, not confidence</small></div>
+              <div class="session-stat"><span>FRAMES ANALYZED</span><strong id="sessionFrames">0</strong><small>Local pose observations</small></div>
+            </div>
+            <div class="session-tempo-grid">
+              <div class="session-tempo-panel">
+                <div class="session-tempo-heading"><span>M34 / FULL CYCLE DURATION</span><strong id="sessionM34Mean">--</strong></div>
+                <div class="session-tempo-bars" id="sessionM34Bars" role="img" aria-label="M34 no completed movements yet"></div>
+                <p>Up to 12 recent completed cycles, oldest to newest</p>
+              </div>
+              <div class="session-tempo-panel" id="sessionM45Panel">
+                <div class="session-tempo-heading"><span>M45 / LOW-TO-RETURN DURATION</span><strong id="sessionM45Mean">--</strong></div>
+                <div class="session-tempo-bars session-tempo-bars-m45" id="sessionM45Bars" role="img" aria-label="M45 no completed movements yet"></div>
+                <p>Up to 12 recovery segments, oldest to newest</p>
+              </div>
+            </div>
+            <p class="session-disclaimer">Tempo panels use different start/end definitions and independent scales: bar heights and values are NOT accuracy, coaching guidance or directly comparable rep times. Camera data stays local unless research inference is separately enabled.</p>
           </section>
 
           <section class="research-comparison" id="researchComparison" aria-label="Experimental Squat counter comparison">
@@ -258,6 +288,17 @@ const ui = {
   repStatus: document.querySelector('#repStatus'),
   repGuidance: document.querySelector('#repGuidance'),
   resetSet: document.querySelector('#resetSet'),
+  sessionDashboard: document.querySelector('#sessionDashboard'),
+  sessionState: document.querySelector('#sessionState'),
+  sessionElapsed: document.querySelector('#sessionElapsed'),
+  sessionPoseSeen: document.querySelector('#sessionPoseSeen'),
+  sessionJointReady: document.querySelector('#sessionJointReady'),
+  sessionFrames: document.querySelector('#sessionFrames'),
+  sessionM34Mean: document.querySelector('#sessionM34Mean'),
+  sessionM34Bars: document.querySelector('#sessionM34Bars'),
+  sessionM45Panel: document.querySelector('#sessionM45Panel'),
+  sessionM45Mean: document.querySelector('#sessionM45Mean'),
+  sessionM45Bars: document.querySelector('#sessionM45Bars'),
   researchComparison: document.querySelector('#researchComparison'),
   researchMode: document.querySelector('#researchMode'),
   researchM34Card: document.querySelector('#researchM34Card'),
@@ -325,7 +366,63 @@ function renderModels() {
   }).join('');
 }
 
+function drawSessionTempo(container, seconds, label) {
+  const bars = tempoBars(seconds);
+  container.replaceChildren();
+  container.setAttribute('aria-label',
+    bars.length
+      ? label + ' durations in seconds, oldest to newest: ' +
+        bars.map((bar) => bar.durationSec.toFixed(2)).join(', ')
+      : label + ': no completed movements yet');
+  if (bars.length === 0) {
+    const note = document.createElement('span');
+    note.className = 'session-tempo-empty';
+    note.textContent = 'NO COMPLETED CYCLES YET';
+    container.append(note);
+    return;
+  }
+  for (const bar of bars) {
+    const element = document.createElement('span');
+    element.className = 'session-tempo-bar';
+    element.style.height = bar.heightPercent + '%';
+    element.title = label + ' segment ' + bar.index + ': ' +
+      bar.durationSec.toFixed(2) + ' seconds';
+    element.setAttribute('aria-hidden', 'true');
+    container.append(element);
+  }
+}
+
+function updateSessionDashboard() {
+  const isPushup = state.exercise === 'pushup';
+  ui.sessionDashboard.hidden = isPushup;
+  if (isPushup) return;
+  const data = state.sessionDashboard.summary(performance.now());
+  ui.sessionElapsed.textContent = data.elapsedLabel;
+  ui.sessionPoseSeen.textContent = data.poseSeenPct === null
+    ? '--' : data.poseSeenPct + '%';
+  ui.sessionJointReady.textContent = data.requiredReadyPct === null
+    ? '--' : data.requiredReadyPct + '%';
+  ui.sessionFrames.textContent = String(data.sampleFrames);
+  ui.sessionState.textContent = data.status;
+  ui.sessionState.dataset.status = data.status;
+  const m34 = state.running ? state.lastRepAnalysis : null;
+  ui.sessionM34Mean.textContent = m34?.meanDurationSec == null
+    ? '--' : m34.meanDurationSec.toFixed(1) + ' s avg';
+  drawSessionTempo(ui.sessionM34Bars, tempoFromM34(state.repCounter.recent),
+    'M34 full cycle');
+  const squat = isResearchSquat(state.exercise);
+  ui.sessionM45Panel.hidden = !squat;
+  if (squat) {
+    const m45 = state.running ? state.lastM45 : null;
+    ui.sessionM45Mean.textContent = m45?.meanRecoverySec == null
+      ? '--' : m45.meanRecoverySec.toFixed(1) + ' s avg';
+    drawSessionTempo(ui.sessionM45Bars, tempoFromM45(state.liveRelative.events),
+      'M45 low to return');
+  }
+}
+
 function updateInspector() {
+  updateSessionDashboard();
   const data = readiness(state.exercise, state.landmarks);
   const rawPoseSeen = state.running && Array.isArray(state.landmarks);
   ui.poseMetric.textContent = state.frames === 0 ? '-' : `${Math.round(state.poseFrames / state.frames * 100)}%`;
@@ -570,6 +667,10 @@ function loop(token, timestamp) {
           state.lastM45 = state.liveRelative.observe(state.landmarks, timestamp);
         }
       }
+      state.sessionDashboard.observe(timestamp, {
+        poseSeen: Array.isArray(state.landmarks),
+        requiredReady: readiness(state.exercise, state.landmarks).basicVisibilityReady
+      });
       state.frames++;
       if (state.landmarks) state.poseFrames++;
       if (state.lastFrameClock) {
@@ -579,10 +680,11 @@ function loop(token, timestamp) {
       state.lastFrameClock = timestamp;
       drawFrame();
       void requestResearchInference(timestamp);
-      if (timestamp - state.lastRendered > 220) {
-        state.lastRendered = timestamp;
-        updateInspector();
-      }
+    }
+    // Clock and stalled-video status keep updating even if decoded frames stop.
+    if (timestamp - state.lastRendered > 220) {
+      state.lastRendered = timestamp;
+      updateInspector();
     }
   } catch (error) {
     stopCamera();
@@ -602,6 +704,7 @@ function stopCamera() {
   state.lastRepAnalysis = null;
   state.liveRelative.reset();
   state.lastM45 = null;
+  state.sessionDashboard.reset();
   state.token++;
   state.running = false;
   state.starting = false;
@@ -679,6 +782,7 @@ async function startCamera() {
     });
     tempStream = null;
     tempLandmarker = null;
+    state.sessionDashboard.start(performance.now());
     state.running = true;
     state.starting = false;
     state.frames = 0;
@@ -727,6 +831,8 @@ ui.resetSet.addEventListener('click', () => {
   state.lastRepAnalysis = null;
   state.liveRelative.reset();
   state.lastM45 = null;
+  if (state.running) state.sessionDashboard.start(performance.now());
+  else state.sessionDashboard.reset();
   updateInspector();
 });
 ui.researchMode.addEventListener('change', () => {
@@ -747,6 +853,8 @@ ui.exercise.addEventListener('change', () => {
   state.lastRepAnalysis = null;
   state.liveRelative.reset();
   state.lastM45 = null;
+  if (state.running) state.sessionDashboard.start(performance.now());
+  else state.sessionDashboard.reset();
   state.exercise = ui.exercise.value;
   ui.help.textContent = TASKS[state.exercise].subtitle;
   renderModels();
