@@ -3,7 +3,7 @@
 ## Owner-observed evidence from 20 new publisher TRAIN videos
 
 M46 evaluated 20/20 publisher TRAIN Squat videos, original
-filename-SHA256 source ranks 21–40 (seed 2026), with 209
+filename-SHA256 source ranks 21-40 (seed 2026), with 209
 annotated events and zero exclusions. The same M45 relative
 excursion detector and M39 absolute-angle control were unchanged.
 
@@ -51,7 +51,7 @@ writing a local SHA256 manifest, it strictly checks:
    the 5000-draw bootstrap delta/bound endpoints match.
 4. The methods and original M34 were unchanged, and the
    two source sampling cadences share one MediaPipe
-   tracking history, as in M41–M47.
+   tracking history, as in M41-M47.
 
 M48 then saves both owner JSON byte SHA256 values, Git HEAD,
 the publisher annotation SHA from those reports, and the
