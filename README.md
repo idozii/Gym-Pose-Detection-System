@@ -68,6 +68,25 @@ MP4s, never the full archive. Actual archive layout is
 unverified until inspected on the owner's Ubuntu machine.
 No fabricated labels, rep scores or production claims.
 
+### M48 - Freeze M46/M47 TRAIN evidence and detector source fingerprints
+
+[M48 frozen evidence protocol](docs/M48_FROZEN_TRAIN_EVIDENCE_PROTOCOL.md)
+locks original owner M46 and M47 report SHA256 bytes and
+17 source file fingerprints BEFORE any possible TEST use.
+On 20 new source TRAIN clips (209 GT), M47 found paired
+candidate-minus-M39 F1 +4.30 percentage points at 200ms
+(95% clip bootstrap percentile +0.18 to +8.49 pp)
+and video MAE -0.65 [-1.25,-0.10]. FP/video +0.05
+[-0.20,+0.30] is **not** evidence of non-inferiority.
+At shared-tracker every-other 400ms, F1 improved +11.18 pp
+[+3.13,+19.07 pp], MAE -1.25 [-2.45,-0.20].
+M48 adds only report/source SHA256 verification and
+strict owner result reconciliation; no algorithms,
+thresholds, tests on TEST, independent subject claims
+or clinical/exercise quality certification.
+
+---
+
 ### M47 - Paired video-bootstrap uncertainty on frozen TRAIN replication
 
 [M47 frozen M46 clip-bootstrap audit](docs/M47_FROZEN_TRAIN_CLIP_BOOTSTRAP.md)
