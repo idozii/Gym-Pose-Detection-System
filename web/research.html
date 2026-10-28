@@ -5,11 +5,193 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="dark" />
   <meta name="theme-color" content="#0b0e0b" />
-  <meta name="description" content="Gym Pose Lab research evidence: frozen Squat TRAIN replication benchmark, transparent micro event F1 and count MAE, methods, uncertainty and known scientific limitations. No publisher TEST claims." />
+  <meta name="description" content="Gym Pose Lab frozen Squat TRAIN evidence: M39/M45 comparison, paired-video uncertainty, methodology and scientific limitations. No publisher TEST claim." />
   <title>Gym Pose Lab | Research Evidence</title>
 </head>
 <body>
-  <div id="researchApp"></div>
-  <script type="module" src="/src/research_page.js"></script>
+<div class="shell research-shell">
+  <header class="topbar research-topbar">
+    <a class="brand" href="./" aria-label="Gym Pose Lab movement studio">
+      <span class="brand-logo"><span class="brand-mark">G</span><span class="brand-spark">✳</span></span>
+      <span>GYM POSE <strong>LAB</strong></span>
+    </a>
+    <nav class="research-nav" aria-label="Site">
+      <a href="./" class="research-nav-studio">Movement studio</a>
+      <a href="./research.html" class="research-nav-active" aria-current="page">Research evidence</a>
+      <a href="https://github.com/idozii/Gym-Pose-Detection-System" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <main class="research-main" id="research">
+    <section class="research-hero" aria-labelledby="research-title">
+      <div class="research-kicker"><span></span> RESEARCH LOGBOOK / SQUAT REPETITION COUNTING</div>
+      <div class="research-hero-grid">
+        <div>
+          <p class="research-eyebrow">01 / THE QUESTION</p>
+          <h1 id="research-title">Can a simpler <em>motion rule</em> count better?</h1>
+          <p class="research-lead">A transparent relative-excursion detector was compared against a fixed low-to-high angle baseline on original publisher <strong>TRAIN</strong> Squat videos. Here is the evidence, the method, and exactly what has <strong>not</strong> been established.</p>
+          <div class="research-hero-links">
+            <a href="#benchmark" class="research-button-primary">Explore the frozen benchmark ↓</a>
+            <a href="./" class="research-button-ghost">Open the live demo ↗</a>
+          </div>
+        </div>
+        <div class="research-scope" aria-label="Research scope">
+          <span class="research-scope-overline">EVIDENCE SCOPE</span>
+          <strong>TRAIN <span>only.</span></strong>
+          <p>40 hash-selected Squat source filenames across two 20-video cohorts.</p>
+          <div class="research-scope-grid">
+            <div><span>40</span><small>TRAIN CLIPS</small></div>
+            <div><span>521</span><small>GT EVENTS</small></div>
+          </div>
+          <p class="research-scope-note">No official TEST results. No subject-disjoint or browser-equivalence claim.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="research-section" id="benchmark" aria-labelledby="benchmark-heading">
+      <div class="research-section-heading">
+        <div>
+          <div class="research-eyebrow">02 / FROZEN COMPARISON · M39 VS M45</div>
+          <h2 id="benchmark-heading">The numbers, <em>without the hype.</em></h2>
+        </div>
+        <div class="research-freeze">FROZEN TRAIN EVIDENCE · M46 / M47 / M48</div>
+      </div>
+      <p class="research-section-intro">Metrics use one-to-one matching of predicted event times to publisher GT event boundaries. The comparison below is from offline Python MediaPipe Solutions poses; it is <strong>not</strong> real-time website accuracy.</p>
+      <div class="research-selector-panel" role="group" aria-label="Select frozen TRAIN evidence">
+        <label for="researchCohort">SOURCE COHORT
+          <select id="researchCohort">
+            <option value="replication">Filename-disjoint TRAIN replication (n=20)</option>
+            <option value="development">Original development TRAIN (n=20)</option>
+          </select>
+        </label>
+        <label for="researchCadence">OBSERVATION CADENCE
+          <select id="researchCadence">
+            <option value="200">Nominal 200 ms · primary</option>
+            <option value="400">400 ms · shared-tracker subsample</option>
+          </select>
+        </label>
+      </div>
+      <p class="research-condition-note" id="conditionNote" aria-live="polite"></p>
+      <div class="research-metric-grid">
+        <article class="research-method-card">
+          <div class="research-method-top"><span>CONTROL / M39</span><small>Low-to-high absolute-angle</small></div>
+          <div class="research-big-number" id="researchM39F1">—</div>
+          <div class="research-number-label">MICRO EVENT F1 · ↑ higher is better</div>
+          <div class="research-track" role="img" aria-label="M39 micro event F1 bar">
+            <span class="research-track-fill m39" id="researchM39Bar"></span>
+          </div>
+          <div class="research-method-bottom"><span>COUNT MAE <strong id="researchM39MAE">—</strong></span><span>TP / FP / FN <strong id="researchM39TP">—</strong></span></div>
+        </article>
+        <article class="research-method-card research-method-card-candidate">
+          <div class="research-method-top"><span>CANDIDATE / M45</span><small>Relative excursion · rule-based</small></div>
+          <div class="research-big-number" id="researchM45F1">—</div>
+          <div class="research-number-label">MICRO EVENT F1 · ↑ higher is better</div>
+          <div class="research-track" role="img" aria-label="M45 micro event F1 bar">
+            <span class="research-track-fill m45" id="researchM45Bar"></span>
+          </div>
+          <div class="research-method-bottom"><span>COUNT MAE <strong id="researchM45MAE">—</strong></span><span>TP / FP / FN <strong id="researchM45TP">—</strong></span></div>
+        </article>
+      </div>
+      <div class="research-delta-grid" aria-live="polite">
+        <div><span>Δ MICRO EVENT F1</span><strong id="researchDeltaF1">—</strong><small>M45 − M39</small></div>
+        <div><span>Δ COUNT MAE</span><strong id="researchDeltaMAE">—</strong><small>Absolute count error per video, M45 − M39</small></div>
+        <div><span>GROUND TRUTH EVENTS</span><strong id="researchGT">—</strong><small id="researchCohortDescription">Publisher Squat TRAIN, not TEST</small></div>
+      </div>
+      <div class="research-bootstrap" id="researchBootstrap" aria-live="polite">
+        <div class="research-bootstrap-head">
+          <span>PAIRED VIDEO BOOTSTRAP / M47</span>
+          <span>5,000 draws · seed 2026 · n=20</span>
+        </div>
+        <div class="research-bootstrap-entries">
+          <p><span>ΔF1 95% percentile interval</span><strong id="researchCIEvent">—</strong></p>
+          <p><span>ΔMAE 95% percentile interval</span><strong id="researchCICount">—</strong></p>
+          <p><span>ΔFP events / video 95% interval</span><strong id="researchCIFP">—</strong></p>
+        </div>
+        <p class="research-footnote">Resamples whole video pairs, not repetitions. Intervals are exploratory and conditional on 20 TRAIN filenames: shared participants or sessions could reduce effective independent sample size. FP uncertainty includes possible increases.</p>
+      </div>
+      <div class="research-bootstrap-unavailable" id="researchBootstrapUnavailable" hidden>
+        <strong>No frozen replication bootstrap interval applies here.</strong>
+        <p>The original 20 TRAIN videos were used during detector development. The M47 replication bootstrap must not be reused for this development cohort.</p>
+      </div>
+      <p class="research-footnote">Event F1 = 2TP / (2TP + FP + FN). Count MAE means average <em>absolute difference in predicted vs GT repetition count per video</em>, not TransRAC normalized MAE. The 400 ms condition samples the <strong>same 200 ms pose trace</strong>; it is not a separate tracker run. No live camera GT is available.</p>
+    </section>
+
+    <section class="research-section" id="method" aria-labelledby="method-heading">
+      <div class="research-eyebrow">03 / METHOD</div>
+      <h2 id="method-heading">From pixels to <em>observed cycles.</em></h2>
+      <p class="research-section-intro">Offline evaluation uses Python MediaPipe Solutions pose landmarks and camera-plane knee angles. M45 adds an interpretable temporal motion rule. The web demo uses separate MediaPipe Tasks Vision and has not been established equivalent on publisher video.</p>
+      <ol class="research-method-flow">
+        <li><span>01</span><strong>Video frames</strong><p>Authorized Squat TRAIN MP4 clips at controlled nominal observation cadence.</p></li>
+        <li><span>02</span><strong>Pose landmarks</strong><p>Offline MediaPipe Solutions supplies hip / knee / ankle tracking.</p></li>
+        <li><span>03</span><strong>Joint geometry</strong><p>Estimate a 2D knee angle; handle insufficient visibility and tracking-side changes.</p></li>
+        <li><span>04</span><strong>Relative excursion</strong><p>Require a high-angle anchor, enough lowering, then sufficient recovery.</p></li>
+        <li><span>05</span><strong>Event matching</strong><p>Frozen one-to-one matching of predicted events against annotated GT ends.</p></li>
+        <li><span>06</span><strong>Paired evidence</strong><p>Compare original M39 vs M45 and resample 20 whole TRAIN video pairs.</p></li>
+      </ol>
+      <div class="research-rules">
+        <span class="research-rules-title">ORIGINAL FROZEN M45 RULE</span>
+        <div><strong>≥155°</strong><small>High-angle anchor / return</small></div>
+        <div><strong>≥35°</strong><small>Drop and recovery excursion</small></div>
+        <div><strong>0.4–12 s</strong><small>Recovery timing window</small></div>
+        <div><strong>1.25 s</strong><small>Tracking gap reset threshold</small></div>
+      </div>
+      <p class="research-footnote">The cycle-counting rule uses no task-specific trained classifier, but pose extraction itself is a pretrained model. The knee angle cannot certify squat depth, technique, or injury risk.</p>
+    </section>
+
+    <section class="research-section" id="integrity" aria-labelledby="integrity-heading">
+      <div class="research-eyebrow">04 / DATA INTEGRITY · M48–M52</div>
+      <h2 id="integrity-heading">An evidence trail, <em>not a certificate.</em></h2>
+      <div class="research-integrity-grid">
+        <article><span>M48 / M49</span><strong>Frozen sources & provenance check</strong><p>17 research source files fingerprinted against owner-local evidence reports and original Git commits.</p></article>
+        <article><span>M50</span><strong>40 clips · 521 annotated events</strong><p>No detected decode/frame-count discrepancy or gross GT-bound timing flags on these TRAIN clips.</p></article>
+        <article><span>M51</span><strong>40 / 40 byte-identical</strong><p>Local TRAIN MP4 contents matched corresponding members of the owner-supplied TAR.GZ.</p></article>
+        <article><span>M52</span><strong>0 descriptive PTS flags</strong><p>Container-derived frame timestamps agreed with the nominal FPS clock; maximum reported drift ≈0.0005 ms.</p></article>
+      </div>
+      <p class="research-footnote">These are consistency checks relative to the owner-supplied archive. They do not independently verify publisher origin or licensing, manually labeled cycle boundaries, subject-disjointness or any official TEST result.</p>
+    </section>
+
+    <section class="research-section" id="limitations" aria-labelledby="limitations-heading">
+      <div class="research-eyebrow">05 / LIMITATIONS & OPEN QUESTIONS</div>
+      <h2 id="limitations-heading">What we <em>cannot claim.</em></h2>
+      <div class="research-limit-grid">
+        <article><span>01 · NO OFFICIAL TEST SCORE</span><p>Publisher TEST remains untouched. These TRAIN F1 scores are not an independent generalization estimate.</p></article>
+        <article><span>02 · IDENTITY UNVERIFIED</span><p>Filenames are disjoint, but subject, session, collection site and camera independence are unknown.</p></article>
+        <article><span>03 · NO ZERO-REP CONTROLS</span><p>Publisher Squat TRAIN lacks count-zero clips. False alarms during non-repetition motion remain unmeasured.</p></article>
+        <article><span>04 · BROWSER PARITY OPEN</span><p>Offline Python MediaPipe Solutions outcomes cannot be assigned to the browser Tasks Vision demo.</p></article>
+        <article><span>05 · ORIGIN & LICENSE OPEN</span><p>Matching video bytes to a local TAR does not authenticate its source or confirm redistribution permissions.</p></article>
+        <article><span>06 · LABEL SEMANTICS OPEN</span><p>Valid bounds and video clocks do not prove human GT cycle ends are aligned with observed knee-angle phases.</p></article>
+      </div>
+    </section>
+
+    <section class="research-section research-end" id="reproduce" aria-labelledby="reproduce-heading">
+      <div>
+        <div class="research-eyebrow">06 / REPRODUCIBILITY</div>
+        <h2 id="reproduce-heading">Read the sources. <em>Challenge the claims.</em></h2>
+        <p class="research-section-intro">W5 contains static, aggregate frozen TRAIN evidence. Owner-local JSON reports, archive, private video, per-video predictions and landmarks are not packaged into this public frontend. M53 normalized MAE, OBO and official TEST results are not claimed or invented.</p>
+        <div class="research-link-grid">
+          <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M46_FROZEN_UNUSED_TRAIN_REPLICATION.md" target="_blank" rel="noopener noreferrer">M46 · Source cohort ↗</a>
+          <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M47_FROZEN_TRAIN_CLIP_BOOTSTRAP.md" target="_blank" rel="noopener noreferrer">M47 · Paired bootstrap ↗</a>
+          <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M48_FROZEN_TRAIN_EVIDENCE_PROTOCOL.md" target="_blank" rel="noopener noreferrer">M48 · Evidence freeze ↗</a>
+          <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M50_TRAIN_LABEL_VIDEO_INTEGRITY.md" target="_blank" rel="noopener noreferrer">M50 · Frame audit ↗</a>
+          <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M51_TRAIN_ARCHIVE_SOURCE_PARITY.md" target="_blank" rel="noopener noreferrer">M51 · Byte parity ↗</a>
+          <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M52_TRAIN_PTS_TIMELINE_AUDIT.md" target="_blank" rel="noopener noreferrer">M52 · PTS audit ↗</a>
+          <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/web/scripts/m45_compare_train_relative.js" target="_blank" rel="noopener noreferrer">M45 · Original detector ↗</a>
+          <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M49_PRETEST_GIT_PROVENANCE.md" target="_blank" rel="noopener noreferrer">M49 · Reproduction checks ↗</a>
+        </div>
+      </div>
+      <div class="research-return">
+        <div class="research-eyebrow">READY TO EXPLORE?</div>
+        <strong>See the live system, not a pre-recorded success.</strong>
+        <p>The webcam and local video demo are experimental observations with no live GT.</p>
+        <a href="./" class="research-button-primary">Back to movement studio ↗</a>
+      </div>
+    </section>
+  </main>
+  <footer class="research-footer">
+    <span>GYM POSE LAB · OPEN RESEARCH PROTOTYPE</span>
+    <span>TRAIN evidence only · no clinical, safety or athlete-generalization claim</span>
+  </footer>
+</div>
+<script type="module" src="/src/research_page.js"></script>
 </body>
 </html>
