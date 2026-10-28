@@ -116,8 +116,65 @@
       <p class="research-footnote">Event F1 = 2TP / (2TP + FP + FN). Count MAE means average <em>absolute difference in predicted vs GT repetition count per video</em>, not TransRAC normalized MAE. The 400 ms condition samples the <strong>same 200 ms pose trace</strong>; it is not a separate tracker run. No live camera GT is available.</p>
     </section>
 
+    <section class="research-section" id="m53" aria-labelledby="m53-heading">
+      <div class="research-section-heading">
+        <div>
+          <div class="research-eyebrow">03 / NEW OWNER-RUN TRAIN AUDIT - M53 + W6</div>
+          <h2 id="m53-heading">Counting error, <em>measured per video.</em></h2>
+        </div>
+        <div class="research-freeze">OWNER-REPORTED LOCAL TRAIN REPLAY</div>
+      </div>
+      <p class="research-section-intro">M53 supplements M46 event matching with normalized count MAE, Off-By-One (OBO), and exact-count rates. Figures below come from the owner's 20-clip TRAIN replication replay; the full private JSON report was not independently inspected here. The same cadence selector above controls these results.</p>
+      <div id="m53OwnerResults" class="research-m53-panel">
+        <div class="research-m53-heading">
+          <strong id="m53CadenceLabel">TRAIN replication / 200 ms</strong>
+          <span>n = 20 original video files · 209 GT reps</span>
+        </div>
+        <div class="research-m53-table-wrap">
+          <table class="research-m53-table">
+            <thead><tr>
+              <th scope="col">VIDEO-MEAN METRIC</th>
+              <th scope="col">M39 BASELINE</th>
+              <th scope="col">M45 CANDIDATE</th>
+              <th scope="col">M45 - M39</th>
+            </tr></thead>
+            <tbody>
+              <tr><th scope="row">Normalized MAE ↓</th>
+                <td id="m53NormalizedM39">—</td><td id="m53NormalizedM45">—</td><td id="m53NormalizedDelta">—</td></tr>
+              <tr><th scope="row">Off-By-One (≤1 rep) ↑</th>
+                <td id="m53OboM39">—</td><td id="m53OboM45">—</td><td id="m53OboDelta">—</td></tr>
+              <tr><th scope="row">Exact count ↑</th>
+                <td id="m53ExactM39">—</td><td id="m53ExactM45">—</td><td id="m53ExactDelta">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="research-footnote">Normalized MAE is the mean of |predicted - GT| / GT across 20 positive-GT videos, NOT total errors divided by total GT. OBO is the fraction of videos with count difference no greater than one. Exact count compares only the integer number of cycles, not temporal matching quality. No new M53 confidence intervals are displayed until the owner-local bootstrap report is reviewed.</p>
+
+        <div class="research-w6-summary">
+          <div>
+            <span>W6 DIRECT EVENT-TIME DISAGREEMENTS</span>
+            <strong id="w6DirectMismatches">—</strong>
+          </div>
+          <div>
+            <span>W6 GATED EVENT-TIME DISAGREEMENTS</span>
+            <strong id="w6GatedMismatches">—</strong>
+          </div>
+          <div>
+            <span>FRAMES DROPPED BY W2 GATE</span>
+            <strong id="w6DroppedFrames">—</strong>
+          </div>
+        </div>
+        <p class="research-footnote"><strong>W6 scope:</strong> the original M45 comparator and the website's M45 algorithm processed the SAME original offline TRAIN pose landmarks and timestamps; the gated check uses the same gated subset on both sides. Zero disagreements are only same-input <em>algorithmic parity</em>, not agreement of Python MediaPipe Solutions and browser MediaPipe Tasks Vision, nor a test of live webcam accuracy.</p>
+      </div>
+      <div id="m53OwnerUnavailable" class="research-bootstrap-unavailable" hidden>
+        <strong>M53 and W6 owner-run results apply only to the 20-video replication TRAIN cohort.</strong>
+        <p>The original development TRAIN clips were not included in the new M53/W6 replay. Select "Filename-disjoint TRAIN replication" above to view these metrics. No development metrics have been fabricated.</p>
+      </div>
+      <p class="research-footnote">Reproducibility: <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M53_TRAIN_NORMALIZED_COUNT_METRICS.md" target="_blank" rel="noopener noreferrer">M53 metric definitions and local replay ↗</a> · <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/W6_BROWSER_SAME_INPUT_PARITY.md" target="_blank" rel="noopener noreferrer">W6 algorithmic parity protocol ↗</a></p>
+    </section>
+
     <section class="research-section" id="method" aria-labelledby="method-heading">
-      <div class="research-eyebrow">03 / METHOD</div>
+      <div class="research-eyebrow">04 / METHOD</div>
       <h2 id="method-heading">From pixels to <em>observed cycles.</em></h2>
       <p class="research-section-intro">Offline evaluation uses Python MediaPipe Solutions pose landmarks and camera-plane knee angles. M45 adds an interpretable temporal motion rule. The web demo uses separate MediaPipe Tasks Vision and has not been established equivalent on publisher video.</p>
       <ol class="research-method-flow">
@@ -139,7 +196,7 @@
     </section>
 
     <section class="research-section" id="integrity" aria-labelledby="integrity-heading">
-      <div class="research-eyebrow">04 / DATA INTEGRITY · M48-M52</div>
+      <div class="research-eyebrow">05 / DATA INTEGRITY · M48-M52</div>
       <h2 id="integrity-heading">An evidence trail, <em>not a certificate.</em></h2>
       <div class="research-integrity-grid">
         <article><span>M48 / M49</span><strong>Frozen sources & provenance check</strong><p>17 research source files fingerprinted against owner-local evidence reports and original Git commits.</p></article>
@@ -151,7 +208,7 @@
     </section>
 
     <section class="research-section" id="limitations" aria-labelledby="limitations-heading">
-      <div class="research-eyebrow">05 / LIMITATIONS & OPEN QUESTIONS</div>
+      <div class="research-eyebrow">06 / LIMITATIONS & OPEN QUESTIONS</div>
       <h2 id="limitations-heading">What we <em>cannot claim.</em></h2>
       <div class="research-limit-grid">
         <article><span>01 · NO OFFICIAL TEST SCORE</span><p>Publisher TEST remains untouched. These TRAIN F1 scores are not an independent generalization estimate.</p></article>
@@ -165,9 +222,9 @@
 
     <section class="research-section research-end" id="reproduce" aria-labelledby="reproduce-heading">
       <div>
-        <div class="research-eyebrow">06 / REPRODUCIBILITY</div>
+        <div class="research-eyebrow">07 / REPRODUCIBILITY</div>
         <h2 id="reproduce-heading">Read the sources. <em>Challenge the claims.</em></h2>
-        <p class="research-section-intro">W5 contains static, aggregate frozen TRAIN evidence. Owner-local JSON reports, archive, private video, per-video predictions and landmarks are not packaged into this public frontend. M53 normalized MAE, OBO and official TEST results are not claimed or invented.</p>
+        <p class="research-section-intro">This site shows the owner-reported M53 point estimates for TRAIN replication and W6 same-input algorithmic parity. The underlying owner-local JSON reports, archived videos, private per-video predictions and landmarks are not packaged into the public frontend. New M53 bootstrap confidence intervals and official TEST results are not claimed or invented.</p>
         <div class="research-link-grid">
           <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M46_FROZEN_UNUSED_TRAIN_REPLICATION.md" target="_blank" rel="noopener noreferrer">M46 · Source cohort ↗</a>
           <a href="https://github.com/idozii/Gym-Pose-Detection-System/blob/main/docs/M47_FROZEN_TRAIN_CLIP_BOOTSTRAP.md" target="_blank" rel="noopener noreferrer">M47 · Paired bootstrap ↗</a>
