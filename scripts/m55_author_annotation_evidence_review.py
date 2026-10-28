@@ -84,7 +84,13 @@ def review(m54: dict, m48: dict) -> dict:
     if not isinstance(c,dict) or set(c)!={"development_20","replication_20"}:
         raise ValueError("M55 requires original M46 20+20 hash cohorts")
     results={}
-    for name,n_gt in (("development_20",312),("replication_20",209)):
+    # Exact owner-run M54 aggregates are part of the frozen TRAIN claim gate.
+    # A matching sum alone could hide changed boundary/gap classifications.
+    expected = (
+        ("development_20", 312, 157, 135, 0, 24, 158),
+        ("replication_20", 209, 155, 34, 1, 24, 166),
+    )
+    for name,n_gt,zero_gaps,positive_gaps,at_zero,min_span,max_span in expected:
         row=c[name]
         n=row.get("source_files")
         if (n != 20 or row.get("annotated_repetitions") != n_gt or
@@ -92,6 +98,11 @@ def review(m54: dict, m48: dict) -> dict:
             row.get("positive_gt_videos") != 20 or
             row.get("zero_gt_videos") != 0 or
             row.get("frame_boundary_semantics_confirmed_by_authors") is not False or
+            row.get("adjacent_cycle_gaps_with_zero_unlabeled_frames") != zero_gaps or
+            row.get("adjacent_cycle_gaps_with_positive_unlabeled_frames") != positive_gaps or
+            row.get("first_cycle_starts_at_frame_zero") != at_zero or
+            row.get("smallest_cycle_span_frames") != min_span or
+            row.get("largest_cycle_span_frames") != max_span or
             row.get("nonoverlapping_adjacent_cycle_gaps") != n_gt-n or
             row.get("adjacent_cycle_gaps_with_zero_unlabeled_frames",0)+
             row.get("adjacent_cycle_gaps_with_positive_unlabeled_frames",0) != n_gt-n):
